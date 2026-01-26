@@ -59,3 +59,5 @@ Thumbs.db
 *.db
 *.db-shm
 *.db-wal
+/github_deploy_key
+/github_deploy_key.pub
