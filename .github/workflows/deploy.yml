@@ -1,0 +1,29 @@
+name: Deploy to AlmaLinux Server
+
+on:
+  push:
+    branches:
+      - master   # كل مرة نعمل push على master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            cd /root/HelpEmpowerment
+            git reset --hard
+            git clean -fd
+            git pull origin master
+            docker compose down
+            docker compose up -d --build
