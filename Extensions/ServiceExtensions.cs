@@ -13,7 +13,16 @@ namespace StandardArticture.Extensions
         {
             // Database
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,                 // عدد المحاولات
+            maxRetryDelay: TimeSpan.FromSeconds(10), // مدة الانتظار بين المحاولات
+            errorNumbersToAdd: null           // لو عايز تضيف أرقام Errors معينة
+        )
+    )
+);
+
 
             // Repositories
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
