@@ -10,21 +10,33 @@ EXPOSE 8081
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["StandardArticture.csproj", "."]
-RUN dotnet restore "./StandardArticture.csproj"
+
+# Copy csproj and restore dependencies
+COPY ["StandardArticture.csproj", "./"]
+RUN dotnet restore "StandardArticture.csproj"
+
+# Copy everything else and build
 COPY . .
-WORKDIR "/src/."
-RUN dotnet build "./StandardArticture.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "StandardArtiture.csproj" -c Release -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./StandardArticture.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "StandardArticture.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
+EXPOSE 8080
+EXPOSE 8081
+
+# Install SQL Server tools for troubleshooting (optional)
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 COPY --from=publish /app/publish .
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl --fail http://localhost:8080/health || exit 1
+
 ENTRYPOINT ["dotnet", "StandardArticture.dll"]
