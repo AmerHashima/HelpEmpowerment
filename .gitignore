@@ -61,3 +61,5 @@ Thumbs.db
 *.db-wal
 /github_deploy_key
 /github_deploy_key.pub
+/deploy_key
+/deploy_key.pub

@@ -1,17 +1,19 @@
-name: Deploy to AlmaLinux Server   # اسم workflow
+name: Deploy to AlmaLinux Server
 
 on:
   push:
     branches:
-      - master                  # يشتغل على أي push للماستر
+      - master
 
 jobs:
-  deploy:                      # اسم الـ job
-    runs-on: ubuntu-latest      # runner
+  deploy:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          ssh-key: ${{ secrets.SERVER_SSH_KEY }}
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.8
