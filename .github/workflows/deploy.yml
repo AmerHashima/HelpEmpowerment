@@ -10,21 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ نسحب الكود من الريبو
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          ssh-key: ${{ secrets.SERVER_SSH_KEY }}
 
+      # 2️⃣ نعمل deploy على السيرفر عبر SSH
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.8
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.SERVER_IP }}          # IP السيرفر
+          username: ${{ secrets.SERVER_USER }}    # user على السيرفر
+          key: ${{ secrets.SERVER_SSH_KEY }}      # المفتاح الخاص SSH (deploy key)
           port: 22
           script: |
             cd /root/HelpEmpowerment
-            git reset --hard
-            git pull origin master
+            git reset --hard origin/master
+            git clean -fd
             docker compose down
             docker compose up -d --build
