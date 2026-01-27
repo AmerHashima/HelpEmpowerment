@@ -21,9 +21,11 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: 22
           script: |
-            eval "$(ssh-agent -s)"
-            ssh-add ~/.ssh/github_deploy_key
             cd /root/HelpEmpowerment
+            if [ ! -f docker-compose.yml ]; then
+              echo "docker-compose.yml not found! Aborting..."
+              exit 1
+            fi
             git reset --hard
             git clean -fd
             git pull origin master
