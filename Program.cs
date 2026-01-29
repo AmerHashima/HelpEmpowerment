@@ -77,7 +77,8 @@ namespace StandardArticture
             });
 
             app.UseResponseCompression();
-            app.UseCors("AllowAll");
+            app.UseRouting();            // ⬅️ مهم
+            app.UseCors("AllowAll"); 
             app.UseHttpsRedirection();
             app.UseAuthorization();
             app.MapControllers();
