@@ -11,41 +11,20 @@ namespace StandardArticture
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // --------------------------
-            // Logging
-            // --------------------------
+            // Configure logging
             builder.Logging.ClearProviders();
             builder.Logging.AddConsole();
             builder.Logging.AddDebug();
 
-            // --------------------------
-            // Add services
-            // --------------------------
+            // Add services to the container
             builder.Services.AddControllers();
-
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            // Application & Infrastructure services
+            // Add application services
             builder.Services.AddApplicationServices(builder.Configuration);
 
-            // --------------------------
-            // CORS Policy for Angular Dev
-            // --------------------------
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowAll", policy =>
-                {
-                    policy.AllowAnyOrigin()
-                        .AllowAnyMethod()
-                    .AllowAnyHeader();
-                    // .AllowCredentials(); // فقط إذا تستخدم Authentication مع Angular
-                });
-            });
-
-            // --------------------------
-            // Health Checks
-            // --------------------------
+            // Add Health Checks for SQL Server
             builder.Services.AddHealthChecks()
                 .AddSqlServer(
                     connectionString: builder.Configuration.GetConnectionString("DefaultConnection")!,
@@ -53,17 +32,13 @@ namespace StandardArticture
                     timeout: TimeSpan.FromSeconds(30),
                     tags: new[] { "ready", "db" });
 
-            // --------------------------
-            // Response Compression
-            // --------------------------
+            // Add response compression for better performance
             builder.Services.AddResponseCompression(options =>
             {
                 options.EnableForHttps = true;
             });
 
-            // --------------------------
-            // HttpClient with Polly
-            // --------------------------
+            // Add HttpClient with Polly resiliency policies
             builder.Services.AddHttpClient("MyHttpClient")
                 .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(10))
                 .AddTransientHttpErrorPolicy(policyBuilder => policyBuilder
@@ -71,64 +46,46 @@ namespace StandardArticture
                 .AddTransientHttpErrorPolicy(policyBuilder => policyBuilder
                     .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)));
 
+            // Add CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                });
+            });
+
             var app = builder.Build();
 
-            // --------------------------
-            // Apply database migrations
-            // --------------------------
+            // Apply database migrations with retry logic (critical for Docker)
             await ApplyDatabaseMigrationsAsync(app);
 
-            // --------------------------
-            // Middleware pipeline
-            // --------------------------
+            // Configure the HTTP request pipeline
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "StandardArticture API V1");
-                });
+                app.UseSwaggerUI();
             }
 
-            // Health check endpoints
+            // Map health check endpoints
             app.MapHealthChecks("/health");
             app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
             {
                 Predicate = check => check.Tags.Contains("ready")
             });
 
-            app.MapGet("/", () => Results.Redirect("/swagger"));
-
-            app.UseHttpsRedirection();
-
-            app.UseRouting();                    // Must be BEFORE UseCors
-            app.UseCors("AllowAll");       // Must be AFTER UseRouting, BEFORE Authorization
-
-            app.UseAuthentication();             // If you have auth
+            app.UseResponseCompression();
+            app.UseRouting();            // ⬅️ مهم
+            app.UseCors("AllowAll"); 
+            //app.UseHttpsRedirection();
             app.UseAuthorization();
-
-            // Handle OPTIONS preflight (optional, ensures no CORS issues)
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Method == "OPTIONS")
-                {
-                    context.Response.StatusCode = 200;
-                    await context.Response.CompleteAsync();
-                }
-                else
-                {
-                    await next();
-                }
-            });
-
             app.MapControllers();
 
             app.Run();
         }
 
-        // --------------------------
-        // Database Migration with retry
-        // --------------------------
         private static async Task ApplyDatabaseMigrationsAsync(WebApplication app)
         {
             using var scope = app.Services.CreateScope();
@@ -141,6 +98,7 @@ namespace StandardArticture
 
                 logger.LogInformation("Starting database migration...");
 
+                // Retry logic for database migration (important for Docker startup)
                 var retryPolicy = Policy
                     .Handle<Exception>()
                     .WaitAndRetryAsync(
@@ -155,14 +113,20 @@ namespace StandardArticture
 
                 await retryPolicy.ExecuteAsync(async () =>
                 {
+                    // Test connection
                     await context.Database.CanConnectAsync();
+
+                    // Apply migrations
                     await context.Database.MigrateAsync();
+
                     logger.LogInformation("Database migration completed successfully");
                 });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "An error occurred while migrating the database. Error: {Message}", ex.Message);
+                
+                // In production, you might want to throw to prevent the app from starting with a broken DB
                 if (app.Environment.IsProduction())
                 {
                     throw;
