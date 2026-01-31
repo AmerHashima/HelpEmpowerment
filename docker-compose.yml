@@ -12,44 +12,54 @@ services:
     volumes:
       - sql_data:/var/opt/mssql
     restart: always
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: standardarticture-api
-    ports:
-      - "8080:8080"
-      - "8081:8081"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:8080;https://+:8081
-      - ConnectionStrings__DefaultConnection=Server=144.91.127.150;Database=HelpEmpowerment;User Id=sa;Password=StrongPassword@123;TrustServerCertificate=True;MultipleActiveResultSets=True;ConnectRetryCount=10;ConnectRetryInterval=10;Connection Timeout=60;
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
     networks:
       - app-network
-    depends_on:
-      - wait-for-db
 
-  # Helper service to wait for SQL Server
   wait-for-db:
     image: mcr.microsoft.com/mssql-tools
     container_name: wait-for-db
+    depends_on:
+      - sqlserver
     entrypoint: >
       /bin/bash -c "
-        until /opt/mssql-tools/bin/sqlcmd -S 144.91.127.150 -U sa -P 'StrongPassword@123' -Q 'SELECT 1' &> /dev/null;
+        until /opt/mssql-tools/bin/sqlcmd
+        -S sqlserver
+        -U sa
+        -P 'StrongPassword@123'
+        -Q 'SELECT 1' &> /dev/null;
         do
           echo 'Waiting for SQL Server to be ready...';
           sleep 5;
         done;
         echo 'SQL Server is ready!';
       "
+    networks:
+      - app-network
+
+  help_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: help_api
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: "http://+:8080;https://+:8081"
+      ConnectionStrings__DefaultConnection: >
+        Server=sqlserver;
+        Database=HelpEmpowerment;
+        User Id=sa;
+        Password=StrongPassword@123;
+        TrustServerCertificate=True;
+        MultipleActiveResultSets=True;
+        ConnectRetryCount=10;
+        ConnectRetryInterval=10;
+        Connection Timeout=60;
+    depends_on:
+      - wait-for-db
+    restart: always
     networks:
       - app-network
 
