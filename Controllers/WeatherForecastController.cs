@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace StandardArticture.Controllers
 {
     [ApiController]
     [Route("[controller]")]
+    [EnableCors("AllowAll")] // ⬅️ أضف هذا السطر
+
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries =
