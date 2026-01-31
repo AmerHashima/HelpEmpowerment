@@ -1,4 +1,8 @@
-version: '3.8'
+version: '3.9'
+
+networks:
+  app-network:
+    driver: bridge
 
 services:
   sqlserver:
@@ -12,60 +16,31 @@ services:
     volumes:
       - sql_data:/var/opt/mssql
     restart: always
-    networks:
-      - app-network
 
-  wait-for-db:
-    image: mcr.microsoft.com/mssql-tools
-    container_name: wait-for-db
+  api:
+    build: .
+    container_name: help_api
     depends_on:
       - sqlserver
-    entrypoint: >
-      /bin/bash -c "
-        until /opt/mssql-tools/bin/sqlcmd
-        -S sqlserver
-        -U sa
-        -P 'StrongPassword@123'
-        -Q 'SELECT 1' &> /dev/null;
-        do
-          echo 'Waiting for SQL Server to be ready...';
-          sleep 5;
-        done;
-        echo 'SQL Server is ready!';
-      "
-    networks:
-      - app-network
-
-  help_api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: help_api
-    ports:
-      - "8080:8080"
-      - "8081:8081"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: "http://+:8080;https://+:8081"
-      ConnectionStrings__DefaultConnection: >
-        Server=sqlserver;
-        Database=HelpEmpowerment;
-        User Id=sa;
-        Password=StrongPassword@123;
-        TrustServerCertificate=True;
-        MultipleActiveResultSets=True;
-        ConnectRetryCount=10;
-        ConnectRetryInterval=10;
-        Connection Timeout=60;
-    depends_on:
-      - wait-for-db
-    restart: always
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=HelpEmpowerment;User Id=sa;Password=StrongPassword@123;TrustServerCertificate=True"
+    ports:
+      - "5000:8080"
     networks:
       - app-network
+    restart: always
+
+  help_frontend:
+    build:
+      context: /root/HelpEmpowermentUi
+      dockerfile: Dockerfile
+    container_name: help_frontend
+    ports:
+      - "8082:4000"
+    networks:
+      - app-network
+    restart: always
 
 volumes:
   sql_data:
-
-networks:
-  app-network:
-    driver: bridge
