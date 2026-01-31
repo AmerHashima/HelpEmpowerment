@@ -46,20 +46,26 @@ namespace StandardArticture
                 .AddTransientHttpErrorPolicy(policyBuilder => policyBuilder
                     .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)));
 
-            // Add CORS
+            // Add CORS - MUST BE PROPERLY CONFIGURED
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAngularDev", policy =>
-                {
-                    policy.WithOrigins("http://localhost:4200") // دومين Angular
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
-                });
                 options.AddPolicy("AllowAll", policy =>
                 {
                     policy.AllowAnyOrigin()
                           .AllowAnyMethod()
                           .AllowAnyHeader();
+                });
+
+                options.AddPolicy("AllowAngularDev", policy =>
+                {
+                    policy.WithOrigins(
+                              "http://localhost:4200",
+                              "http://localhost:4201",
+                              "http://127.0.0.1:4200"
+                          )
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials();
                 });
             });
 
@@ -69,36 +75,35 @@ namespace StandardArticture
             await ApplyDatabaseMigrationsAsync(app);
 
             // Configure the HTTP request pipeline
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            // IMPORTANT: Correct middleware order!
 
-            // Map health check endpoints
+            // 1. Response compression first
+            app.UseResponseCompression();
+
+            // 2. CORS MUST BE BEFORE UseRouting()
+            app.UseCors("AllowAll");  // Use AllowAll for now to test
+
+            // 3. Routing
+            app.UseRouting();
+
+            // 4. Authorization
+            app.UseAuthorization();
+
+            // 5. Swagger (available in all environments for testing)
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "StandardArticture API V1");
+            });
+
+            // 6. Map health check endpoints
             app.MapHealthChecks("/health");
             app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
             {
                 Predicate = check => check.Tags.Contains("ready")
             });
 
-            app.UseResponseCompression();
-            app.UseRouting();            // ⬅️ مهم
-            app.UseCors("AllowAngularDev"); 
-            //app.UseHttpsRedirection();
-            app.UseAuthorization();
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Method == "OPTIONS")
-                {
-                    context.Response.StatusCode = 200;
-                    await context.Response.CompleteAsync();
-                }
-                else
-                {
-                    await next();
-                }
-            });
+            // 7. Map controllers
             app.MapControllers();
 
             app.Run();
