@@ -49,6 +49,12 @@ namespace StandardArticture
             // Add CORS
             builder.Services.AddCors(options =>
             {
+                options.AddPolicy("AllowAngularDev", policy =>
+                {
+                    policy.WithOrigins("http://localhost:4200") // دومين Angular
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
                 options.AddPolicy("AllowAll", policy =>
                 {
                     policy.AllowAnyOrigin()
@@ -78,7 +84,7 @@ namespace StandardArticture
 
             app.UseResponseCompression();
             app.UseRouting();            // ⬅️ مهم
-            app.UseCors("AllowAll"); 
+            app.UseCors("AllowAngularDev"); 
             //app.UseHttpsRedirection();
             app.UseAuthorization();
             app.Use(async (context, next) =>
