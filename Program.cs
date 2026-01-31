@@ -12,45 +12,89 @@ namespace StandardArticture
             var builder = WebApplication.CreateBuilder(args);
 
             // --------------------------
-            builder.Services.AddControllers();
-
-            // Add Application & Infrastructure layers
-            //builder.Services.AddApplication();
-            //builder.Services.AddInfrastructure(builder.Configuration);
-
-            //// --------------------------
-            //// Configure FluentValidation
-            //// --------------------------
-            //builder.Services.AddFluentValidationAutoValidation()
-            //                .AddFluentValidationClientsideAdapters();
+            // Logging
+            // --------------------------
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
+            builder.Logging.AddDebug();
 
             // --------------------------
-            // Configure CORS to allow any region
+            // Add services
+            // --------------------------
+            builder.Services.AddControllers();
+
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
+
+            // Application & Infrastructure services
+            builder.Services.AddApplicationServices(builder.Configuration);
+
+            // --------------------------
+            // CORS Policy for Angular Dev
             // --------------------------
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll", policy =>
+                options.AddPolicy("AllowAngularDev", policy =>
                 {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
+                    policy.WithOrigins(
+                        "http://localhost:4200",
+                        "http://localhost:4201",
+                        "http://127.0.0.1:4200"
+                    )
+                    .AllowAnyMethod()
+                    .AllowAnyHeader();
+                    // .AllowCredentials(); // فقط إذا تستخدم Authentication مع Angular
                 });
             });
 
+            // --------------------------
+            // Health Checks
+            // --------------------------
+            builder.Services.AddHealthChecks()
+                .AddSqlServer(
+                    connectionString: builder.Configuration.GetConnectionString("DefaultConnection")!,
+                    name: "sql-server",
+                    timeout: TimeSpan.FromSeconds(30),
+                    tags: new[] { "ready", "db" });
+
+            // --------------------------
+            // Response Compression
+            // --------------------------
+            builder.Services.AddResponseCompression(options =>
+            {
+                options.EnableForHttps = true;
+            });
+
+            // --------------------------
+            // HttpClient with Polly
+            // --------------------------
+            builder.Services.AddHttpClient("MyHttpClient")
+                .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(10))
+                .AddTransientHttpErrorPolicy(policyBuilder => policyBuilder
+                    .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))))
+                .AddTransientHttpErrorPolicy(policyBuilder => policyBuilder
+                    .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)));
 
             var app = builder.Build();
 
-            // Apply database migrations with retry logic (critical for Docker)
+            // --------------------------
+            // Apply database migrations
+            // --------------------------
             await ApplyDatabaseMigrationsAsync(app);
 
-            // Configure the HTTP request pipeline
+            // --------------------------
+            // Middleware pipeline
+            // --------------------------
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "StandardArticture API V1");
+                });
             }
 
-            // Map health check endpoints
+            // Health check endpoints
             app.MapHealthChecks("/health");
             app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
             {
@@ -59,20 +103,36 @@ namespace StandardArticture
 
             app.MapGet("/", () => Results.Redirect("/swagger"));
 
-            // ⭐ CORS must be before Authentication and Authorization
-            app.UseCors("AllowAll");
-
             app.UseHttpsRedirection();
 
-            // Authentication must come before Authorization
-            app.UseAuthentication();
+            app.UseRouting();                    // Must be BEFORE UseCors
+            app.UseCors("AllowAngularDev");       // Must be AFTER UseRouting, BEFORE Authorization
+
+            app.UseAuthentication();             // If you have auth
             app.UseAuthorization();
 
-            app.MapControllers();
-            app.Run();
+            // Handle OPTIONS preflight (optional, ensures no CORS issues)
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Method == "OPTIONS")
+                {
+                    context.Response.StatusCode = 200;
+                    await context.Response.CompleteAsync();
+                }
+                else
+                {
+                    await next();
+                }
+            });
 
+            app.MapControllers();
+
+            app.Run();
         }
 
+        // --------------------------
+        // Database Migration with retry
+        // --------------------------
         private static async Task ApplyDatabaseMigrationsAsync(WebApplication app)
         {
             using var scope = app.Services.CreateScope();
@@ -85,7 +145,6 @@ namespace StandardArticture
 
                 logger.LogInformation("Starting database migration...");
 
-                // Retry logic for database migration (important for Docker startup)
                 var retryPolicy = Policy
                     .Handle<Exception>()
                     .WaitAndRetryAsync(
@@ -100,20 +159,14 @@ namespace StandardArticture
 
                 await retryPolicy.ExecuteAsync(async () =>
                 {
-                    // Test connection
                     await context.Database.CanConnectAsync();
-
-                    // Apply migrations
                     await context.Database.MigrateAsync();
-
                     logger.LogInformation("Database migration completed successfully");
                 });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "An error occurred while migrating the database. Error: {Message}", ex.Message);
-                
-                // In production, you might want to throw to prevent the app from starting with a broken DB
                 if (app.Environment.IsProduction())
                 {
                     throw;
