@@ -11,42 +11,22 @@ namespace StandardArticture
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Configure logging
-            builder.Logging.ClearProviders();
-            builder.Logging.AddConsole();
-            builder.Logging.AddDebug();
-
-            // Add services to the container
+            // --------------------------
             builder.Services.AddControllers();
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
 
-            // Add application services
-            builder.Services.AddApplicationServices(builder.Configuration);
+            // Add Application & Infrastructure layers
+            //builder.Services.AddApplication();
+            //builder.Services.AddInfrastructure(builder.Configuration);
 
-            // Add Health Checks for SQL Server
-            builder.Services.AddHealthChecks()
-                .AddSqlServer(
-                    connectionString: builder.Configuration.GetConnectionString("DefaultConnection")!,
-                    name: "sql-server",
-                    timeout: TimeSpan.FromSeconds(30),
-                    tags: new[] { "ready", "db" });
+            //// --------------------------
+            //// Configure FluentValidation
+            //// --------------------------
+            //builder.Services.AddFluentValidationAutoValidation()
+            //                .AddFluentValidationClientsideAdapters();
 
-            // Add response compression for better performance
-            builder.Services.AddResponseCompression(options =>
-            {
-                options.EnableForHttps = true;
-            });
-
-            // Add HttpClient with Polly resiliency policies
-            builder.Services.AddHttpClient("MyHttpClient")
-                .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(10))
-                .AddTransientHttpErrorPolicy(policyBuilder => policyBuilder
-                    .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))))
-                .AddTransientHttpErrorPolicy(policyBuilder => policyBuilder
-                    .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)));
-
-            // Add CORS - MUST BE PROPERLY CONFIGURED
+            // --------------------------
+            // Configure CORS to allow any region
+            // --------------------------
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>
@@ -55,19 +35,8 @@ namespace StandardArticture
                           .AllowAnyMethod()
                           .AllowAnyHeader();
                 });
-
-                options.AddPolicy("AllowAngularDev", policy =>
-                {
-                    policy.WithOrigins(
-                              "http://localhost:4200",
-                              "http://localhost:4201",
-                              "http://127.0.0.1:4200"
-                          )
-                          .AllowAnyMethod()
-                          .AllowAnyHeader()
-                          .AllowCredentials();
-                });
             });
+
 
             var app = builder.Build();
 
@@ -75,38 +44,33 @@ namespace StandardArticture
             await ApplyDatabaseMigrationsAsync(app);
 
             // Configure the HTTP request pipeline
-            // IMPORTANT: Correct middleware order!
-
-            // 1. Response compression first
-            app.UseResponseCompression();
-
-            // 2. CORS MUST BE BEFORE UseRouting()
-            app.UseCors("AllowAll");  // Use AllowAll for now to test
-
-            // 3. Routing
-            app.UseRouting();
-
-            // 4. Authorization
-            app.UseAuthorization();
-
-            // 5. Swagger (available in all environments for testing)
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
+            if (app.Environment.IsDevelopment())
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "StandardArticture API V1");
-            });
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
 
-            // 6. Map health check endpoints
+            // Map health check endpoints
             app.MapHealthChecks("/health");
             app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
             {
                 Predicate = check => check.Tags.Contains("ready")
             });
 
-            // 7. Map controllers
-            app.MapControllers();
+            app.MapGet("/", () => Results.Redirect("/swagger"));
 
+            // ⭐ CORS must be before Authentication and Authorization
+            app.UseCors("AllowAll");
+
+            app.UseHttpsRedirection();
+
+            // Authentication must come before Authorization
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.MapControllers();
             app.Run();
+
         }
 
         private static async Task ApplyDatabaseMigrationsAsync(WebApplication app)
