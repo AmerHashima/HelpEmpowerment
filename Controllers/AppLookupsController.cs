@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using StandardArticture.Common;
 using StandardArticture.DTOs;
@@ -7,6 +8,8 @@ namespace StandardArticture.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [EnableCors("AllowAll")]
+
     public class AppLookupsController : ControllerBase
     {
         private readonly IAppLookupService _lookupService;
