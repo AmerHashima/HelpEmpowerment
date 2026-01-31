@@ -34,14 +34,10 @@ namespace StandardArticture
             // --------------------------
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAngularDev", policy =>
+                options.AddPolicy("AllowAll", policy =>
                 {
-                    policy.WithOrigins(
-                        "http://localhost:4200",
-                        "http://localhost:4201",
-                        "http://127.0.0.1:4200"
-                    )
-                    .AllowAnyMethod()
+                    policy.AllowAnyOrigin()
+                        .AllowAnyMethod()
                     .AllowAnyHeader();
                     // .AllowCredentials(); // فقط إذا تستخدم Authentication مع Angular
                 });
@@ -106,7 +102,7 @@ namespace StandardArticture
             app.UseHttpsRedirection();
 
             app.UseRouting();                    // Must be BEFORE UseCors
-            app.UseCors("AllowAngularDev");       // Must be AFTER UseRouting, BEFORE Authorization
+            app.UseCors("AllowAll");       // Must be AFTER UseRouting, BEFORE Authorization
 
             app.UseAuthentication();             // If you have auth
             app.UseAuthorization();
