@@ -81,6 +81,18 @@ namespace StandardArticture
             app.UseCors("AllowAll"); 
             //app.UseHttpsRedirection();
             app.UseAuthorization();
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Method == "OPTIONS")
+                {
+                    context.Response.StatusCode = 200;
+                    await context.Response.CompleteAsync();
+                }
+                else
+                {
+                    await next();
+                }
+            });
             app.MapControllers();
 
             app.Run();
