@@ -30,6 +30,11 @@ services:
     networks:
       - app-network
     restart: always
+    # ربط الكود مباشرة من السيرفر عشان Hot Reload ممكن يشتغل لو حبيت
+    volumes:
+      - ./HelpEmpowermentApi:/app
+    command: >
+      sh -c "dotnet restore && dotnet build && dotnet HelpEmpowermentApi.dll"
 
   help_frontend:
     build:
