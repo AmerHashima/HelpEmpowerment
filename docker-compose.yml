@@ -19,7 +19,6 @@ services:
 
   api:
     build: .
-    container_name: help_api
     depends_on:
       - sqlserver
     environment:
