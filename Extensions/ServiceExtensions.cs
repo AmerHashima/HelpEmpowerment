@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using StandardArticture.Data;
-using StandardArticture.IRepositories;
-using StandardArticture.IServices;
-using StandardArticture.Repositories;
-using StandardArticture.Services;
+using HelpEmpowermentApi.Data;
+using HelpEmpowermentApi.IRepositories;
+using HelpEmpowermentApi.IServices;
+using HelpEmpowermentApi.Repositories;
+using HelpEmpowermentApi.Services;
 
-namespace StandardArticture.Extensions
+namespace HelpEmpowermentApi.Extensions
 {
     public static class ServiceExtensions
     {
@@ -28,7 +28,7 @@ namespace StandardArticture.Extensions
                         sqlOptions.CommandTimeout(120);
 
                         // Migrations assembly
-                        sqlOptions.MigrationsAssembly("StandardArticture");
+                        sqlOptions.MigrationsAssembly("HelpEmpowermentApi");
                     });
 
                 // Enable detailed errors in development

@@ -1,7 +1,7 @@
-using StandardArticture.Common;
-using StandardArticture.DTOs;
+using HelpEmpowermentApi.Common;
+using HelpEmpowermentApi.DTOs;
 
-namespace StandardArticture.IServices
+namespace HelpEmpowermentApi.IServices
 {
     public interface ICourseQuestionService
     {

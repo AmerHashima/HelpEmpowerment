@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using StandardArticture.Common;
-using StandardArticture.Data;
-using StandardArticture.Extensions;
-using StandardArticture.IRepositories;
-using StandardArticture.Models;
+using HelpEmpowermentApi.Common;
+using HelpEmpowermentApi.Data;
+using HelpEmpowermentApi.Extensions;
+using HelpEmpowermentApi.IRepositories;
+using HelpEmpowermentApi.Models;
 
-namespace StandardArticture.Repositories
+namespace HelpEmpowermentApi.Repositories
 {
     public class CoursesMasterExamRepository : Repository<CoursesMasterExam>, ICoursesMasterExamRepository
     {

@@ -1,4 +1,4 @@
-namespace StandardArticture.DTOs
+namespace HelpEmpowermentApi.DTOs
 {
     public class CourseDto
     {

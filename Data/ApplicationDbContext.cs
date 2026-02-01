@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using StandardArticture.Models;
+using HelpEmpowermentApi.Models;
 
-namespace StandardArticture.Data
+namespace HelpEmpowermentApi.Data
 {
     public class ApplicationDbContext : DbContext
     {

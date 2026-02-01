@@ -1,10 +1,10 @@
-using StandardArticture.Common;
-using StandardArticture.DTOs;
-using StandardArticture.IRepositories;
-using StandardArticture.IServices;
-using StandardArticture.Models;
+using HelpEmpowermentApi.Common;
+using HelpEmpowermentApi.DTOs;
+using HelpEmpowermentApi.IRepositories;
+using HelpEmpowermentApi.IServices;
+using HelpEmpowermentApi.Models;
 
-namespace StandardArticture.Services
+namespace HelpEmpowermentApi.Services
 {
     public class AppLookupService : IAppLookupService
     {

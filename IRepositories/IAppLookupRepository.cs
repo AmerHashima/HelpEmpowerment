@@ -1,7 +1,7 @@
-using StandardArticture.Common;
-using StandardArticture.Models;
+using HelpEmpowermentApi.Common;
+using HelpEmpowermentApi.Models;
 
-namespace StandardArticture.IRepositories
+namespace HelpEmpowermentApi.IRepositories
 {
     public interface IAppLookupHeaderRepository : IRepository<AppLookupHeader>
     {

@@ -1,4 +1,4 @@
-namespace StandardArticture
+namespace HelpEmpowermentApi
 {
     public class WeatherForecast
     {

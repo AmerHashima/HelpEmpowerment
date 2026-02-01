@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using StandardArticture.Common;
+using HelpEmpowermentApi.Common;
 
-namespace StandardArticture.Models
+namespace HelpEmpowermentApi.Models
 {
     [Table("course_questions")]
     public class CourseQuestion : BaseEntity

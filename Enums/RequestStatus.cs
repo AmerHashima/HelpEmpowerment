@@ -1,4 +1,4 @@
-﻿namespace StandardArticture.Enums
+﻿namespace HelpEmpowermentApi.Enums
 {
     public enum RequestStatus
     {

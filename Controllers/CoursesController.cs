@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using StandardArticture.Common;
-using StandardArticture.DTOs;
-using StandardArticture.IServices;
+using HelpEmpowermentApi.Common;
+using HelpEmpowermentApi.DTOs;
+using HelpEmpowermentApi.IServices;
 
-namespace StandardArticture.Controllers
+namespace HelpEmpowermentApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

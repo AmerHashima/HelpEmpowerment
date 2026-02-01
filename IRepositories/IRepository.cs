@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
-using StandardArticture.Common;
+using HelpEmpowermentApi.Common;
 
-namespace StandardArticture.IRepositories
+namespace HelpEmpowermentApi.IRepositories
 {
     public interface IRepository<T> where T : BaseEntity
     {

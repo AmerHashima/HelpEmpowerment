@@ -1,4 +1,4 @@
-namespace StandardArticture.Common;
+namespace HelpEmpowermentApi.Common;
 
 public class PagedResult<T>
 {

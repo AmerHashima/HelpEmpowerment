@@ -1,6 +1,0 @@
-@StandardArticture_HostAddress = http://localhost:5075
-
-GET {{StandardArticture_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

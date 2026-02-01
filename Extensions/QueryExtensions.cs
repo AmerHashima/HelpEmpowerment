@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
 using System.Reflection;
-using StandardArticture.Common;
+using HelpEmpowermentApi.Common;
 
-namespace StandardArticture.Extensions
+namespace HelpEmpowermentApi.Extensions
 {
     public static class QueryExtensions
     {

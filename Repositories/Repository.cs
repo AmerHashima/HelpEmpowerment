@@ -1,10 +1,10 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using StandardArticture.Common;
-using StandardArticture.Data;
-using StandardArticture.IRepositories;
+using HelpEmpowermentApi.Common;
+using HelpEmpowermentApi.Data;
+using HelpEmpowermentApi.IRepositories;
 
-namespace StandardArticture.Repositories
+namespace HelpEmpowermentApi.Repositories
 {
     public class Repository<T> : IRepository<T> where T : BaseEntity
     {
