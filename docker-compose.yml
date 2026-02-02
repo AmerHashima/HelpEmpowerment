@@ -1,46 +1,37 @@
-version: '3.9'
-
-networks:
-  app-network:
-    driver: bridge
+version: '3.8'
 
 services:
- sqlserver:
-   image: mcr.microsoft.com/mssql/server:2022-latest
-   container_name: help_sql
-   environment:
-     SA_PASSWORD: "StrongPassword@123"
-     ACCEPT_EULA: "Y"
-   ports:
-     - "1433:1433"
-   volumes:
-     - sql_data:/var/opt/mssql
-   restart: always
-     
- api:
-   build: .
-   container_name: help_api
-   depends_on:
-     - sqlserver
-   environment:
-     ASPNETCORE_ENVIRONMENT: Development
-     ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=HelpEmpowerment;User Id=sa;Password=StrongPassword@123;TrustServerCertificate=True"
-   ports:
-     - "5000:8080"
-   networks:
-     - app-network
-   restart: always
-
- help_frontend:
-    build:
-      context: /root/HelpEmpowermentUi
-      dockerfile: Dockerfile
-    container_name: help_frontend
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
     ports:
-      - "8082:4000"
+      - "1433:1433"
     networks:
-      - app-network
-    restart: always
+      - help-network
+    volumes:
+      - sqldata:/var/opt/mssql
+
+  help_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: help_api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HelpEmpowerment;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+    ports:
+      - "8080:8080"
+    depends_on:
+      - sqlserver
+    networks:
+      - help-network
+
+networks:
+  help-network:
+    driver: bridge
 
 volumes:
-  sql_data:
+  sqldata:
