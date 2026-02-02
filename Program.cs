@@ -17,7 +17,35 @@ namespace HelpEmpowermentApi
 
             // Register DbContext
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            {
+                options.UseSqlServer(
+                     builder.Configuration.GetConnectionString("DefaultConnection"),
+                    sqlServerOptionsAction: sqlOptions =>
+                    {
+                        // Enable retry on failure for transient errors (critical for Docker)
+                        sqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 10,  // Increased for Docker startup delays
+                            maxRetryDelay: TimeSpan.FromSeconds(30),
+                            errorNumbersToAdd: null);
+
+                        // Command timeout (important for slow networks)
+                        sqlOptions.CommandTimeout(120);
+
+                        // Migrations assembly
+                        sqlOptions.MigrationsAssembly("HelpEmpowermentApi");
+                    });
+
+                // Enable detailed errors in development
+                var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+                if (environment == "Development")
+                {
+                    options.EnableSensitiveDataLogging();
+                    options.EnableDetailedErrors();
+                }
+
+                // Set query tracking behavior
+                options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+            });
 
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
