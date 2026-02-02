@@ -9,7 +9,7 @@ services:
       - SA_PASSWORD=StrongPassword@123
     ports:
       - "1433:1433"
-    networks:
+    networks:  
       - help-network
     volumes:
       - sqldata:/var/opt/mssql
@@ -28,7 +28,16 @@ services:
       - sqlserver
     networks:
       - help-network
-
+  help_frontend:
+    build:
+      context: /root/HelpEmpowermentUi
+      dockerfile: Dockerfile
+    container_name: help_frontend
+    ports:
+      - "8082:4000"
+    networks:
+      - app-network
+    restart: always
 networks:
   help-network:
     driver: bridge
