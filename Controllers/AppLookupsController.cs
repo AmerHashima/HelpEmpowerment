@@ -8,7 +8,6 @@ namespace HelpEmpowermentApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [EnableCors("AllowAll")]
 
     public class AppLookupsController : ControllerBase
     {
