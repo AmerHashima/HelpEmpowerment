@@ -12,19 +12,19 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["StandardArticture.csproj", "."]
-RUN dotnet restore "./StandardArticture.csproj"
+COPY ["HelpEmpowermentApi.csproj", "."]
+RUN dotnet restore "./HelpEmpowermentApi.csproj"
 COPY . .
 WORKDIR "/src/."
-RUN dotnet build "./StandardArticture.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./HelpEmpowermentApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./StandardArticture.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./HelpEmpowermentApi.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "StandardArticture.dll"]
+ENTRYPOINT ["dotnet", "HelpEmpowermentApi.dll"]
