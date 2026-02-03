@@ -13,7 +13,9 @@ namespace HelpEmpowermentApi.Models
         [Required]
         [Column(TypeName = "text")]
         public string AnswerText { get; set; } = string.Empty;
+        public bool Question_Ask { get; set; } = false;
 
+        public Guid? CorrectAnswerOid { get; set; }
         public bool IsCorrect { get; set; } = false;
 
         public int? OrderNo { get; set; }
@@ -25,5 +27,8 @@ namespace HelpEmpowermentApi.Models
         // Navigation properties
         [ForeignKey(nameof(QuestionId))]
         public virtual CourseQuestion Question { get; set; } = null!;
+
+        [ForeignKey(nameof(CorrectAnswerOid))]
+        public virtual CourseAnswer CourseAnswerData { get; set; } = null!;
     }
 }

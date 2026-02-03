@@ -165,6 +165,8 @@ namespace HelpEmpowermentApi.Services
                         var answer = new CourseAnswer
                         {
                             QuestionId = created.Oid,
+                            CorrectAnswerOid = answerDto.CorrectAnswerOid,
+                            Question_Ask = answerDto.Question_Ask,
                             AnswerText = answerDto.AnswerText,
                             IsCorrect = answerDto.IsCorrect,
                             OrderNo = answerDto.OrderNo,
@@ -270,6 +272,8 @@ namespace HelpEmpowermentApi.Services
                     Oid = a.Oid,
                     QuestionId = a.QuestionId,
                     AnswerText = a.AnswerText,
+                    CorrectAnswerOid = a.CorrectAnswerOid,
+                    Question_Ask = a.Question_Ask,
                     IsCorrect = a.IsCorrect,
                     OrderNo = a.OrderNo,
                     CreatedAt = a.CreatedAt,

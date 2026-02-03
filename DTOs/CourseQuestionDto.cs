@@ -29,6 +29,7 @@ namespace HelpEmpowermentApi.DTOs
         public int QuestionScore { get; set; } = 1;
         public int? OrderNo { get; set; }
         public bool IsActive { get; set; } = true;
+
         public bool CorrectAnswer { get; set; } = false;
         public bool Question { get; set; } = false;
         public Guid? CorrectChoiceOid { get; set; }
