@@ -65,6 +65,8 @@ namespace HelpEmpowermentApi.Repositories
 
             entity.IsDeleted = true;
             entity.DeletedAt = DateTime.UtcNow;
+            _dbSet.Update(entity);
+
             await _context.SaveChangesAsync();
             return true;
         }
