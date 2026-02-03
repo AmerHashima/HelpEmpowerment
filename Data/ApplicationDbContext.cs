@@ -18,6 +18,29 @@ namespace HelpEmpowermentApi.Data
         public DbSet<AppLookupHeader> AppLookupHeaders { get; set; }
         public DbSet<AppLookupDetail> AppLookupDetails { get; set; }
 
+        // NEW DbSets - AUTH & USERS
+        public DbSet<User> Users { get; set; }
+        public DbSet<Student> Students { get; set; }
+
+        // NEW DbSets - COURSE FEATURES & CONTENT
+        public DbSet<CourseFeature> CourseFeatures { get; set; }
+        public DbSet<CourseOutline> CourseOutlines { get; set; }
+        public DbSet<CourseContent> CourseContents { get; set; }
+        public DbSet<CourseVideo> CourseVideos { get; set; }
+        public DbSet<CourseVideoAttachment> CourseVideoAttachments { get; set; }
+
+        // NEW DbSets - STUDENT EXAMS
+        public DbSet<StudentExam> StudentExams { get; set; }
+        public DbSet<StudentExamQuestion> StudentExamQuestions { get; set; }
+
+        // NEW DbSets - LIVE SESSIONS
+        public DbSet<CourseLiveSession> CourseLiveSessions { get; set; }
+        public DbSet<CourseLiveSessionStudent> CourseLiveSessionStudents { get; set; }
+
+        // NEW DbSets - INSTRUCTORS & TARGET AUDIENCE
+        public DbSet<CourseInstructor> CourseInstructors { get; set; }
+        public DbSet<CourseTargetAudience> CourseTargetAudiences { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -143,6 +166,237 @@ namespace HelpEmpowermentApi.Data
             ConfigureBaseEntityIndexes<CourseAnswer>(modelBuilder);
             ConfigureBaseEntityIndexes<AppLookupHeader>(modelBuilder);
             ConfigureBaseEntityIndexes<AppLookupDetail>(modelBuilder);
+
+            // ========================================
+            // NEW CONFIGURATIONS
+            // ========================================
+
+            // Configure User
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasIndex(e => e.Username).IsUnique();
+                entity.HasIndex(e => e.Email).IsUnique();
+                entity.HasIndex(e => e.IsDeleted);
+                entity.HasIndex(e => new { e.IsDeleted, e.IsActive });
+
+                entity.HasOne(u => u.RoleLookup)
+                    .WithMany()
+                    .HasForeignKey(u => u.RoleLookupId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
+
+                entity.HasOne(u => u.StatusLookup)
+                    .WithMany()
+                    .HasForeignKey(u => u.StatusLookupId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
+            });
+
+            // Configure Student
+            modelBuilder.Entity<Student>(entity =>
+            {
+                entity.HasIndex(e => e.Username).IsUnique();
+                entity.HasIndex(e => e.Email).IsUnique();
+                entity.HasIndex(e => e.IsDeleted);
+                entity.HasIndex(e => new { e.IsDeleted, e.IsActive });
+            });
+
+            // Configure CourseFeature
+            modelBuilder.Entity<CourseFeature>(entity =>
+            {
+                entity.HasOne(cf => cf.Course)
+                    .WithMany(c => c.Features)
+                    .HasForeignKey(cf => cf.CourseOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasIndex(e => e.CourseOid);
+                entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // Configure CourseOutline
+            modelBuilder.Entity<CourseOutline>(entity =>
+            {
+                entity.HasOne(co => co.Course)
+                    .WithMany(c => c.Outlines)
+                    .HasForeignKey(co => co.CourseOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasIndex(e => e.CourseOid);
+                entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // Configure CourseContent
+            modelBuilder.Entity<CourseContent>(entity =>
+            {
+                entity.HasOne(cc => cc.CourseOutline)
+                    .WithMany(co => co.Contents)
+                    .HasForeignKey(cc => cc.CourseOutlineOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasOne(cc => cc.ContentTypeLookup)
+                    .WithMany()
+                    .HasForeignKey(cc => cc.ContentTypeLookupId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
+
+                entity.HasIndex(e => e.CourseOutlineOid);
+                entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // Configure CourseVideo
+            modelBuilder.Entity<CourseVideo>(entity =>
+            {
+                entity.HasOne(cv => cv.Course)
+                    .WithMany(c => c.Videos)
+                    .HasForeignKey(cv => cv.CourseOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasOne(cv => cv.VideoTypeLookup)
+                    .WithMany()
+                    .HasForeignKey(cv => cv.VideoTypeLookupId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
+
+                entity.HasIndex(e => e.CourseOid);
+                entity.HasIndex(e => new { e.IsDeleted, e.IsActive });
+            });
+
+            // Configure CourseVideoAttachment
+            modelBuilder.Entity<CourseVideoAttachment>(entity =>
+            {
+                entity.HasOne(cva => cva.CourseVideo)
+                    .WithMany(cv => cv.Attachments)
+                    .HasForeignKey(cva => cva.CourseVideoOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasOne(cva => cva.FileTypeLookup)
+                    .WithMany()
+                    .HasForeignKey(cva => cva.FileTypeLookupId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
+
+                entity.HasIndex(e => e.CourseVideoOid);
+                entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // Configure StudentExam
+            modelBuilder.Entity<StudentExam>(entity =>
+            {
+                entity.HasOne(se => se.Student)
+                    .WithMany(s => s.StudentExams)
+                    .HasForeignKey(se => se.StudentOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasOne(se => se.MasterExam)
+                    .WithMany()
+                    .HasForeignKey(se => se.CoursesMasterExamOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasOne(se => se.ExamStatusLookup)
+                    .WithMany()
+                    .HasForeignKey(se => se.ExamStatusLookupId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
+
+                entity.HasIndex(e => e.StudentOid);
+                entity.HasIndex(e => e.CoursesMasterExamOid);
+                entity.HasIndex(e => new { e.StudentOid, e.CoursesMasterExamOid });
+                entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // Configure StudentExamQuestion
+            modelBuilder.Entity<StudentExamQuestion>(entity =>
+            {
+                entity.HasOne(seq => seq.StudentExam)
+                    .WithMany(se => se.ExamQuestions)
+                    .HasForeignKey(seq => seq.StudentExamOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasOne(seq => seq.Question)
+                    .WithMany()
+                    .HasForeignKey(seq => seq.QuestionOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasOne(seq => seq.SelectedAnswer)
+                    .WithMany()
+                    .HasForeignKey(seq => seq.SelectedAnswerOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
+
+                entity.HasIndex(e => e.StudentExamOid);
+                entity.HasIndex(e => e.QuestionOid);
+                entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // Configure CourseLiveSession
+            modelBuilder.Entity<CourseLiveSession>(entity =>
+            {
+                entity.HasOne(cls => cls.Course)
+                    .WithMany(c => c.LiveSessions)
+                    .HasForeignKey(cls => cls.CourseOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasIndex(e => e.CourseOid);
+                entity.HasIndex(e => e.Date);
+                entity.HasIndex(e => new { e.IsDeleted, e.Active });
+            });
+
+            // Configure CourseLiveSessionStudent
+            modelBuilder.Entity<CourseLiveSessionStudent>(entity =>
+            {
+                entity.HasOne(clss => clss.LiveSession)
+                    .WithMany(cls => cls.SessionStudents)
+                    .HasForeignKey(clss => clss.CourseOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasOne(clss => clss.Student)
+                    .WithMany(s => s.LiveSessionEnrollments)
+                    .HasForeignKey(clss => clss.StudentOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasIndex(e => e.CourseOid);
+                entity.HasIndex(e => e.StudentOid);
+                entity.HasIndex(e => new { e.CourseOid, e.StudentOid }).IsUnique();
+                entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // Configure CourseInstructor
+            modelBuilder.Entity<CourseInstructor>(entity =>
+            {
+                entity.HasOne(ci => ci.Course)
+                    .WithMany(c => c.Instructors)
+                    .HasForeignKey(ci => ci.CourseOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasIndex(e => e.CourseOid);
+                entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // Configure CourseTargetAudience
+            modelBuilder.Entity<CourseTargetAudience>(entity =>
+            {
+                entity.HasOne(cta => cta.Course)
+                    .WithMany(c => c.TargetAudiences)
+                    .HasForeignKey(cta => cta.CourseOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasIndex(e => e.CourseOid);
+                entity.HasIndex(e => e.IsDeleted);
+            });
         }
 
         private void SeedLookupData(ModelBuilder modelBuilder)
@@ -390,42 +644,6 @@ namespace HelpEmpowermentApi.Data
                     CreatedAt = seedDate,
                     CreatedBy = null
                 },
-                //new AppLookupDetail
-                //{
-                //    Oid = Guid.Parse("33333333-3333-3333-3333-333333333303"),
-                //    LookupHeaderId = questionTypeHeaderId,
-                //    LookupValue = "TEXT",
-                //    LookupNameAr = "نص",
-                //    LookupNameEn = "Text Answer",
-                //    OrderNo = 3,
-                //    IsActive = true,
-                //    CreatedAt = DateTime.UtcNow,
-                //    CreatedBy = null
-                //},
-                //new AppLookupDetail
-                //{
-                //    Oid = Guid.Parse("33333333-3333-3333-3333-333333333304"),
-                //    LookupHeaderId = questionTypeHeaderId,
-                //    LookupValue = "FILL_BLANK",
-                //    LookupNameAr = "املأ الفراغ",
-                //    LookupNameEn = "Fill in the Blank",
-                //    OrderNo = 4,
-                //    IsActive = true,
-                //    CreatedAt = DateTime.UtcNow,
-                //    CreatedBy = null
-                //},
-                //new AppLookupDetail
-                //{
-                //    Oid = Guid.Parse("33333333-3333-3333-3333-333333333305"),
-                //    LookupHeaderId = questionTypeHeaderId,
-                //    LookupValue = "ESSAY",
-                //    LookupNameAr = "مقال",
-                //    LookupNameEn = "Essay",
-                //    OrderNo = 5,
-                //    IsActive = true,
-                //    CreatedAt = DateTime.UtcNow,
-                //    CreatedBy = null
-                //},
                 new AppLookupDetail
                 {
                     Oid = Guid.Parse("33333333-3333-3333-3333-333333333306"),

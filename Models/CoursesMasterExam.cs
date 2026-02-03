@@ -18,6 +18,17 @@ namespace HelpEmpowermentApi.Models
 
         public Guid? CourseCategoryLookupId { get; set; }
 
+        // ADD THESE PROPERTIES
+        public int? PassPercent { get; set; } = 60;
+
+        public int? DurationMinutes { get; set; }
+
+        public int? MaxAttempts { get; set; }
+
+        public bool ShuffleQuestions { get; set; } = true;
+
+        public bool ShuffleAnswers { get; set; } = true;
+
         public bool IsActive { get; set; } = true;
 
         public Guid? CreatedBy { get; set; }
@@ -26,7 +37,7 @@ namespace HelpEmpowermentApi.Models
 
         // Navigation properties
         [ForeignKey(nameof(CourseOid))]
-        public virtual Course Course { get; set; } = null!;
+        public virtual Course? Course { get; set; }
 
         [ForeignKey(nameof(CourseLevelLookupId))]
         public virtual AppLookupDetail? CourseLevelLookup { get; set; }

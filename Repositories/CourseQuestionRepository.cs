@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.Data;
-using HelpEmpowermentApi.Extensions;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.Models;
+using HelpEmpowermentApi.Extensions;
 
 namespace HelpEmpowermentApi.Repositories
 {
@@ -18,7 +18,8 @@ namespace HelpEmpowermentApi.Repositories
             var query = _dbSet
                 .Include(q => q.MasterExam)
                 .Include(q => q.QuestionTypeLookup)
-                .Where(x => !x.IsDeleted)
+                .Include(q => q.Answers.Where(a => !a.IsDeleted))
+                .Where(q => !q.IsDeleted)
                 .AsQueryable();
 
             query = query.ApplyFilters(request.Filters);
@@ -38,15 +39,6 @@ namespace HelpEmpowermentApi.Repositories
             };
         }
 
-        public async Task<IEnumerable<CourseQuestion>> GetByExamIdAsync(Guid examId)
-        {
-            return await _dbSet
-                .Include(q => q.QuestionTypeLookup)
-                .Where(q => q.CoursesMasterExamOid == examId && !q.IsDeleted)
-                .OrderBy(q => q.OrderNo)
-                .ToListAsync();
-        }
-
         public async Task<CourseQuestion?> GetWithAnswersAsync(Guid id)
         {
             return await _dbSet
@@ -56,12 +48,35 @@ namespace HelpEmpowermentApi.Repositories
                 .FirstOrDefaultAsync(q => q.Oid == id && !q.IsDeleted);
         }
 
-        public async Task<IEnumerable<CourseQuestion>> GetWithAnswersByExamIdAsync(Guid examId)
+        public async Task<List<CourseQuestion>> GetByMasterExamIdAsync(Guid masterExamId)
         {
             return await _dbSet
+                .Include(q => q.MasterExam)
                 .Include(q => q.QuestionTypeLookup)
-                .Include(q => q.Answers.Where(a => !a.IsDeleted).OrderBy(a => a.OrderNo))
-                .Where(q => q.CoursesMasterExamOid == examId && !q.IsDeleted)
+                .Include(q => q.Answers.Where(a => !a.IsDeleted))
+                .Where(q => q.CoursesMasterExamOid == masterExamId && !q.IsDeleted && q.IsActive)
+                .OrderBy(q => q.OrderNo)
+                .ToListAsync();
+        }
+
+        public async Task<List<CourseQuestion>> GetByExamIdAsync(Guid examId)
+        {
+            return await _dbSet
+                .Include(q => q.MasterExam)
+                .Include(q => q.QuestionTypeLookup)
+                .Where(q => q.CoursesMasterExamOid == examId && !q.IsDeleted && q.IsActive)
+                .OrderBy(q => q.OrderNo)
+                .ToListAsync();
+        }
+
+        public async Task<List<CourseQuestion>> GetWithAnswersByExamIdAsync(Guid examId)
+        {
+            return await _dbSet
+                .Include(q => q.MasterExam)
+                .Include(q => q.QuestionTypeLookup)
+                .Include(q => q.Answers.Where(a => !a.IsDeleted))
+                    .ThenInclude(a => a.Question)
+                .Where(q => q.CoursesMasterExamOid == examId && !q.IsDeleted && q.IsActive)
                 .OrderBy(q => q.OrderNo)
                 .ToListAsync();
         }

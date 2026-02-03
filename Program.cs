@@ -50,6 +50,10 @@ namespace HelpEmpowermentApi
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
+
+            // ========================================
+            // ✅ EXISTING REPOSITORIES
+            // ========================================
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped<ICourseRepository, CourseRepository>();
             builder.Services.AddScoped<ICoursesMasterExamRepository, CoursesMasterExamRepository>();
@@ -58,11 +62,80 @@ namespace HelpEmpowermentApi
             builder.Services.AddScoped<IAppLookupHeaderRepository, AppLookupHeaderRepository>();
             builder.Services.AddScoped<IAppLookupDetailRepository, AppLookupDetailRepository>();
 
-            // Services
+            // ========================================
+            // ✅ NEW REPOSITORIES - AUTH & USERS
+            // ========================================
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+
+            // ========================================
+            // ✅ NEW REPOSITORIES - COURSE FEATURES & CONTENT
+            // ========================================
+            builder.Services.AddScoped<ICourseFeatureRepository, CourseFeatureRepository>();
+            builder.Services.AddScoped<ICourseOutlineRepository, CourseOutlineRepository>();
+            builder.Services.AddScoped<ICourseContentRepository, CourseContentRepository>();
+            builder.Services.AddScoped<ICourseVideoRepository, CourseVideoRepository>();
+            builder.Services.AddScoped<ICourseVideoAttachmentRepository, CourseVideoAttachmentRepository>();
+
+            // ========================================
+            // ✅ NEW REPOSITORIES - STUDENT EXAMS
+            // ========================================
+            builder.Services.AddScoped<IStudentExamRepository, StudentExamRepository>();
+            builder.Services.AddScoped<IStudentExamQuestionRepository, StudentExamQuestionRepository>();
+
+            // ========================================
+            // ✅ NEW REPOSITORIES - LIVE SESSIONS
+            // ========================================
+            builder.Services.AddScoped<ICourseLiveSessionRepository, CourseLiveSessionRepository>();
+            builder.Services.AddScoped<ICourseLiveSessionStudentRepository, CourseLiveSessionStudentRepository>();
+
+            // ========================================
+            // ✅ NEW REPOSITORIES - INSTRUCTORS & TARGET AUDIENCE
+            // ========================================
+            builder.Services.AddScoped<ICourseInstructorRepository, CourseInstructorRepository>();
+            builder.Services.AddScoped<ICourseTargetAudienceRepository, CourseTargetAudienceRepository>();
+
+            // ========================================
+            // ✅ EXISTING SERVICES
+            // ========================================
             builder.Services.AddScoped<ICourseService, CourseService>();
             builder.Services.AddScoped<ICoursesMasterExamService, CoursesMasterExamService>();
             builder.Services.AddScoped<ICourseQuestionService, CourseQuestionService>();
             builder.Services.AddScoped<IAppLookupService, AppLookupService>();
+
+            // ========================================
+            // ✅ NEW SERVICES - AUTH & USERS
+            // ========================================
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IStudentService, StudentService>();
+
+            // ========================================
+            // ✅ NEW SERVICES - COURSE FEATURES & CONTENT
+            // ========================================
+            builder.Services.AddScoped<ICourseFeatureService, CourseFeatureService>();
+            builder.Services.AddScoped<ICourseOutlineService, CourseOutlineService>();
+            builder.Services.AddScoped<ICourseContentService, CourseContentService>();
+            builder.Services.AddScoped<ICourseVideoService, CourseVideoService>();
+            builder.Services.AddScoped<ICourseVideoAttachmentService, CourseVideoAttachmentService>();
+
+            // ========================================
+            // ✅ NEW SERVICES - STUDENT EXAMS
+            // ========================================
+            builder.Services.AddScoped<IStudentExamService, StudentExamService>();
+            builder.Services.AddScoped<IStudentExamQuestionService, StudentExamQuestionService>();
+
+            // ========================================
+            // ✅ NEW SERVICES - LIVE SESSIONS
+            // ========================================
+            builder.Services.AddScoped<ICourseLiveSessionService, CourseLiveSessionService>();
+            builder.Services.AddScoped<ICourseLiveSessionStudentService, CourseLiveSessionStudentService>();
+
+            // ========================================
+            // ✅ NEW SERVICES - INSTRUCTORS & TARGET AUDIENCE
+            // ========================================
+            builder.Services.AddScoped<ICourseInstructorService, CourseInstructorService>();
+            builder.Services.AddScoped<ICourseTargetAudienceService, CourseTargetAudienceService>();
+
             // Add Swagger Services
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

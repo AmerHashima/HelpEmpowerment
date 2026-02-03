@@ -6,8 +6,9 @@ namespace HelpEmpowermentApi.IRepositories
     public interface ICourseQuestionRepository : IRepository<CourseQuestion>
     {
         Task<PagedResult<CourseQuestion>> GetPagedAsync(DataRequest request);
-        Task<IEnumerable<CourseQuestion>> GetByExamIdAsync(Guid examId);
         Task<CourseQuestion?> GetWithAnswersAsync(Guid id);
-        Task<IEnumerable<CourseQuestion>> GetWithAnswersByExamIdAsync(Guid examId);
+        Task<List<CourseQuestion>> GetByMasterExamIdAsync(Guid masterExamId);
+        Task<List<CourseQuestion>> GetByExamIdAsync(Guid examId);
+        Task<List<CourseQuestion>> GetWithAnswersByExamIdAsync(Guid examId);
     }
 }
