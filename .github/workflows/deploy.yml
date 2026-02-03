@@ -23,8 +23,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}      # المفتاح الخاص SSH (deploy key)
           port: 22
           script: |
-            cd /root/HelpEmpowerment
-            git reset --hard origin/master
-            git clean -fd
-            docker compose down
+            cd /root/HelpEmpowerment &&
+            git pull origin master &&
+            docker compose down &&   
             docker compose up -d --build

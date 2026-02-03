@@ -16,7 +16,7 @@ namespace HelpEmpowermentApi.Controllers
             _instructorService = instructorService;
         }
 
-        [HttpPost("search")]
+        [HttpPost("searchData")]
         public async Task<ActionResult<PagedResponse<CourseInstructorDto>>> Search([FromBody] DataRequest request)
         {
             var response = await _instructorService.GetPagedAsync(request);
