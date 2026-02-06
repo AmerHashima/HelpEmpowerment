@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.Data;
-using HelpEmpowermentApi.Extensions;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.Models;
+using HelpEmpowermentApi.Extensions;
 
 namespace HelpEmpowermentApi.Repositories
 {
@@ -17,7 +17,8 @@ namespace HelpEmpowermentApi.Repositories
         {
             var query = _dbSet
                 .Include(a => a.Question)
-                .Where(x => !x.IsDeleted)
+                    .ThenInclude(q => q.MasterExam)
+                .Where(a => !a.IsDeleted)
                 .AsQueryable();
 
             query = query.ApplyFilters(request.Filters);
@@ -37,28 +38,20 @@ namespace HelpEmpowermentApi.Repositories
             };
         }
 
-        public async Task<IEnumerable<CourseAnswer>> GetByQuestionIdAsync(Guid questionId)
+        public async Task<List<CourseAnswer>> GetByQuestionIdAsync(Guid questionId)
         {
             return await _dbSet
+                .Include(a => a.Question)
                 .Where(a => a.QuestionId == questionId && !a.IsDeleted)
                 .OrderBy(a => a.OrderNo)
                 .ToListAsync();
         }
 
-        public async Task<bool> DeleteByQuestionIdAsync(Guid questionId)
+        public async Task<CourseAnswer?> GetCorrectAnswerByQuestionIdAsync(Guid questionId)
         {
-            var answers = await _dbSet
-                .Where(a => a.QuestionId == questionId && !a.IsDeleted)
-                .ToListAsync();
-
-            foreach (var answer in answers)
-            {
-                answer.IsDeleted = true;
-                answer.DeletedAt = DateTime.UtcNow;
-            }
-
-            await _context.SaveChangesAsync();
-            return true;
+            return await _dbSet
+                .Include(a => a.Question)
+                .FirstOrDefaultAsync(a => a.QuestionId == questionId && a.IsCorrect && !a.IsDeleted);
         }
     }
 }

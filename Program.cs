@@ -102,6 +102,8 @@ namespace HelpEmpowermentApi
             builder.Services.AddScoped<ICoursesMasterExamService, CoursesMasterExamService>();
             builder.Services.AddScoped<ICourseQuestionService, CourseQuestionService>();
             builder.Services.AddScoped<IAppLookupService, AppLookupService>();
+            builder.Services.AddScoped<ICourseAnswerService, CourseAnswerService>(); // ✅ ADD THIS
+ 
 
             // ========================================
             // ✅ NEW SERVICES - AUTH & USERS

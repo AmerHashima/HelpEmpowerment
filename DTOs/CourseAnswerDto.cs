@@ -20,6 +20,7 @@ namespace HelpEmpowermentApi.DTOs
     {
         public string AnswerText { get; set; } = string.Empty;
         public bool Question_Ask { get; set; } = false;
+        public Guid QuestionId { get; set; }
 
         public Guid? CorrectAnswerOid { get; set; }
         public bool IsCorrect { get; set; } = false;
