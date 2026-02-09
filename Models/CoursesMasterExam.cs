@@ -22,6 +22,7 @@ namespace HelpEmpowermentApi.Models
         public int? PassPercent { get; set; } = 60;
 
         public int? DurationMinutes { get; set; }
+        public int? QuestionCount { get; set; }
 
         public int? MaxAttempts { get; set; }
 

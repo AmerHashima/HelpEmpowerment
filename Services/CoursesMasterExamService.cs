@@ -129,6 +129,8 @@ namespace HelpEmpowermentApi.Services
                     CourseName = dto.CourseName,
                     CourseLevelLookupId = dto.CourseLevelLookupId,
                     CourseCategoryLookupId = dto.CourseCategoryLookupId,
+                    QuestionCount = dto.QuestionCount,
+                    DurationMinutes = dto.DurationMinutes,
                     IsActive = dto.IsActive,
                     CreatedBy = dto.CreatedBy
                 };
@@ -170,6 +172,8 @@ namespace HelpEmpowermentApi.Services
 
                 exam.CourseOid = dto.CourseOid;
                 exam.CourseName = dto.CourseName;
+                exam.QuestionCount = exam.QuestionCount;
+                exam.DurationMinutes = exam.DurationMinutes;
                 exam.CourseLevelLookupId = dto.CourseLevelLookupId;
                 exam.CourseCategoryLookupId = dto.CourseCategoryLookupId;
                 exam.IsActive = dto.IsActive;
@@ -213,7 +217,8 @@ namespace HelpEmpowermentApi.Services
                 CourseCategoryLookupId = exam.CourseCategoryLookupId,
                 CourseCategoryName = exam.CourseCategoryLookup?.LookupNameEn,
                 IsActive = exam.IsActive,
-                QuestionCount = exam.Questions?.Count ?? 0,
+                QuestionCount = exam.QuestionCount,
+                DurationMinutes = exam.DurationMinutes,
                 CreatedAt = exam.CreatedAt,
                 CreatedBy = exam.CreatedBy,
                 UpdatedAt = exam.UpdatedAt,

@@ -11,7 +11,8 @@ namespace HelpEmpowermentApi.DTOs
         public Guid? CourseCategoryLookupId { get; set; }
         public string? CourseCategoryName { get; set; }
         public bool IsActive { get; set; }
-        public int QuestionCount { get; set; }
+        public int? DurationMinutes { get; set; }
+        public int? QuestionCount { get; set; }
         public DateTime? CreatedAt { get; set; }
         public Guid? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
@@ -23,6 +24,8 @@ namespace HelpEmpowermentApi.DTOs
         public Guid CourseOid { get; set; }
         public string CourseName { get; set; } = string.Empty;
         public Guid? CourseLevelLookupId { get; set; }
+        public int? DurationMinutes { get; set; }
+        public int? QuestionCount { get; set; }
         public Guid? CourseCategoryLookupId { get; set; }
         public bool IsActive { get; set; } = true;
         public Guid? CreatedBy { get; set; }
@@ -33,6 +36,8 @@ namespace HelpEmpowermentApi.DTOs
         public Guid Oid { get; set; }
         public Guid CourseOid { get; set; }
         public string CourseName { get; set; } = string.Empty;
+        public int? DurationMinutes { get; set; }
+        public int? QuestionCount { get; set; }
         public Guid? CourseLevelLookupId { get; set; }
         public Guid? CourseCategoryLookupId { get; set; }
         public bool IsActive { get; set; }
