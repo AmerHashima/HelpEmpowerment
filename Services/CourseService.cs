@@ -81,8 +81,8 @@ namespace HelpEmpowermentApi.Services
             try
             {
                 // Validate unique course code
-                if (!await _courseRepository.IsCourseCodeUniqueAsync(dto.CourseCode))
-                    return ApiResponse<CourseDto>.ErrorResponse("Course code already exists");
+                //if (!await _courseRepository.IsCourseCodeUniqueAsync(dto.CourseCode))
+                //    return ApiResponse<CourseDto>.ErrorResponse("Course code already exists");
 
                 // Validate Course Level Lookup if provided
                 if (dto.CourseLevelLookupId.HasValue)

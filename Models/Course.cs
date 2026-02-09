@@ -7,7 +7,7 @@ namespace HelpEmpowermentApi.Models
     [Table("courses")]
     public class Course : BaseEntity
     {
-        [Required]
+        //[Required]
         [MaxLength(50)]
         public string CourseCode { get; set; } = string.Empty;
 

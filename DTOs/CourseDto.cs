@@ -19,7 +19,7 @@ namespace HelpEmpowermentApi.DTOs
 
     public class CreateCourseDto
     {
-        public string CourseCode { get; set; } = string.Empty;
+        public string? CourseCode { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public string? CourseDescription { get; set; }
         public Guid? CourseLevelLookupId { get; set; }
@@ -31,7 +31,7 @@ namespace HelpEmpowermentApi.DTOs
     public class UpdateCourseDto
     {
         public Guid Oid { get; set; }
-        public string CourseCode { get; set; } = string.Empty;
+        public string? CourseCode { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public string? CourseDescription { get; set; }
         public Guid? CourseLevelLookupId { get; set; }
