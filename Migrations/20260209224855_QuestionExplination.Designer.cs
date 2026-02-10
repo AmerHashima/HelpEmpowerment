@@ -4,6 +4,7 @@ using HelpEmpowermentApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HelpEmpowermentApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260209224855_QuestionExplination")]
+    partial class QuestionExplination
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -472,10 +475,6 @@ namespace HelpEmpowermentApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("AnswerText_Ar")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<Guid?>("CorrectAnswerOid")
                         .HasColumnType("uniqueidentifier");
 
@@ -851,10 +850,6 @@ namespace HelpEmpowermentApi.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("QuestionText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("QuestionText_Ar")
                         .IsRequired()
                         .HasColumnType("text");
 

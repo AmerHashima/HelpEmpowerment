@@ -13,6 +13,10 @@ namespace HelpEmpowermentApi.Models
         [Required]
         [Column(TypeName = "text")]
         public string AnswerText { get; set; } = string.Empty;
+
+        [Column(TypeName = "text")]
+        public string AnswerText_Ar { get; set; } = string.Empty;
+
         public bool Question_Ask { get; set; } = false;
 
         public Guid? CorrectAnswerOid { get; set; }

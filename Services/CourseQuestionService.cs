@@ -149,6 +149,7 @@ namespace HelpEmpowermentApi.Services
                     QuestionScore = dto.QuestionScore,
                     OrderNo = dto.OrderNo,
                     IsActive = dto.IsActive,
+                    QuestionExplination = dto.QuestionExplination,
                     CorrectAnswer = dto.CorrectAnswer,
                     Question = dto.Question,
                     CorrectChoiceOid = dto.CorrectChoiceOid,
@@ -220,6 +221,8 @@ namespace HelpEmpowermentApi.Services
                 question.QuestionTypeLookupId = dto.QuestionTypeLookupId;
                 question.QuestionScore = dto.QuestionScore;
                 question.OrderNo = dto.OrderNo;
+                question.QuestionExplination = dto.QuestionExplination;
+
                 question.IsActive = dto.IsActive;
                 question.CorrectAnswer = dto.CorrectAnswer;
                 question.Question = dto.Question;
@@ -263,6 +266,8 @@ namespace HelpEmpowermentApi.Services
                 QuestionTypeName = question.QuestionTypeLookup?.LookupNameEn,
                 QuestionScore = question.QuestionScore,
                 OrderNo = question.OrderNo,
+                QuestionExplination = question.QuestionExplination,
+
                 IsActive = question.IsActive,
                 CorrectAnswer = question.CorrectAnswer,
                 Question = question.Question,

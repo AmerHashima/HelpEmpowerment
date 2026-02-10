@@ -6,7 +6,11 @@ namespace HelpEmpowermentApi.DTOs
         public Guid CoursesMasterExamOid { get; set; }
         public string? ExamName { get; set; }
         public string QuestionText { get; set; } = string.Empty;
+        public string QuestionText_Ar { get; set; } = string.Empty;
+
         public Guid? QuestionTypeLookupId { get; set; }
+        public string QuestionExplination { get; set; } = string.Empty;
+
         public string? QuestionTypeName { get; set; }
         public int QuestionScore { get; set; }
         public int? OrderNo { get; set; }
@@ -25,6 +29,10 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid CoursesMasterExamOid { get; set; }
         public string QuestionText { get; set; } = string.Empty;
+        public string QuestionText_Ar { get; set; } = string.Empty;
+
+        public string QuestionExplination { get; set; } = string.Empty;
+
         public Guid? QuestionTypeLookupId { get; set; }
         public int QuestionScore { get; set; } = 1;
         public int? OrderNo { get; set; }
@@ -42,6 +50,10 @@ namespace HelpEmpowermentApi.DTOs
         public Guid Oid { get; set; }
         public Guid CoursesMasterExamOid { get; set; }
         public string QuestionText { get; set; } = string.Empty;
+        public string QuestionText_Ar { get; set; } = string.Empty;
+
+        public string QuestionExplination { get; set; } = string.Empty;
+
         public Guid? QuestionTypeLookupId { get; set; }
         public int QuestionScore { get; set; }
         public int? OrderNo { get; set; }
