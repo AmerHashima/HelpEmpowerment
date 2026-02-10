@@ -47,7 +47,8 @@ namespace HelpEmpowermentApi
                 // Set query tracking behavior
                 options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             });
-          
+            builder.Services.AddHttpClient();
+
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
