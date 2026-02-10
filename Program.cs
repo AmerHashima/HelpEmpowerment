@@ -14,7 +14,8 @@ namespace HelpEmpowermentApi
             var builder = WebApplication.CreateBuilder(args);
 
             // Add Services to the container.
-
+            var credentialsPath = Path.Combine(AppContext.BaseDirectory, "Properties", "test-erp-68be7-b83f4e97f6be.json");
+            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsPath);
             // Register DbContext
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             {
@@ -46,7 +47,7 @@ namespace HelpEmpowermentApi
                 // Set query tracking behavior
                 options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             });
-
+          
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
