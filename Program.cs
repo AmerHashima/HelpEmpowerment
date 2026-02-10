@@ -14,8 +14,10 @@ namespace HelpEmpowermentApi
             var builder = WebApplication.CreateBuilder(args);
 
             // Add Services to the container.
-            var credentialsPath = Path.Combine(AppContext.BaseDirectory, "Properties", "test-erp-68be7-b83f4e97f6be.json");
-            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsPath);
+            
+            // ✅ FIX: Set Google credentials path with multiple fallback options
+            SetGoogleCredentials(builder.Environment);
+
             // Register DbContext
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             {
@@ -47,6 +49,7 @@ namespace HelpEmpowermentApi
                 // Set query tracking behavior
                 options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             });
+            
             builder.Services.AddHttpClient();
 
             builder.Services.AddControllers();
@@ -104,8 +107,7 @@ namespace HelpEmpowermentApi
             builder.Services.AddScoped<ICoursesMasterExamService, CoursesMasterExamService>();
             builder.Services.AddScoped<ICourseQuestionService, CourseQuestionService>();
             builder.Services.AddScoped<IAppLookupService, AppLookupService>();
-            builder.Services.AddScoped<ICourseAnswerService, CourseAnswerService>(); // ✅ ADD THIS
- 
+            builder.Services.AddScoped<ICourseAnswerService, CourseAnswerService>();
 
             // ========================================
             // ✅ NEW SERVICES - AUTH & USERS
@@ -183,6 +185,71 @@ namespace HelpEmpowermentApi
             app.MapControllers();
 
             app.Run();
+        }
+
+        // ✅ ADD THIS METHOD
+        private static void SetGoogleCredentials(IWebHostEnvironment environment)
+        {
+            // Priority 1: Check environment variable
+            var envCredentials = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+            if (!string.IsNullOrEmpty(envCredentials))
+            {
+                if (File.Exists(envCredentials))
+                {
+                    Console.WriteLine($"✅ Using Google credentials from environment variable: {envCredentials}");
+                    return;
+                }
+                else
+                {
+                    Console.WriteLine($"⚠️ Warning: GOOGLE_APPLICATION_CREDENTIALS points to non-existent file: {envCredentials}");
+                }
+            }
+
+            // Priority 2: Check for credentials JSON content in environment variable
+            var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
+            if (!string.IsNullOrEmpty(credentialsJson))
+            {
+                // Write JSON to temporary file
+                var tempPath = Path.Combine(Path.GetTempPath(), "google-credentials.json");
+                File.WriteAllText(tempPath, credentialsJson);
+                Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", tempPath);
+                Console.WriteLine($"✅ Created temporary credentials file at: {tempPath}");
+                return;
+            }
+
+            // Priority 3: Look for file in various locations (Development only)
+            if (environment.IsDevelopment())
+            {
+                var possiblePaths = new[]
+                {
+                    Path.Combine(environment.ContentRootPath, "Properties", "test-erp-68be7-b83f4e97f6be.json"),
+                    Path.Combine(AppContext.BaseDirectory, "Properties", "test-erp-68be7-b83f4e97f6be.json"),
+                    Path.Combine(AppContext.BaseDirectory, "test-erp-68be7-b83f4e97f6be.json"),
+                    Path.Combine(environment.ContentRootPath, "test-erp-68be7-b83f4e97f6be.json")
+                };
+
+                foreach (var path in possiblePaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", path);
+                        Console.WriteLine($"✅ Google credentials found at: {path}");
+                        return;
+                    }
+                }
+
+                Console.WriteLine("⚠️ Warning: Google Cloud credentials file not found in development.");
+                Console.WriteLine("Searched locations:");
+                foreach (var path in possiblePaths)
+                {
+                    Console.WriteLine($"  - {path}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("⚠️ Error: Google Cloud credentials not configured for production!");
+                Console.WriteLine("Please set GOOGLE_APPLICATION_CREDENTIALS environment variable or GOOGLE_CREDENTIALS_JSON.");
+            }
         }
     }
 }

@@ -27,4 +27,5 @@ RUN dotnet publish "./HelpEmpowermentApi.csproj" -c $BUILD_CONFIGURATION -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY Properties/test-erp-68be7-b83f4e97f6be.json /app/Properties/
 ENTRYPOINT ["dotnet", "HelpEmpowermentApi.dll"]
