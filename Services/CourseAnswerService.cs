@@ -146,16 +146,16 @@ namespace HelpEmpowermentApi.Services
                     return ApiResponse<CourseAnswerDto>.ErrorResponse("Invalid Question. Please select a valid question.");
 
                 // If this answer is being marked as correct, unmark other answers for the same question
-                if (dto.IsCorrect && !answer.IsCorrect)
-                {
-                    var existingAnswers = await _answerRepository.GetByQuestionIdAsync(dto.QuestionId);
-                    foreach (var existingAnswer in existingAnswers.Where(a => a.IsCorrect && a.Oid != dto.Oid))
-                    {
-                        existingAnswer.IsCorrect = false;
-                        existingAnswer.UpdatedAt = DateTime.UtcNow;
-                        await _answerRepository.UpdateAsync(existingAnswer);
-                    }
-                }
+                //if (dto.IsCorrect && !answer.IsCorrect)
+                //{
+                //    var existingAnswers = await _answerRepository.GetByQuestionIdAsync(dto.QuestionId);
+                //    foreach (var existingAnswer in existingAnswers.Where(a => a.IsCorrect && a.Oid != dto.Oid))
+                //    {
+                //        existingAnswer.IsCorrect = false;
+                //        existingAnswer.UpdatedAt = DateTime.UtcNow;
+                //        await _answerRepository.UpdateAsync(existingAnswer);
+                //    }
+                //}
 
                 answer.QuestionId = dto.QuestionId;
                 answer.CorrectAnswerOid = dto.CorrectAnswerOid;
