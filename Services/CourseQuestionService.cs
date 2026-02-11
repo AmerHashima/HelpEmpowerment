@@ -30,7 +30,6 @@ namespace HelpEmpowermentApi.Services
             try
             {
                 var pagedResult = await _questionRepository.GetPagedAsync(request);
-
                 var dtos = pagedResult.Items.Select(MapToDto).ToList();
 
                 return new PagedResponse<CourseQuestionDto>
@@ -118,12 +117,10 @@ namespace HelpEmpowermentApi.Services
         {
             try
             {
-                // Validate exam exists
                 var exam = await _examRepository.GetByIdAsync(dto.CoursesMasterExamOid);
                 if (exam == null)
                     return ApiResponse<CourseQuestionDto>.ErrorResponse("Exam not found");
 
-                // Validate Question Type Lookup if provided
                 if (dto.QuestionTypeLookupId.HasValue)
                 {
                     var questionTypeExists = await _lookupDetailRepository.ExistsAsync(
@@ -132,7 +129,6 @@ namespace HelpEmpowermentApi.Services
                         return ApiResponse<CourseQuestionDto>.ErrorResponse("Invalid Question Type. Please select a valid question type.");
                 }
 
-                // Validate Correct Choice if provided
                 if (dto.CorrectChoiceOid.HasValue)
                 {
                     var correctChoiceExists = await _questionRepository.ExistsAsync(
@@ -159,7 +155,6 @@ namespace HelpEmpowermentApi.Services
 
                 var created = await _questionRepository.AddAsync(question);
 
-                // Add answers if provided
                 if (dto.Answers != null && dto.Answers.Any())
                 {
                     foreach (var answerDto in dto.Answers)
@@ -192,11 +187,10 @@ namespace HelpEmpowermentApi.Services
         {
             try
             {
-                var question = await _questionRepository.GetWithAnswersAsync(dto.Oid);
+                var question = await _questionRepository.GetByIdAsync(dto.Oid);
                 if (question == null)
                     return ApiResponse<CourseQuestionDto>.ErrorResponse("Question not found");
 
-                // Validate Question Type Lookup if provided
                 if (dto.QuestionTypeLookupId.HasValue)
                 {
                     var questionTypeExists = await _lookupDetailRepository.ExistsAsync(
@@ -205,7 +199,6 @@ namespace HelpEmpowermentApi.Services
                         return ApiResponse<CourseQuestionDto>.ErrorResponse("Invalid Question Type. Please select a valid question type.");
                 }
 
-                // Validate Correct Choice if provided
                 if (dto.CorrectChoiceOid.HasValue)
                 {
                     if (dto.CorrectChoiceOid.Value == dto.Oid)
@@ -220,34 +213,35 @@ namespace HelpEmpowermentApi.Services
                 // Update question properties
                 question.CoursesMasterExamOid = dto.CoursesMasterExamOid;
                 question.QuestionText = dto.QuestionText;
+                question.QuestionText_Ar = dto.QuestionText_Ar;
                 question.QuestionTypeLookupId = dto.QuestionTypeLookupId;
-                //question.QuestionScore = dto.QuestionScore;
+                question.QuestionScore = dto.QuestionScore;
                 question.OrderNo = dto.OrderNo;
                 question.IsActive = dto.IsActive;
-                //question.CorrectAnswer = dto.CorrectAnswer;
-                //question.Question = dto.Question;
+                question.QuestionExplination = dto.QuestionExplination;
+                question.CorrectAnswer = dto.CorrectAnswer;
+                question.Question = dto.Question;
                 question.CorrectChoiceOid = dto.CorrectChoiceOid;
                 question.UpdatedBy = dto.UpdatedBy;
                 question.UpdatedAt = DateTime.UtcNow;
 
-                var updated = await _questionRepository.UpdateAsync(question);
+                await _questionRepository.UpdateAsync(question);
 
                 // ✅ UPDATE ANSWERS if provided
                 if (dto.Answers != null && dto.Answers.Any())
                 {
-                    // Get existing answers
-                    var existingAnswers = await _answerRepository.GetByQuestionIdAsync(dto.Oid);
-                    var existingAnswerIds = existingAnswers.Select(a => a.Oid).ToHashSet();
+                    // Process deletes
+                    var existingAnswerIds = (await _answerRepository.GetByQuestionIdAsync(dto.Oid))
+                        .Select(a => a.Oid).ToHashSet();
                     var dtoAnswerIds = dto.Answers.Where(a => a.Oid != Guid.Empty).Select(a => a.Oid).ToHashSet();
+                    var answersToDelete = existingAnswerIds.Except(dtoAnswerIds);
 
-                    // Delete answers that are not in the DTO
-                    var answersToDelete = existingAnswers.Where(a => !dtoAnswerIds.Contains(a.Oid));
-                    foreach (var answerToDelete in answersToDelete)
+                    foreach (var answerIdToDelete in answersToDelete)
                     {
-                        await _answerRepository.SoftDeleteAsync(answerToDelete.Oid);
+                        await _answerRepository.SoftDeleteAsync(answerIdToDelete);
                     }
 
-                    // Process each answer in DTO
+                    // Process creates and updates
                     foreach (var answerDto in dto.Answers)
                     {
                         if (answerDto.Oid == Guid.Empty)
@@ -269,8 +263,8 @@ namespace HelpEmpowermentApi.Services
                         }
                         else
                         {
-                            // Update existing answer
-                            var existingAnswer = existingAnswers.FirstOrDefault(a => a.Oid == answerDto.Oid);
+                            // ✅ FIX: Fetch individual entity to avoid tracking conflicts
+                            var existingAnswer = await _answerRepository.GetByIdAsync(answerDto.Oid);
                             if (existingAnswer != null)
                             {
                                 existingAnswer.AnswerText = answerDto.AnswerText;
@@ -281,25 +275,8 @@ namespace HelpEmpowermentApi.Services
                                 existingAnswer.OrderNo = answerDto.OrderNo;
                                 existingAnswer.UpdatedBy = dto.UpdatedBy;
                                 existingAnswer.UpdatedAt = DateTime.UtcNow;
+                                
                                 await _answerRepository.UpdateAsync(existingAnswer);
-                            }
-                        }
-                    }
-
-                    // Ensure only one answer is marked as correct
-                    if (dto.Answers.Any(a => a.IsCorrect))
-                    {
-                        var allAnswers = await _answerRepository.GetByQuestionIdAsync(dto.Oid);
-                        var correctAnswers = dto.Answers.Where(a => a.IsCorrect).Select(a => a.Oid).ToHashSet();
-                        
-                        foreach (var answer in allAnswers)
-                        {
-                            bool shouldBeCorrect = correctAnswers.Contains(answer.Oid);
-                            if (answer.IsCorrect != shouldBeCorrect)
-                            {
-                                answer.IsCorrect = shouldBeCorrect;
-                                answer.UpdatedAt = DateTime.UtcNow;
-                                await _answerRepository.UpdateAsync(answer);
                             }
                         }
                     }
@@ -344,9 +321,8 @@ namespace HelpEmpowermentApi.Services
                 QuestionTypeName = question.QuestionTypeLookup?.LookupNameEn,
                 QuestionScore = question.QuestionScore,
                 OrderNo = question.OrderNo,
-                QuestionExplination = question.QuestionExplination,
-
                 IsActive = question.IsActive,
+                QuestionExplination = question.QuestionExplination,
                 CorrectAnswer = question.CorrectAnswer,
                 Question = question.Question,
                 CorrectChoiceOid = question.CorrectChoiceOid,
@@ -356,8 +332,8 @@ namespace HelpEmpowermentApi.Services
                     QuestionId = a.QuestionId,
                     AnswerText = a.AnswerText,
                     AnswerText_Ar = a.AnswerText_Ar,
-                    CorrectAnswerOid = a.CorrectAnswerOid,
                     Question_Ask = a.Question_Ask,
+                    CorrectAnswerOid = a.CorrectAnswerOid,
                     IsCorrect = a.IsCorrect,
                     OrderNo = a.OrderNo,
                     CreatedAt = a.CreatedAt,

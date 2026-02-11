@@ -41,6 +41,7 @@ namespace HelpEmpowermentApi.Repositories
         public async Task<List<CourseAnswer>> GetByQuestionIdAsync(Guid questionId)
         {
             return await _dbSet
+                .AsNoTracking()  // ✅ Add this to prevent tracking
                 .Include(a => a.Question)
                 .Where(a => a.QuestionId == questionId && !a.IsDeleted)
                 .OrderBy(a => a.OrderNo)

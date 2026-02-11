@@ -34,11 +34,10 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid Oid { get; set; }
         public Guid QuestionId { get; set; }
-        public bool Question_Ask { get; set; } = false;
-        public string AnswerText_Ar { get; set; } = string.Empty;
-
-        public Guid? CorrectAnswerOid { get; set; }
         public string AnswerText { get; set; } = string.Empty;
+        public string AnswerText_Ar { get; set; } = string.Empty;
+        public bool Question_Ask { get; set; }
+        public Guid? CorrectAnswerOid { get; set; }
         public bool IsCorrect { get; set; }
         public int? OrderNo { get; set; }
         public Guid? UpdatedBy { get; set; }
