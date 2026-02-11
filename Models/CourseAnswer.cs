@@ -14,7 +14,7 @@ namespace HelpEmpowermentApi.Models
         [Column(TypeName = "text")]
         public string AnswerText { get; set; } = string.Empty;
 
-        [Column(TypeName = "text")]
+        [Column(TypeName = "nvarchar(max)")]
         public string AnswerText_Ar { get; set; } = string.Empty;
 
         public bool Question_Ask { get; set; } = false;

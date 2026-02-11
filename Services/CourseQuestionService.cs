@@ -192,7 +192,7 @@ namespace HelpEmpowermentApi.Services
         {
             try
             {
-                var question = await _questionRepository.GetByIdAsync(dto.Oid);
+                var question = await _questionRepository.GetWithAnswersAsync(dto.Oid);
                 if (question == null)
                     return ApiResponse<CourseQuestionDto>.ErrorResponse("Question not found");
 
@@ -208,7 +208,6 @@ namespace HelpEmpowermentApi.Services
                 // Validate Correct Choice if provided
                 if (dto.CorrectChoiceOid.HasValue)
                 {
-                    // Prevent self-reference
                     if (dto.CorrectChoiceOid.Value == dto.Oid)
                         return ApiResponse<CourseQuestionDto>.ErrorResponse("A question cannot reference itself as the correct choice.");
 
@@ -218,22 +217,97 @@ namespace HelpEmpowermentApi.Services
                         return ApiResponse<CourseQuestionDto>.ErrorResponse("Invalid Correct Choice. The referenced question does not exist.");
                 }
 
+                // Update question properties
                 question.CoursesMasterExamOid = dto.CoursesMasterExamOid;
                 question.QuestionText = dto.QuestionText;
-                question.QuestionText_Ar = dto.QuestionText_Ar;
                 question.QuestionTypeLookupId = dto.QuestionTypeLookupId;
-                question.QuestionScore = dto.QuestionScore;
+                //question.QuestionScore = dto.QuestionScore;
                 question.OrderNo = dto.OrderNo;
-                question.QuestionExplination = dto.QuestionExplination;
-
                 question.IsActive = dto.IsActive;
-                question.CorrectAnswer = dto.CorrectAnswer;
-                question.Question = dto.Question;
+                //question.CorrectAnswer = dto.CorrectAnswer;
+                //question.Question = dto.Question;
                 question.CorrectChoiceOid = dto.CorrectChoiceOid;
                 question.UpdatedBy = dto.UpdatedBy;
+                question.UpdatedAt = DateTime.UtcNow;
 
                 var updated = await _questionRepository.UpdateAsync(question);
-                return ApiResponse<CourseQuestionDto>.SuccessResponse(MapToDto(updated), "Question updated successfully");
+
+                // ✅ UPDATE ANSWERS if provided
+                if (dto.Answers != null && dto.Answers.Any())
+                {
+                    // Get existing answers
+                    var existingAnswers = await _answerRepository.GetByQuestionIdAsync(dto.Oid);
+                    var existingAnswerIds = existingAnswers.Select(a => a.Oid).ToHashSet();
+                    var dtoAnswerIds = dto.Answers.Where(a => a.Oid != Guid.Empty).Select(a => a.Oid).ToHashSet();
+
+                    // Delete answers that are not in the DTO
+                    var answersToDelete = existingAnswers.Where(a => !dtoAnswerIds.Contains(a.Oid));
+                    foreach (var answerToDelete in answersToDelete)
+                    {
+                        await _answerRepository.SoftDeleteAsync(answerToDelete.Oid);
+                    }
+
+                    // Process each answer in DTO
+                    foreach (var answerDto in dto.Answers)
+                    {
+                        if (answerDto.Oid == Guid.Empty)
+                        {
+                            // Create new answer
+                            var newAnswer = new CourseAnswer
+                            {
+                                QuestionId = dto.Oid,
+                                AnswerText = answerDto.AnswerText,
+                                AnswerText_Ar = answerDto.AnswerText_Ar,
+                                Question_Ask = answerDto.Question_Ask,
+                                CorrectAnswerOid = answerDto.CorrectAnswerOid,
+                                IsCorrect = answerDto.IsCorrect,
+                                OrderNo = answerDto.OrderNo,
+                                CreatedBy = dto.UpdatedBy,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            await _answerRepository.AddAsync(newAnswer);
+                        }
+                        else
+                        {
+                            // Update existing answer
+                            var existingAnswer = existingAnswers.FirstOrDefault(a => a.Oid == answerDto.Oid);
+                            if (existingAnswer != null)
+                            {
+                                existingAnswer.AnswerText = answerDto.AnswerText;
+                                existingAnswer.AnswerText_Ar = answerDto.AnswerText_Ar;
+                                existingAnswer.Question_Ask = answerDto.Question_Ask;
+                                existingAnswer.CorrectAnswerOid = answerDto.CorrectAnswerOid;
+                                existingAnswer.IsCorrect = answerDto.IsCorrect;
+                                existingAnswer.OrderNo = answerDto.OrderNo;
+                                existingAnswer.UpdatedBy = dto.UpdatedBy;
+                                existingAnswer.UpdatedAt = DateTime.UtcNow;
+                                await _answerRepository.UpdateAsync(existingAnswer);
+                            }
+                        }
+                    }
+
+                    // Ensure only one answer is marked as correct
+                    if (dto.Answers.Any(a => a.IsCorrect))
+                    {
+                        var allAnswers = await _answerRepository.GetByQuestionIdAsync(dto.Oid);
+                        var correctAnswers = dto.Answers.Where(a => a.IsCorrect).Select(a => a.Oid).ToHashSet();
+                        
+                        foreach (var answer in allAnswers)
+                        {
+                            bool shouldBeCorrect = correctAnswers.Contains(answer.Oid);
+                            if (answer.IsCorrect != shouldBeCorrect)
+                            {
+                                answer.IsCorrect = shouldBeCorrect;
+                                answer.UpdatedAt = DateTime.UtcNow;
+                                await _answerRepository.UpdateAsync(answer);
+                            }
+                        }
+                    }
+                }
+
+                // Reload question with updated answers
+                var result = await _questionRepository.GetWithAnswersAsync(dto.Oid);
+                return ApiResponse<CourseQuestionDto>.SuccessResponse(MapToDto(result!), "Question and answers updated successfully");
             }
             catch (Exception ex)
             {

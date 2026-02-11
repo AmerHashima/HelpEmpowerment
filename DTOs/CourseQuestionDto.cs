@@ -50,17 +50,16 @@ namespace HelpEmpowermentApi.DTOs
         public Guid Oid { get; set; }
         public Guid CoursesMasterExamOid { get; set; }
         public string QuestionText { get; set; } = string.Empty;
-        public string QuestionText_Ar { get; set; } = string.Empty;
-
-        public string QuestionExplination { get; set; } = string.Empty;
-
         public Guid? QuestionTypeLookupId { get; set; }
-        public int QuestionScore { get; set; }
+        public int? QuestionScore { get; set; }
         public int? OrderNo { get; set; }
         public bool IsActive { get; set; }
-        public bool CorrectAnswer { get; set; }
-        public bool Question { get; set; }
+        public string? CorrectAnswer { get; set; }
+        public string? Question { get; set; }
         public Guid? CorrectChoiceOid { get; set; }
         public Guid? UpdatedBy { get; set; }
+        
+        // ✅ ADD: Support for updating answers
+        public List<UpdateCourseAnswerDto>? Answers { get; set; }
     }
 }
