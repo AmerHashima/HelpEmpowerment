@@ -4,7 +4,6 @@ using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Repositories;
 using HelpEmpowermentApi.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace HelpEmpowermentApi
 {
@@ -14,13 +13,8 @@ namespace HelpEmpowermentApi
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // ✅ IMPORTANT: Call this BEFORE building the app
-            SetGoogleCredentialsFromEnvironment();
-
-            // Add Services to the container.
-            
-            // ✅ FIX: Set Google credentials path with multiple fallback options
-            SetGoogleCredentials(builder.Environment);
+            // ✅ Configure Google credentials FIRST
+            ConfigureGoogleCredentials(builder.Environment);
 
             // Register DbContext
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -29,20 +23,14 @@ namespace HelpEmpowermentApi
                      builder.Configuration.GetConnectionString("DefaultConnection"),
                     sqlServerOptionsAction: sqlOptions =>
                     {
-                        // Enable retry on failure for transient errors (critical for Docker)
                         sqlOptions.EnableRetryOnFailure(
-                            maxRetryCount: 10,  // Increased for Docker startup delays
+                            maxRetryCount: 10,
                             maxRetryDelay: TimeSpan.FromSeconds(30),
                             errorNumbersToAdd: null);
-
-                        // Command timeout (important for slow networks)
                         sqlOptions.CommandTimeout(120);
-
-                        // Migrations assembly
                         sqlOptions.MigrationsAssembly("HelpEmpowermentApi");
                     });
 
-                // Enable detailed errors in development
                 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
                 if (environment == "Development")
                 {
@@ -50,107 +38,20 @@ namespace HelpEmpowermentApi
                     options.EnableDetailedErrors();
                 }
 
-                // Set query tracking behavior
                 options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             });
             
             builder.Services.AddHttpClient();
-
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
-            // ========================================
-            // ✅ EXISTING REPOSITORIES
-            // ========================================
-            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-            builder.Services.AddScoped<ICourseRepository, CourseRepository>();
-            builder.Services.AddScoped<ICoursesMasterExamRepository, CoursesMasterExamRepository>();
-            builder.Services.AddScoped<ICourseQuestionRepository, CourseQuestionRepository>();
-            builder.Services.AddScoped<ICourseAnswerRepository, CourseAnswerRepository>();
-            builder.Services.AddScoped<IAppLookupHeaderRepository, AppLookupHeaderRepository>();
-            builder.Services.AddScoped<IAppLookupDetailRepository, AppLookupDetailRepository>();
+            // Register all repositories and services
+            RegisterRepositories(builder.Services);
+            RegisterServices(builder.Services);
 
-            // ========================================
-            // ✅ NEW REPOSITORIES - AUTH & USERS
-            // ========================================
-            builder.Services.AddScoped<IUserRepository, UserRepository>();
-            builder.Services.AddScoped<IStudentRepository, StudentRepository>();
-
-            // ========================================
-            // ✅ NEW REPOSITORIES - COURSE FEATURES & CONTENT
-            // ========================================
-            builder.Services.AddScoped<ICourseFeatureRepository, CourseFeatureRepository>();
-            builder.Services.AddScoped<ICourseOutlineRepository, CourseOutlineRepository>();
-            builder.Services.AddScoped<ICourseContentRepository, CourseContentRepository>();
-            builder.Services.AddScoped<ICourseVideoRepository, CourseVideoRepository>();
-            builder.Services.AddScoped<ICourseVideoAttachmentRepository, CourseVideoAttachmentRepository>();
-
-            // ========================================
-            // ✅ NEW REPOSITORIES - STUDENT EXAMS
-            // ========================================
-            builder.Services.AddScoped<IStudentExamRepository, StudentExamRepository>();
-            builder.Services.AddScoped<IStudentExamQuestionRepository, StudentExamQuestionRepository>();
-
-            // ========================================
-            // ✅ NEW REPOSITORIES - LIVE SESSIONS
-            // ========================================
-            builder.Services.AddScoped<ICourseLiveSessionRepository, CourseLiveSessionRepository>();
-            builder.Services.AddScoped<ICourseLiveSessionStudentRepository, CourseLiveSessionStudentRepository>();
-
-            // ========================================
-            // ✅ NEW REPOSITORIES - INSTRUCTORS & TARGET AUDIENCE
-            // ========================================
-            builder.Services.AddScoped<ICourseInstructorRepository, CourseInstructorRepository>();
-            builder.Services.AddScoped<ICourseTargetAudienceRepository, CourseTargetAudienceRepository>();
-
-            // ========================================
-            // ✅ EXISTING SERVICES
-            // ========================================
-            builder.Services.AddScoped<ICourseService, CourseService>();
-            builder.Services.AddScoped<ICoursesMasterExamService, CoursesMasterExamService>();
-            builder.Services.AddScoped<ICourseQuestionService, CourseQuestionService>();
-            builder.Services.AddScoped<IAppLookupService, AppLookupService>();
-            builder.Services.AddScoped<ICourseAnswerService, CourseAnswerService>();
-
-            // ========================================
-            // ✅ NEW SERVICES - AUTH & USERS
-            // ========================================
-            builder.Services.AddScoped<IUserService, UserService>();
-            builder.Services.AddScoped<IStudentService, StudentService>();
-
-            // ========================================
-            // ✅ NEW SERVICES - COURSE FEATURES & CONTENT
-            // ========================================
-            builder.Services.AddScoped<ICourseFeatureService, CourseFeatureService>();
-            builder.Services.AddScoped<ICourseOutlineService, CourseOutlineService>();
-            builder.Services.AddScoped<ICourseContentService, CourseContentService>();
-            builder.Services.AddScoped<ICourseVideoService, CourseVideoService>();
-            builder.Services.AddScoped<ICourseVideoAttachmentService, CourseVideoAttachmentService>();
-
-            // ========================================
-            // ✅ NEW SERVICES - STUDENT EXAMS
-            // ========================================
-            builder.Services.AddScoped<IStudentExamService, StudentExamService>();
-            builder.Services.AddScoped<IStudentExamQuestionService, StudentExamQuestionService>();
-
-            // ========================================
-            // ✅ NEW SERVICES - LIVE SESSIONS
-            // ========================================
-            builder.Services.AddScoped<ICourseLiveSessionService, CourseLiveSessionService>();
-            builder.Services.AddScoped<ICourseLiveSessionStudentService, CourseLiveSessionStudentService>();
-
-            // ========================================
-            // ✅ NEW SERVICES - INSTRUCTORS & TARGET AUDIENCE
-            // ========================================
-            builder.Services.AddScoped<ICourseInstructorService, CourseInstructorService>();
-            builder.Services.AddScoped<ICourseTargetAudienceService, CourseTargetAudienceService>();
-
-            // Add Swagger Services
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            // Add CORS Services
             builder.Services.AddCors(options =>
             {
                 options.AddDefaultPolicy(policy =>
@@ -163,107 +64,153 @@ namespace HelpEmpowermentApi
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            //if (app.Environment.IsDevelopment())
-            //{
-                app.MapOpenApi();
+            // Auto-migrate database on startup
+            MigrateDatabase(app);
 
-            // Enable Swagger middleware
+            app.MapOpenApi();
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "HelpEmpowerment API V1");
             });
-            // }
 
             app.UseHttpsRedirection();
-
-            // Enable CORS
             app.UseCors();
-
             app.UseAuthorization();
-
-            // Redirect root to Swagger
+            
+            // Health check endpoint
+            app.MapGet("/health", () => Results.Ok(new 
+            { 
+                status = "healthy", 
+                timestamp = DateTime.UtcNow,
+                googleCredentials = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS"))
+            })).ExcludeFromDescription();
+            
             app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
-
             app.MapControllers();
 
             app.Run();
         }
 
-        // ✅ ADD THIS METHOD
-        private static void SetGoogleCredentials(IWebHostEnvironment environment)
+        // ✅ Configure Google Credentials
+        private static void ConfigureGoogleCredentials(IWebHostEnvironment environment)
         {
             try
             {
-                // Priority 1: Check environment variable (Docker/Production)
-                var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
+                const string credentialFileName = "test-erp-68be7-b83f4e97f6be.json";
                 
-                // Priority 2: Check appsettings.json (Local Development)
-                if (string.IsNullOrEmpty(credentialsJson))
+                // Try multiple locations in order of priority
+                var searchPaths = new[]
                 {
-                    var configuration = new ConfigurationBuilder()
-                        .SetBasePath(Directory.GetCurrentDirectory())
-                        .AddJsonFile("appsettings.json", optional: true)
-                        .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development"}.json", optional: true)
-                        .AddEnvironmentVariables()
-                        .Build();
-                        
-                    credentialsJson = configuration["GoogleCredentials:Json"];
-                }
-                
-                if (!string.IsNullOrEmpty(credentialsJson))
+                    // 1. Local development - from project Common folder
+                    Path.Combine(environment.ContentRootPath, "Common", credentialFileName),
+                    
+                    // 2. Published app - from output Common folder
+                    Path.Combine(AppContext.BaseDirectory, "Common", credentialFileName),
+                    
+                    // 3. Docker - copied to app root
+                    Path.Combine(AppContext.BaseDirectory, credentialFileName),
+                    
+                    // 4. Fallback - current directory
+                    Path.Combine(Directory.GetCurrentDirectory(), "Common", credentialFileName)
+                };
+
+                foreach (var path in searchPaths)
                 {
-                    // Create temporary file
-                    var tempPath = Path.Combine(Path.GetTempPath(), $"google-credentials-{Guid.NewGuid()}.json");
-                    File.WriteAllText(tempPath, credentialsJson);
-                    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", tempPath);
-                    Console.WriteLine($"✅ Google credentials configured successfully");
-                    Console.WriteLine($"   Environment: {Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development"}");
-                    Console.WriteLine($"   Temp file: {tempPath}");
-                    return;
+                    if (File.Exists(path))
+                    {
+                        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", path);
+                        Console.WriteLine($"✅ Google Cloud credentials loaded successfully");
+                        Console.WriteLine($"   File: {credentialFileName}");
+                        Console.WriteLine($"   Path: {path}");
+                        Console.WriteLine($"   Environment: {environment.EnvironmentName}");
+                        return;
+                    }
                 }
 
-                Console.WriteLine("⚠️ Warning: Google credentials not configured.");
-                Console.WriteLine("   Translation API endpoints will not work.");
+                // File not found - log warning but don't crash
+                Console.WriteLine($"⚠️ Warning: Google credentials file '{credentialFileName}' not found");
+                Console.WriteLine($"   Translation API will not be available");
+                Console.WriteLine($"   Searched locations:");
+                foreach (var path in searchPaths)
+                {
+                    Console.WriteLine($"     - {path}");
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error setting Google credentials: {ex.Message}");
+                Console.WriteLine($"❌ Error configuring Google credentials: {ex.Message}");
+                Console.WriteLine($"   Translation API will not be available");
             }
         }
 
-        private static void SetGoogleCredentialsFromEnvironment()
+        // ✅ Auto-migrate database
+        private static void MigrateDatabase(WebApplication app)
         {
+            using var scope = app.Services.CreateScope();
+            var services = scope.ServiceProvider;
             try
             {
-                // Check if running in Azure App Service or Container
-                var isAzure = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") != null;
-                var isContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-
-                if (isAzure || isContainer)
-                {
-                    // Use Managed Identity or Environment Variables for Google Credentials
-                    var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
-
-                    if (!string.IsNullOrEmpty(credentialsJson))
-                    {
-                        // Create temporary file
-                        var tempPath = Path.Combine(Path.GetTempPath(), $"google-credentials-{Guid.NewGuid()}.json");
-                        File.WriteAllText(tempPath, credentialsJson);
-                        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", tempPath);
-                        Console.WriteLine($"✅ Google credentials configured from environment variable");
-                    }
-                    else
-                    {
-                        Console.WriteLine("⚠️ Warning: GOOGLE_CREDENTIALS_JSON not found in environment variables.");
-                    }
-                }
+                var context = services.GetRequiredService<ApplicationDbContext>();
+                var logger = services.GetRequiredService<ILogger<Program>>();
+                
+                logger.LogInformation("🔄 Checking database migrations...");
+                context.Database.Migrate();
+                logger.LogInformation("✅ Database is up to date");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error setting Google credentials from environment: {ex.Message}");
+                var logger = services.GetRequiredService<ILogger<Program>>();
+                logger.LogError(ex, "❌ Database migration failed");
             }
+        }
+
+        // ✅ Register repositories
+        private static void RegisterRepositories(IServiceCollection services)
+        {
+            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            services.AddScoped<ICourseRepository, CourseRepository>();
+            services.AddScoped<ICoursesMasterExamRepository, CoursesMasterExamRepository>();
+            services.AddScoped<ICourseQuestionRepository, CourseQuestionRepository>();
+            services.AddScoped<ICourseAnswerRepository, CourseAnswerRepository>();
+            services.AddScoped<IAppLookupHeaderRepository, AppLookupHeaderRepository>();
+            services.AddScoped<IAppLookupDetailRepository, AppLookupDetailRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IStudentRepository, StudentRepository>();
+            services.AddScoped<ICourseFeatureRepository, CourseFeatureRepository>();
+            services.AddScoped<ICourseOutlineRepository, CourseOutlineRepository>();
+            services.AddScoped<ICourseContentRepository, CourseContentRepository>();
+            services.AddScoped<ICourseVideoRepository, CourseVideoRepository>();
+            services.AddScoped<ICourseVideoAttachmentRepository, CourseVideoAttachmentRepository>();
+            services.AddScoped<IStudentExamRepository, StudentExamRepository>();
+            services.AddScoped<IStudentExamQuestionRepository, StudentExamQuestionRepository>();
+            services.AddScoped<ICourseLiveSessionRepository, CourseLiveSessionRepository>();
+            services.AddScoped<ICourseLiveSessionStudentRepository, CourseLiveSessionStudentRepository>();
+            services.AddScoped<ICourseInstructorRepository, CourseInstructorRepository>();
+            services.AddScoped<ICourseTargetAudienceRepository, CourseTargetAudienceRepository>();
+        }
+
+        // ✅ Register services
+        private static void RegisterServices(IServiceCollection services)
+        {
+            services.AddScoped<ICourseService, CourseService>();
+            services.AddScoped<ICoursesMasterExamService, CoursesMasterExamService>();
+            services.AddScoped<ICourseQuestionService, CourseQuestionService>();
+            services.AddScoped<IAppLookupService, AppLookupService>();
+            services.AddScoped<ICourseAnswerService, CourseAnswerService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IStudentService, StudentService>();
+            services.AddScoped<ICourseFeatureService, CourseFeatureService>();
+            services.AddScoped<ICourseOutlineService, CourseOutlineService>();
+            services.AddScoped<ICourseContentService, CourseContentService>();
+            services.AddScoped<ICourseVideoService, CourseVideoService>();
+            services.AddScoped<ICourseVideoAttachmentService, CourseVideoAttachmentService>();
+            services.AddScoped<IStudentExamService, StudentExamService>();
+            services.AddScoped<IStudentExamQuestionService, StudentExamQuestionService>();
+            services.AddScoped<ICourseLiveSessionService, CourseLiveSessionService>();
+            services.AddScoped<ICourseLiveSessionStudentService, CourseLiveSessionStudentService>();
+            services.AddScoped<ICourseInstructorService, CourseInstructorService>();
+            services.AddScoped<ICourseTargetAudienceService, CourseTargetAudienceService>();
         }
     }
 }

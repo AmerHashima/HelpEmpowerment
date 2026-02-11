@@ -26,5 +26,4 @@ bld/
 # ✅ ADD THESE LINES
 .env
 appsettings.Development.json
-Common/test-erp-68be7-b83f4e97f6be.json
-Properties/*.json"env .env" 
+Properties/*.json
