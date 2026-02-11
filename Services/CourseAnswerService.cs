@@ -117,6 +117,7 @@ namespace HelpEmpowermentApi.Services
                 {
                     QuestionId = dto.QuestionId,
                     AnswerText = dto.AnswerText,
+                    AnswerText_Ar = dto.AnswerText_Ar,
                     IsCorrect = dto.IsCorrect,
                     OrderNo = dto.OrderNo,
                     CreatedBy = dto.CreatedBy,
@@ -160,6 +161,7 @@ namespace HelpEmpowermentApi.Services
                 answer.QuestionId = dto.QuestionId;
                 answer.CorrectAnswerOid = dto.CorrectAnswerOid;
                 answer.AnswerText = dto.AnswerText;
+                answer.AnswerText_Ar = dto.AnswerText_Ar;
                 answer.IsCorrect = dto.IsCorrect;
                 answer.OrderNo = dto.OrderNo;
                 answer.UpdatedBy = dto.UpdatedBy;
@@ -197,6 +199,7 @@ namespace HelpEmpowermentApi.Services
                 Oid = answer.Oid,
                 QuestionId = answer.QuestionId,
                 AnswerText = answer.AnswerText,
+                AnswerText_Ar = answer.AnswerText_Ar,
                 IsCorrect = answer.IsCorrect,
                 OrderNo = answer.OrderNo,
                 CorrectAnswerOid = answer.CorrectAnswerOid,

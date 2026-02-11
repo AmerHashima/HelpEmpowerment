@@ -145,6 +145,7 @@ namespace HelpEmpowermentApi.Services
                 {
                     CoursesMasterExamOid = dto.CoursesMasterExamOid,
                     QuestionText = dto.QuestionText,
+                    QuestionText_Ar = dto.QuestionText_Ar,
                     QuestionTypeLookupId = dto.QuestionTypeLookupId,
                     QuestionScore = dto.QuestionScore,
                     OrderNo = dto.OrderNo,
@@ -169,6 +170,7 @@ namespace HelpEmpowermentApi.Services
                             CorrectAnswerOid = answerDto.CorrectAnswerOid,
                             Question_Ask = answerDto.Question_Ask,
                             AnswerText = answerDto.AnswerText,
+                            AnswerText_Ar = answerDto.AnswerText_Ar,
                             IsCorrect = answerDto.IsCorrect,
                             OrderNo = answerDto.OrderNo,
                             CreatedBy = answerDto.CreatedBy
@@ -218,6 +220,7 @@ namespace HelpEmpowermentApi.Services
 
                 question.CoursesMasterExamOid = dto.CoursesMasterExamOid;
                 question.QuestionText = dto.QuestionText;
+                question.QuestionText_Ar = dto.QuestionText_Ar;
                 question.QuestionTypeLookupId = dto.QuestionTypeLookupId;
                 question.QuestionScore = dto.QuestionScore;
                 question.OrderNo = dto.OrderNo;
@@ -262,6 +265,7 @@ namespace HelpEmpowermentApi.Services
                 CoursesMasterExamOid = question.CoursesMasterExamOid,
                 ExamName = question.MasterExam?.CourseName,
                 QuestionText = question.QuestionText,
+                QuestionText_Ar = question.QuestionText_Ar,
                 QuestionTypeLookupId = question.QuestionTypeLookupId,
                 QuestionTypeName = question.QuestionTypeLookup?.LookupNameEn,
                 QuestionScore = question.QuestionScore,
@@ -277,6 +281,7 @@ namespace HelpEmpowermentApi.Services
                     Oid = a.Oid,
                     QuestionId = a.QuestionId,
                     AnswerText = a.AnswerText,
+                    AnswerText_Ar = a.AnswerText_Ar,
                     CorrectAnswerOid = a.CorrectAnswerOid,
                     Question_Ask = a.Question_Ask,
                     IsCorrect = a.IsCorrect,
