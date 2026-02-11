@@ -4,6 +4,7 @@ using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Repositories;
 using HelpEmpowermentApi.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace HelpEmpowermentApi
 {
@@ -12,6 +13,9 @@ namespace HelpEmpowermentApi
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // ✅ IMPORTANT: Call this BEFORE building the app
+            SetGoogleCredentialsFromEnvironment();
 
             // Add Services to the container.
             
@@ -190,65 +194,75 @@ namespace HelpEmpowermentApi
         // ✅ ADD THIS METHOD
         private static void SetGoogleCredentials(IWebHostEnvironment environment)
         {
-            // Priority 1: Check environment variable
-            var envCredentials = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
-            if (!string.IsNullOrEmpty(envCredentials))
+            try
             {
-                if (File.Exists(envCredentials))
+                // Priority 1: Check environment variable (Docker/Production)
+                var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
+                
+                // Priority 2: Check appsettings.json (Local Development)
+                if (string.IsNullOrEmpty(credentialsJson))
                 {
-                    Console.WriteLine($"✅ Using Google credentials from environment variable: {envCredentials}");
+                    var configuration = new ConfigurationBuilder()
+                        .SetBasePath(Directory.GetCurrentDirectory())
+                        .AddJsonFile("appsettings.json", optional: true)
+                        .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development"}.json", optional: true)
+                        .AddEnvironmentVariables()
+                        .Build();
+                        
+                    credentialsJson = configuration["GoogleCredentials:Json"];
+                }
+                
+                if (!string.IsNullOrEmpty(credentialsJson))
+                {
+                    // Create temporary file
+                    var tempPath = Path.Combine(Path.GetTempPath(), $"google-credentials-{Guid.NewGuid()}.json");
+                    File.WriteAllText(tempPath, credentialsJson);
+                    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", tempPath);
+                    Console.WriteLine($"✅ Google credentials configured successfully");
+                    Console.WriteLine($"   Environment: {Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development"}");
+                    Console.WriteLine($"   Temp file: {tempPath}");
                     return;
                 }
-                else
-                {
-                    Console.WriteLine($"⚠️ Warning: GOOGLE_APPLICATION_CREDENTIALS points to non-existent file: {envCredentials}");
-                }
+
+                Console.WriteLine("⚠️ Warning: Google credentials not configured.");
+                Console.WriteLine("   Translation API endpoints will not work.");
             }
-
-            // Priority 2: Check for credentials JSON content in environment variable
-            var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
-            if (!string.IsNullOrEmpty(credentialsJson))
+            catch (Exception ex)
             {
-                // Write JSON to temporary file
-                var tempPath = Path.Combine(Path.GetTempPath(), "google-credentials.json");
-                File.WriteAllText(tempPath, credentialsJson);
-                Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", tempPath);
-                Console.WriteLine($"✅ Created temporary credentials file at: {tempPath}");
-                return;
+                Console.WriteLine($"❌ Error setting Google credentials: {ex.Message}");
             }
+        }
 
-            // Priority 3: Look for file in various locations (Development only)
-            if (environment.IsDevelopment())
+        private static void SetGoogleCredentialsFromEnvironment()
+        {
+            try
             {
-                var possiblePaths = new[]
-                {
-                    Path.Combine(environment.ContentRootPath, "Properties", "test-erp-68be7-b83f4e97f6be.json"),
-                    Path.Combine(AppContext.BaseDirectory, "Properties", "test-erp-68be7-b83f4e97f6be.json"),
-                    Path.Combine(AppContext.BaseDirectory, "test-erp-68be7-b83f4e97f6be.json"),
-                    Path.Combine(environment.ContentRootPath, "test-erp-68be7-b83f4e97f6be.json")
-                };
+                // Check if running in Azure App Service or Container
+                var isAzure = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") != null;
+                var isContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 
-                foreach (var path in possiblePaths)
+                if (isAzure || isContainer)
                 {
-                    if (File.Exists(path))
+                    // Use Managed Identity or Environment Variables for Google Credentials
+                    var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
+
+                    if (!string.IsNullOrEmpty(credentialsJson))
                     {
-                        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", path);
-                        Console.WriteLine($"✅ Google credentials found at: {path}");
-                        return;
+                        // Create temporary file
+                        var tempPath = Path.Combine(Path.GetTempPath(), $"google-credentials-{Guid.NewGuid()}.json");
+                        File.WriteAllText(tempPath, credentialsJson);
+                        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", tempPath);
+                        Console.WriteLine($"✅ Google credentials configured from environment variable");
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ Warning: GOOGLE_CREDENTIALS_JSON not found in environment variables.");
                     }
                 }
-
-                Console.WriteLine("⚠️ Warning: Google Cloud credentials file not found in development.");
-                Console.WriteLine("Searched locations:");
-                foreach (var path in possiblePaths)
-                {
-                    Console.WriteLine($"  - {path}");
-                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("⚠️ Error: Google Cloud credentials not configured for production!");
-                Console.WriteLine("Please set GOOGLE_APPLICATION_CREDENTIALS environment variable or GOOGLE_CREDENTIALS_JSON.");
+                Console.WriteLine($"❌ Error setting Google credentials from environment: {ex.Message}");
             }
         }
     }
