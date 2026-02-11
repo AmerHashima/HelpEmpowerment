@@ -15,12 +15,12 @@ namespace HelpEmpowermentApi
             var builder = WebApplication.CreateBuilder(args);
 
             // ✅ IMPORTANT: Call this BEFORE building the app
-            SetGoogleCredentialsFromEnvironment();
+            ConfigureGoogleCredentials(builder.Environment);
 
             // Add Services to the container.
-            
+
             // ✅ FIX: Set Google credentials path with multiple fallback options
-            SetGoogleCredentials(builder.Environment);
+         //   SetGoogleCredentials(builder.Environment);
 
             // Register DbContext
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -233,36 +233,55 @@ namespace HelpEmpowermentApi
             }
         }
 
-        private static void SetGoogleCredentialsFromEnvironment()
+        private static void ConfigureGoogleCredentials(IWebHostEnvironment environment)
         {
+            const string CREDENTIAL_FILE = "test-erp-68be7-b83f4e97f6be.json";
+
             try
             {
-                // Check if running in Azure App Service or Container
-                var isAzure = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") != null;
-                var isContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-
-                if (isAzure || isContainer)
+                // Define search paths in priority order
+                var searchPaths = new[]
                 {
-                    // Use Managed Identity or Environment Variables for Google Credentials
-                    var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
+                    // Path 1: Common folder in content root (Local Development)
+                    Path.Combine(environment.ContentRootPath, "Common", CREDENTIAL_FILE),
+                    
+                    // Path 2: Common folder in base directory (Published App)
+                    Path.Combine(AppContext.BaseDirectory, "Common", CREDENTIAL_FILE),
+                    
+                    // Path 3: Base directory root (Docker fallback)
+                    Path.Combine(AppContext.BaseDirectory, CREDENTIAL_FILE),
+                    
+                    // Path 4: Current directory
+                    Path.Combine(Directory.GetCurrentDirectory(), "Common", CREDENTIAL_FILE)
+                };
 
-                    if (!string.IsNullOrEmpty(credentialsJson))
+                // Try to find credentials file
+                foreach (var path in searchPaths)
+                {
+                    if (File.Exists(path))
                     {
-                        // Create temporary file
-                        var tempPath = Path.Combine(Path.GetTempPath(), $"google-credentials-{Guid.NewGuid()}.json");
-                        File.WriteAllText(tempPath, credentialsJson);
-                        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", tempPath);
-                        Console.WriteLine($"✅ Google credentials configured from environment variable");
+                        // Set environment variable pointing to file
+                        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", path);
+
+                        Console.WriteLine("✅ Google Cloud Translation API configured");
+                        Console.WriteLine($"   Environment: {environment.EnvironmentName}");
+                        Console.WriteLine($"   Credentials: {path}");
+                        return;
                     }
-                    else
-                    {
-                        Console.WriteLine("⚠️ Warning: GOOGLE_CREDENTIALS_JSON not found in environment variables.");
-                    }
+                }
+
+                // Credentials not found
+                Console.WriteLine("⚠️  Google Cloud credentials not found");
+                Console.WriteLine($"   Translation API will be unavailable");
+                Console.WriteLine($"   Searched paths:");
+                foreach (var path in searchPaths)
+                {
+                    Console.WriteLine($"     - {path}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error setting Google credentials from environment: {ex.Message}");
+                Console.WriteLine($"❌ Error loading Google credentials: {ex.Message}");
             }
         }
     }

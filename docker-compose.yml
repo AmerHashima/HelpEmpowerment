@@ -29,8 +29,7 @@ services:
     environment: 
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HelpEmpowerment;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Encrypt=False;
-      # ✅ FIX: Read from .env file
-      - GOOGLE_CREDENTIALS_JSON=${GOOGLE_CREDENTIALS_JSON}
+
     ports:
       - "8080:8080"
     depends_on:
