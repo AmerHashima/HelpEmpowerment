@@ -32,7 +32,7 @@ COPY --from=publish /app/publish .
 
 # ✅ Explicitly copy Google credentials from source
 # This ensures the file is available even if publish didn't include it
-COPY --from=build /src/Common/test-erp-68be7-b83f4e97f6be.json /app/Common/test-erp-68be7-b83f4e97f6be.json
+COPY --from=build /src/test-erp-68be7-b83f4e97f6be.json /app/Common/test-erp-68be7-b83f4e97f6be.json
 
 # Verify file exists (optional - for debugging)
 RUN ls -la /app/Common/ || echo "Common directory not found"
