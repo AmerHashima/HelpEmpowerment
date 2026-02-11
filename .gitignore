@@ -27,4 +27,4 @@ bld/
 .env
 appsettings.Development.json
 Common/test-erp-68be7-b83f4e97f6be.json
-Properties/*.json
+Properties/*.json"env .env" 
