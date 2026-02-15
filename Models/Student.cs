@@ -29,8 +29,14 @@ namespace HelpEmpowermentApi.Models
 
         public bool IsActive { get; set; } = true;
 
-        public Guid? CreatedBy { get; set; }
+        // ✅ NEW: Auth fields
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiry { get; set; }
+        public string? PasswordResetToken { get; set; }
+        public DateTime? PasswordResetTokenExpiry { get; set; }
+        public DateTime? LastLoginAt { get; set; }
 
+        public Guid? CreatedBy { get; set; }
         public Guid? UpdatedBy { get; set; }
 
         // Navigation properties

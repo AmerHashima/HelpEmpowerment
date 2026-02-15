@@ -27,7 +27,11 @@ namespace HelpEmpowermentApi.Models
         public Guid? CreatedBy { get; set; }
 
         public Guid? UpdatedBy { get; set; }
-
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiry { get; set; }
+        public string? PasswordResetToken { get; set; }
+        public DateTime? PasswordResetTokenExpiry { get; set; }
+        public DateTime? LastLoginAt { get; set; }
         // Navigation properties
         [ForeignKey(nameof(RoleLookupId))]
         public virtual AppLookupDetail? RoleLookup { get; set; }
