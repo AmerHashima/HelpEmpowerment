@@ -160,6 +160,12 @@ namespace HelpEmpowermentApi
             services.AddScoped<ICourseLiveSessionStudentRepository, CourseLiveSessionStudentRepository>();
             services.AddScoped<ICourseInstructorRepository, CourseInstructorRepository>();
             services.AddScoped<ICourseTargetAudienceRepository, CourseTargetAudienceRepository>();
+            // ========================================
+            // ✅ NEW REPOSITORIES
+            // ========================================
+            services.AddScoped<IStudentCourseRepository, StudentCourseRepository>();
+            services.AddScoped<IStudentBasketRepository, StudentBasketRepository>();
+            services.AddScoped<IServiceContactUsRepository, ServiceContactUsRepository>();
         }
 
         private static void RegisterServices(IServiceCollection services)
@@ -185,6 +191,12 @@ namespace HelpEmpowermentApi
             services.AddScoped<ICourseLiveSessionStudentService, CourseLiveSessionStudentService>();
             services.AddScoped<ICourseInstructorService, CourseInstructorService>();
             services.AddScoped<ICourseTargetAudienceService, CourseTargetAudienceService>();
+            // ========================================
+            // ✅ NEW SERVICES
+            // ========================================
+            services.AddScoped<IStudentCourseService, StudentCourseService>();
+            services.AddScoped<IStudentBasketService, StudentBasketService>();
+            services.AddScoped<IServiceContactUsService, ServiceContactUsService>();
         }
 
         private static void ConfigureGoogleCredentials(IWebHostEnvironment environment)

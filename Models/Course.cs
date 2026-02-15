@@ -64,5 +64,9 @@ namespace HelpEmpowermentApi.Models
         public virtual ICollection<CourseLiveSession> LiveSessions { get; set; } = new List<CourseLiveSession>();
         public virtual ICollection<CourseInstructor> Instructors { get; set; } = new List<CourseInstructor>();
         public virtual ICollection<CourseTargetAudience> TargetAudiences { get; set; } = new List<CourseTargetAudience>();
+
+        // ✅ ADD: Navigation properties for new tables
+        public virtual ICollection<StudentCourse> StudentEnrollments { get; set; } = new List<StudentCourse>();
+        public virtual ICollection<StudentBasket> BasketItems { get; set; } = new List<StudentBasket>();
     }
 }

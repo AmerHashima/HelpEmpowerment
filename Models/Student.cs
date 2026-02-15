@@ -29,7 +29,7 @@ namespace HelpEmpowermentApi.Models
 
         public bool IsActive { get; set; } = true;
 
-        // ✅ NEW: Auth fields
+        // Auth fields
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiry { get; set; }
         public string? PasswordResetToken { get; set; }
@@ -42,5 +42,10 @@ namespace HelpEmpowermentApi.Models
         // Navigation properties
         public virtual ICollection<StudentExam> StudentExams { get; set; } = new List<StudentExam>();
         public virtual ICollection<CourseLiveSessionStudent> LiveSessionEnrollments { get; set; } = new List<CourseLiveSessionStudent>();
+        
+        // ✅ NEW: Navigation properties
+        public virtual ICollection<StudentCourse> EnrolledCourses { get; set; } = new List<StudentCourse>();
+        public virtual ICollection<StudentBasket> BasketItems { get; set; } = new List<StudentBasket>();
+        public virtual ICollection<ServiceContactUs> ContactRequests { get; set; } = new List<ServiceContactUs>();
     }
 }

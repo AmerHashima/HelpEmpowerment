@@ -41,6 +41,11 @@ namespace HelpEmpowermentApi.Data
         public DbSet<CourseInstructor> CourseInstructors { get; set; }
         public DbSet<CourseTargetAudience> CourseTargetAudiences { get; set; }
 
+        // Add DbSets
+        public DbSet<StudentCourse> StudentCourses { get; set; }
+        public DbSet<StudentBasket> StudentBaskets { get; set; }
+        public DbSet<ServiceContactUs> ServiceContactUs { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -167,9 +172,9 @@ namespace HelpEmpowermentApi.Data
             ConfigureBaseEntityIndexes<AppLookupHeader>(modelBuilder);
             ConfigureBaseEntityIndexes<AppLookupDetail>(modelBuilder);
 
-            // ========================================
+            // ###################################
             // NEW CONFIGURATIONS
-            // ========================================
+            // ###################################
 
             // Configure User
             modelBuilder.Entity<User>(entity =>
@@ -396,6 +401,56 @@ namespace HelpEmpowermentApi.Data
 
                 entity.HasIndex(e => e.CourseOid);
                 entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // ✅ StudentCourse configuration
+            modelBuilder.Entity<StudentCourse>(entity =>
+            {
+                entity.HasOne(sc => sc.Student)
+                    .WithMany(s => s.EnrolledCourses)
+                    .HasForeignKey(sc => sc.StudentId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(sc => sc.Course)
+                    .WithMany(c => c.StudentEnrollments)
+                    .HasForeignKey(sc => sc.CourseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => new { e.StudentId, e.CourseId }).IsUnique();
+                entity.HasIndex(e => e.PaymentStatusLookupId);
+                entity.HasIndex(e => e.EnrollmentStatusLookupId);
+                entity.HasIndex(e => e.TransactionId);
+            });
+
+            // Configure StudentBasket
+            modelBuilder.Entity<StudentBasket>(entity =>
+            {
+                entity.HasOne(sb => sb.Student)
+                    .WithMany(s => s.BasketItems)
+                    .HasForeignKey(sb => sb.StudentId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(sb => sb.Course)
+                    .WithMany(c => c.BasketItems)
+                    .HasForeignKey(sb => sb.CourseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => new { e.StudentId, e.CourseId });
+                entity.HasIndex(e => e.BasketStatusLookupId);
+            });
+
+            // Configure ServiceContactUs
+            modelBuilder.Entity<ServiceContactUs>(entity =>
+            {
+                entity.HasOne(c => c.Student)
+                    .WithMany(s => s.ContactRequests)
+                    .HasForeignKey(c => c.StudentId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.Email);
+                entity.HasIndex(e => e.TicketNumber).IsUnique();
+                entity.HasIndex(e => e.StatusLookupId);
+                entity.HasIndex(e => e.ContactTypeLookupId);
             });
         }
 
