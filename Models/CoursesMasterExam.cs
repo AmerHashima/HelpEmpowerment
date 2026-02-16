@@ -9,6 +9,7 @@ namespace HelpEmpowermentApi.Models
     {
         [Required]
         public Guid CourseOid { get; set; }
+        public string ExamName { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(150)]

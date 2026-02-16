@@ -3,6 +3,8 @@ namespace HelpEmpowermentApi.DTOs
     public class CoursesMasterExamDto
     {
         public Guid Oid { get; set; }
+        public string ExamName { get; set; } = string.Empty;
+
         public Guid CourseOid { get; set; }
         public string CourseName { get; set; } = string.Empty;
         public string? CourseCode { get; set; }
@@ -22,6 +24,8 @@ namespace HelpEmpowermentApi.DTOs
     public class CreateCoursesMasterExamDto
     {
         public Guid CourseOid { get; set; }
+        public string ExamName { get; set; } = string.Empty;
+
         public string CourseName { get; set; } = string.Empty;
         public Guid? CourseLevelLookupId { get; set; }
         public int? DurationMinutes { get; set; }
@@ -34,6 +38,8 @@ namespace HelpEmpowermentApi.DTOs
     public class UpdateCoursesMasterExamDto
     {
         public Guid Oid { get; set; }
+        public string ExamName { get; set; } = string.Empty;
+
         public Guid CourseOid { get; set; }
         public string CourseName { get; set; } = string.Empty;
         public int? DurationMinutes { get; set; }
