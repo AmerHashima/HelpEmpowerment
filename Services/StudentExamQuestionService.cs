@@ -440,5 +440,141 @@ namespace HelpEmpowermentApi.Services
                 return ApiResponse<MultipleQuestionsSubmissionResult>.ErrorResponse($"Error submitting questions: {ex.Message}");
             }
         }
+
+        public async Task<ApiResponse<AnswerValidationResult>> ValidateAnswersAsync(ValidateAnswersDto dto)
+        {
+            try
+            {
+                // Validate Student Exam exists
+                var examExists = await _studentExamRepository.ExistsAsync(e => e.Oid == dto.StudentExamOid && !e.IsDeleted);
+                if (!examExists)
+                    return ApiResponse<AnswerValidationResult>.ErrorResponse("Invalid Student Exam. Please select a valid exam.");
+
+                // Validate Question exists
+                var question = await _courseQuestionRepository.GetByIdAsync(dto.QuestionOid);
+                if (question == null)
+                    return ApiResponse<AnswerValidationResult>.ErrorResponse("Question not found");
+
+                // Get all answers for the question
+                var allAnswers = await _courseAnswerRepository.GetByQuestionIdAsync(dto.QuestionOid);
+                if (!allAnswers.Any())
+                    return ApiResponse<AnswerValidationResult>.ErrorResponse("No answers found for this question");
+
+                // Validate all submitted answers exist
+                var submittedAnswerOids = dto.Answers.Select(a => a.SelectedAnswerOid).ToList();
+                var invalidAnswers = submittedAnswerOids.Where(id => !allAnswers.Any(a => a.Oid == id)).ToList();
+                if (invalidAnswers.Any())
+                    return ApiResponse<AnswerValidationResult>.ErrorResponse("Invalid answer(s) selected");
+
+                // Validate each answer submission and determine correctness
+                bool isCorrect = true; // Start with true, will set to false if any validation fails
+                var validationErrors = new List<string>();
+
+                foreach (var answerSubmission in dto.Answers)
+                {
+                    // Find the answer in the database
+                    var dbAnswer = allAnswers.FirstOrDefault(a => a.Oid == answerSubmission.SelectedAnswerOid);
+                    if (dbAnswer == null)
+                    {
+                        isCorrect = false;
+                        validationErrors.Add($"Answer {answerSubmission.SelectedAnswerOid} not found");
+                        continue;
+                    }
+
+                    // Check if the AnswerSelectedAnswerOid matches the database CorrectAnswerOid
+                    // Answer is correct when: SelectedAnswerOid = answerOid AND AnswerSelectedAnswerOid = CorrectAnswerOid
+                    if (answerSubmission.AnswerSelectedAnswerOid.HasValue)
+                    {
+                        if (dbAnswer.CorrectAnswerOid != answerSubmission.AnswerSelectedAnswerOid.Value)
+                        {
+                            isCorrect = false;
+                            validationErrors.Add($"Answer {answerSubmission.SelectedAnswerOid}: CorrectAnswerOid mismatch. Expected {dbAnswer.CorrectAnswerOid}, got {answerSubmission.AnswerSelectedAnswerOid}");
+                        }
+                    }
+                    else
+                    {
+                        // If no AnswerSelectedAnswerOid provided but the answer has one, it's invalid
+                        if (dbAnswer.CorrectAnswerOid.HasValue)
+                        {
+                            isCorrect = false;
+                            validationErrors.Add($"Answer {answerSubmission.SelectedAnswerOid}: Missing AnswerSelectedAnswerOid. Expected {dbAnswer.CorrectAnswerOid}");
+                        }
+                        // If both are null, it's valid for this answer
+                    }
+                }
+
+                // Get correct answers using IsCorrect flag (for reference in response)
+                var correctAnswerOids = allAnswers.Where(a => a.IsCorrect).Select(a => a.Oid).ToList();
+
+                // Calculate score
+                int obtainedScore = isCorrect ? question.QuestionScore : 0;
+
+                // Delete existing answers for this question
+                var existingAnswers = await _studentExamQuestionRepository.GetByStudentExamIdAsync(dto.StudentExamOid);
+                var existingForQuestion = existingAnswers.Where(eq => eq.QuestionOid == dto.QuestionOid).ToList();
+                foreach (var existing in existingForQuestion)
+                {
+                    await _studentExamQuestionRepository.SoftDeleteAsync(existing.Oid);
+                }
+
+                // Create StudentExamQuestion rows - one for each selected answer
+                foreach (var answerId in submittedAnswerOids)
+                {
+                    // Find the corresponding AnswerSubmission for this answerId
+                    var answerSubmission = dto.Answers.FirstOrDefault(a => a.SelectedAnswerOid == answerId);
+
+                    var examQuestion = new StudentExamQuestion
+                    {
+                        StudentExamOid = dto.StudentExamOid,
+                        QuestionOid = dto.QuestionOid,
+                        SelectedAnswerOid = answerId,
+                        AnswerSelectedAnswerOid = answerSubmission?.AnswerSelectedAnswerOid,
+                        IsCorrect = isCorrect,
+                        QuestionScore = question.QuestionScore,
+                        ObtainedScore = obtainedScore,
+                        CreatedBy = dto.CreatedBy,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    await _studentExamQuestionRepository.AddAsync(examQuestion);
+                }
+
+                // Build answer details
+                var answerDetails = allAnswers.Select(a => new AnswerValidationDetail
+                {
+                    AnswerOid = a.Oid,
+                    AnswerText = a.AnswerText,
+                    IsSelected = submittedAnswerOids.Contains(a.Oid),
+                    IsCorrectAnswer = a.IsCorrect,
+                    CorrectAnswerOid = a.CorrectAnswerOid
+                }).ToList();
+
+                var message = isCorrect 
+                    ? "Correct answer!" 
+                    : validationErrors.Any() 
+                        ? $"Incorrect answer: {string.Join("; ", validationErrors)}" 
+                        : "Incorrect answer";
+
+                var result = new AnswerValidationResult
+                {
+                    Success = isCorrect,
+                    Message = message,
+                    QuestionOid = dto.QuestionOid,
+                    QuestionText = question.QuestionText,
+                    SelectedAnswerOids = submittedAnswerOids,
+                    CorrectAnswerOids = correctAnswerOids,
+                    IsCorrect = isCorrect,
+                    QuestionScore = question.QuestionScore,
+                    ObtainedScore = obtainedScore,
+                    AnswerDetails = answerDetails
+                };
+
+                return ApiResponse<AnswerValidationResult>.SuccessResponse(result, message);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<AnswerValidationResult>.ErrorResponse($"Error validating answers: {ex.Message}");
+            }
+        }
     }
 }

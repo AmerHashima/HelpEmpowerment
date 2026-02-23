@@ -14,6 +14,7 @@ namespace HelpEmpowermentApi.Models
         public Guid QuestionOid { get; set; }
 
         public Guid? SelectedAnswerOid { get; set; }
+        public Guid? AnswerSelectedAnswerOid { get; set; }
 
         public bool? IsCorrect { get; set; }
 
@@ -34,5 +35,7 @@ namespace HelpEmpowermentApi.Models
 
         [ForeignKey(nameof(SelectedAnswerOid))]
         public virtual CourseAnswer? SelectedAnswer { get; set; }
+        [ForeignKey(nameof(AnswerSelectedAnswerOid))]
+        public virtual CourseAnswer? AnswerSelectedAnswer { get; set; }
     }
 }

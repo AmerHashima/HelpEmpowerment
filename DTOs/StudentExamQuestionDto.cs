@@ -70,4 +70,41 @@ namespace HelpEmpowermentApi.DTOs
         public int QuestionScore { get; set; }
         public int ObtainedScore { get; set; }
     }
+
+    public class ValidateAnswersDto
+    {
+        public Guid StudentExamOid { get; set; }
+        public Guid QuestionOid { get; set; }
+        public List<AnswerSubmission> Answers { get; set; } = new();
+        public Guid? CreatedBy { get; set; }
+    }
+
+    public class AnswerSubmission
+    {
+        public Guid SelectedAnswerOid { get; set; }
+        public Guid? AnswerSelectedAnswerOid { get; set; }
+    }
+
+    public class AnswerValidationResult
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public Guid QuestionOid { get; set; }
+        public string? QuestionText { get; set; }
+        public List<Guid> SelectedAnswerOids { get; set; } = new();
+        public List<Guid> CorrectAnswerOids { get; set; } = new();
+        public bool IsCorrect { get; set; }
+        public int QuestionScore { get; set; }
+        public int ObtainedScore { get; set; }
+        public List<AnswerValidationDetail> AnswerDetails { get; set; } = new();
+    }
+
+    public class AnswerValidationDetail
+    {
+        public Guid AnswerOid { get; set; }
+        public string? AnswerText { get; set; }
+        public bool IsSelected { get; set; }
+        public bool IsCorrectAnswer { get; set; }
+        public Guid? CorrectAnswerOid { get; set; }
+    }
 }

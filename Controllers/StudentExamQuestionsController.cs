@@ -75,5 +75,15 @@ namespace HelpEmpowermentApi.Controllers
             return response.Success ? Ok(response) : NotFound(response);
         }
 
+        [HttpPost("validate-answers")]
+        public async Task<ActionResult<ApiResponse<string>>> ValidateAnswers([FromBody] ValidateAnswersDto dto)
+        {
+            var response = await _studentExamQuestionService.ValidateAnswersAsync(dto);
+            if (response.Success)
+            {
+                return Ok(ApiResponse<string>.SuccessResponse("submitted"));
+            }
+            return BadRequest(ApiResponse<string>.ErrorResponse(response.Message ?? "Failed to submit answers"));
+        }
     }
 }
