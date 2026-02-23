@@ -38,10 +38,27 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ApiResponse<StudentExamQuestionDto>>> Create([FromBody] CreateStudentExamQuestionDto dto)
+        public async Task<ActionResult<ApiResponse<string>>> Create([FromBody] CreateStudentExamQuestionDto dto)
         {
             var response = await _studentExamQuestionService.CreateAsync(dto);
-            return response.Success ? CreatedAtAction(nameof(GetById), new { id = response.Data?.Oid }, response) : BadRequest(response);
+            if (response.Success)
+            {
+                return Ok(ApiResponse<string>.SuccessResponse("Question submitted successfully"));
+            }
+            return BadRequest(ApiResponse<string>.ErrorResponse(response.Message ?? "Failed to submit question"));
+        }
+
+        [HttpPost("submit-multiple")]
+        public async Task<ActionResult<ApiResponse<string>>> SubmitMultiple([FromBody] SubmitMultipleQuestionsDto dto)
+        {
+            var response = await _studentExamQuestionService.SubmitMultipleQuestionsAsync(dto);
+            if (response.Success)
+            {
+                var result = response.Data;
+                var message = $"Questions submitted successfully. ";
+                return Ok(ApiResponse<string>.SuccessResponse(message));
+            }
+            return BadRequest(ApiResponse<string>.ErrorResponse(response.Message ?? "Failed to submit questions"));
         }
 
         [HttpPut]
@@ -57,5 +74,6 @@ namespace HelpEmpowermentApi.Controllers
             var response = await _studentExamQuestionService.DeleteAsync(id);
             return response.Success ? Ok(response) : NotFound(response);
         }
+
     }
 }
