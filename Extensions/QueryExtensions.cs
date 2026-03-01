@@ -72,6 +72,11 @@ namespace HelpEmpowermentApi.Extensions
             if (pagination == null || pagination.GetAll)
                 return query;
 
+            if (pagination.PageNumber < 1)
+                pagination.PageNumber = 1;
+            if (pagination.PageSize < 1)
+                pagination.PageSize = 50;
+
             var skip = (pagination.PageNumber - 1) * pagination.PageSize;
             var take = pagination.PageSize;
 
