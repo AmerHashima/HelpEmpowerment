@@ -51,6 +51,9 @@ namespace HelpEmpowermentApi.Models
 
         // Certificate
         public bool IsCertificateIssued { get; set; } = false;
+        public bool ExamSimulationReserv { get; set; } = false;
+        public bool RecordedCourseReserv { get; set; } = false;
+        public bool LiveCourseReserv { get; set; } = false;
         
         public DateTime? CertificateIssuedDate { get; set; }
         

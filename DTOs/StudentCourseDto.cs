@@ -23,6 +23,9 @@ namespace HelpEmpowermentApi.DTOs
         public int ProgressPercentage { get; set; }
         public int CompletedLessons { get; set; }
         public int TotalLessons { get; set; }
+        public bool ExamSimulationReserv { get; set; } = false;
+        public bool RecordedCourseReserv { get; set; } = false;
+        public bool LiveCourseReserv { get; set; } = false;
         public bool IsCertificateIssued { get; set; }
         public DateTime? CertificateIssuedDate { get; set; }
         public string? CertificateNumber { get; set; }
@@ -33,6 +36,9 @@ namespace HelpEmpowermentApi.DTOs
         public Guid StudentId { get; set; }
         public Guid CourseId { get; set; }
         public decimal? Price { get; set; }
+        public bool ExamSimulationReserv { get; set; } = false;
+        public bool RecordedCourseReserv { get; set; } = false;
+        public bool LiveCourseReserv { get; set; } = false;
         public decimal? DiscountAmount { get; set; }
         public string? PaymentMethod { get; set; }
         public Guid? CreatedBy { get; set; }
@@ -45,6 +51,9 @@ namespace HelpEmpowermentApi.DTOs
         public decimal? PaidAmount { get; set; }
         public string? TransactionId { get; set; }
         public DateTime? PaymentDate { get; set; }
+        public bool ExamSimulationReserv { get; set; } = false;
+        public bool RecordedCourseReserv { get; set; } = false;
+        public bool LiveCourseReserv { get; set; } = false;
         public Guid? EnrollmentStatusLookupId { get; set; }
         public int ProgressPercentage { get; set; }
         public int CompletedLessons { get; set; }

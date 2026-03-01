@@ -26,7 +26,9 @@ namespace HelpEmpowermentApi.Models
         public string? CouponCode { get; set; }
 
         public int Quantity { get; set; } = 1;
-
+        public bool ExamSimulationReserv { get; set; } = false;
+        public bool RecordedCourseReserv { get; set; } = false;
+        public bool LiveCourseReserv { get; set; } = false;
         public DateTime AddedAt { get; set; } = DateTime.UtcNow;
 
         // Basket status: Active, Abandoned, Converted

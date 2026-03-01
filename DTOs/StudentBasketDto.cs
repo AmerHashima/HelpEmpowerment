@@ -13,6 +13,9 @@ namespace HelpEmpowermentApi.DTOs
         public decimal FinalPrice { get; set; }
         public string? CouponCode { get; set; }
         public int Quantity { get; set; }
+        public bool ExamSimulationReserv { get; set; } = false;
+        public bool RecordedCourseReserv { get; set; } = false;
+        public bool LiveCourseReserv { get; set; } = false;
         public DateTime AddedAt { get; set; }
     }
 
@@ -20,6 +23,9 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid StudentId { get; set; }
         public Guid CourseId { get; set; }
+        public bool ExamSimulationReserv { get; set; } = false;
+        public bool RecordedCourseReserv { get; set; } = false;
+        public bool LiveCourseReserv { get; set; } = false;
         public string? CouponCode { get; set; }
     }
 
@@ -27,6 +33,9 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid Oid { get; set; }
         public int Quantity { get; set; }
+        public bool ExamSimulationReserv { get; set; } = false;
+        public bool RecordedCourseReserv { get; set; } = false;
+        public bool LiveCourseReserv { get; set; } = false;
         public string? CouponCode { get; set; }
     }
 
