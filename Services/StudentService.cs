@@ -11,10 +11,12 @@ namespace HelpEmpowermentApi.Services
     public class StudentService : IStudentService
     {
         private readonly IStudentRepository _studentRepository;
+        private readonly IStudentCourseRepository _studentCourseRepository;
 
-        public StudentService(IStudentRepository studentRepository)
+        public StudentService(IStudentRepository studentRepository, IStudentCourseRepository studentCourseRepository)
         {
             _studentRepository = studentRepository;
+            _studentCourseRepository = studentCourseRepository;
         }
 
         public async Task<PagedResponse<StudentDto>> GetPagedAsync(DataRequest request)
@@ -194,6 +196,54 @@ namespace HelpEmpowermentApi.Services
                 UpdatedAt = student.UpdatedAt,
                 UpdatedBy = student.UpdatedBy
             };
+        }
+
+        public async Task<PagedResponse<StudentWithCoursesDto>> GetStudentsWithCoursesAsync(DataRequest request)
+        {
+            try
+            {
+                var pagedResult = await _studentRepository.GetPagedAsync(request);
+
+                var dtos = new List<StudentWithCoursesDto>();
+                foreach (var student in pagedResult.Items)
+                {
+                    var studentCourses = await _studentCourseRepository.GetByStudentIdAsync(student.Oid);
+                    var courseNames = studentCourses
+                        .Where(sc => sc.Course != null)
+                        .Select(sc => sc.Course!.CourseName)
+                        .Distinct()
+                        .ToList();
+
+                    dtos.Add(new StudentWithCoursesDto
+                    {
+                        Oid = student.Oid,
+                        NameEn = student.NameEn,
+                        NameAr = student.NameAr,
+                        Email = student.Email,
+                        Mobile = student.Mobile,
+                        Username = student.Username,
+                        IsActive = student.IsActive,
+                        Courses = courseNames
+                    });
+                }
+
+                return new PagedResponse<StudentWithCoursesDto>
+                {
+                    Success = true,
+                    Data = dtos,
+                    TotalCount = pagedResult.TotalCount,
+                    PageNumber = pagedResult.PageNumber,
+                    PageSize = pagedResult.PageSize
+                };
+            }
+            catch (Exception ex)
+            {
+                return new PagedResponse<StudentWithCoursesDto>
+                {
+                    Success = false,
+                    Message = $"Error retrieving students with courses: {ex.Message}"
+                };
+            }
         }
 
         private string HashPassword(string password)

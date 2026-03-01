@@ -14,6 +14,19 @@
         public DateTime? UpdatedAt { get; set; }
         public Guid? UpdatedBy { get; set; }
     }
+   
+
+    public class StudentWithCoursesDto
+    {
+        public Guid Oid { get; set; }
+        public string? NameEn { get; set; }
+        public string? NameAr { get; set; }
+        public string? Email { get; set; }
+        public string? Mobile { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public List<string> Courses { get; set; } = new();
+    }
 
     public class CreateStudentDto
     {

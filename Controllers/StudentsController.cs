@@ -64,6 +64,13 @@ namespace HelpEmpowermentApi.Controllers
             var response = await _studentService.AuthenticateAsync(dto.Username, dto.Password);
             return response.Success ? Ok(response) : Unauthorized(response);
         }
+
+        [HttpPost("with-courses")]
+        public async Task<ActionResult<PagedResponse<StudentWithCoursesDto>>> StudentsWithCourses([FromBody] DataRequest request)
+        {
+            var response = await _studentService.GetStudentsWithCoursesAsync(request);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
     }
 
     public class StudentLoginDto
