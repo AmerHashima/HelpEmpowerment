@@ -136,23 +136,87 @@ namespace HelpEmpowermentApi.Controllers
 
         private async Task<string> TranslateWithMyMemory(string text, string? sourceLanguage, string targetLanguage)
         {
-            var langPair = string.IsNullOrWhiteSpace(sourceLanguage)
-                ? $"en|{targetLanguage}"
-                : $"{sourceLanguage}|{targetLanguage}";
+            // Try MyMemory first
+            try
+            {
+                var langPair = string.IsNullOrWhiteSpace(sourceLanguage)
+                    ? $"en|{targetLanguage}"
+                    : $"{sourceLanguage}|{targetLanguage}";
 
-            var encodedText = Uri.EscapeDataString(text);
-            var url = $"https://api.mymemory.translated.net/get?q={encodedText}&langpair={langPair}";
+                var encodedText = Uri.EscapeDataString(text);
+                var url = $"https://api.mymemory.translated.net/get?q={encodedText}&langpair={langPair}";
 
-            var response = await _httpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
+                var response = await _httpClient.GetAsync(url);
 
-            var json = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<MyMemoryResponse>(json);
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    // Fallback to LibreTranslate
+                    return await TranslateWithLibreTranslate(text, sourceLanguage, targetLanguage);
+                }
 
-            if (result?.ResponseData?.TranslatedText == null)
-                throw new Exception("Translation returned no result");
+                response.EnsureSuccessStatusCode();
 
-            return result.ResponseData.TranslatedText;
+                var json = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<MyMemoryResponse>(json);
+
+                if (result?.ResponseData?.TranslatedText == null)
+                    throw new Exception("Translation returned no result");
+
+                return result.ResponseData.TranslatedText;
+            }
+            catch (HttpRequestException)
+            {
+                // Fallback to LibreTranslate on any HTTP error
+                return await TranslateWithLibreTranslate(text, sourceLanguage, targetLanguage);
+            }
+        }
+
+        private async Task<string> TranslateWithLibreTranslate(string text, string? sourceLanguage, string targetLanguage)
+        {
+            var requestBody = new
+            {
+                q = text,
+                source = string.IsNullOrWhiteSpace(sourceLanguage) ? "auto" : sourceLanguage,
+                target = targetLanguage,
+                format = "text"
+            };
+
+            // Try multiple LibreTranslate instances
+            var libreTranslateUrls = new[]
+            {
+                "https://libretranslate.de/translate",
+                "https://translate.argosopentech.com/translate",
+                "https://translate.terraprint.co/translate"
+            };
+
+            foreach (var url in libreTranslateUrls)
+            {
+                try
+                {
+                    var jsonContent = new StringContent(
+                        JsonSerializer.Serialize(requestBody),
+                        System.Text.Encoding.UTF8,
+                        "application/json");
+
+                    var response = await _httpClient.PostAsync(url, jsonContent);
+
+                    if (!response.IsSuccessStatusCode)
+                        continue;
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<LibreTranslateResponse>(json);
+
+                    if (!string.IsNullOrEmpty(result?.TranslatedText))
+                        return result.TranslatedText;
+                }
+                catch
+                {
+                    // Try next instance
+                    continue;
+                }
+            }
+
+            throw new Exception("All translation services are currently unavailable. Please try again later.");
         }
     }
 
@@ -173,6 +237,12 @@ namespace HelpEmpowermentApi.Controllers
 
         [JsonPropertyName("match")]
         public double Match { get; set; }
+    }
+
+    public class LibreTranslateResponse
+    {
+        [JsonPropertyName("translatedText")]
+        public string? TranslatedText { get; set; }
     }
 
     // Request/Response DTOs
