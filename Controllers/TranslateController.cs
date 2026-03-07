@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Google.Cloud.Translation.V2; // استخدام مكتبة Google الرسمية
-using System.Threading.Tasks;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace HelpEmpowermentApi.Controllers
 {
@@ -8,64 +8,63 @@ namespace HelpEmpowermentApi.Controllers
     [Route("api/[controller]")]
     public class TranslateController : ControllerBase
     {
-        private readonly TranslationClient _client;
+        private readonly HttpClient _httpClient;
 
-        public TranslateController()
+        public TranslateController(IHttpClientFactory httpClientFactory)
         {
-            // إنشاء TranslationClient
-            _client = TranslationClient.Create();
+            _httpClient = httpClientFactory.CreateClient();
         }
 
         [HttpPost("en-to-ar")]
-        public IActionResult TranslateEnToAr([FromBody] TranslateRequest request)
+        public async Task<IActionResult> TranslateEnToAr([FromBody] TranslateRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Text))
                 return BadRequest(new { error = "Text is required" });
 
             try
             {
-                var response = _client.TranslateText(request.Text, "ar", "en");
+                var translatedText = await TranslateWithMyMemory(request.Text, "en", "ar");
 
                 return Ok(new TranslateResponse
                 {
-                    translatedText = response.TranslatedText,
-                    sourceLanguage = response.DetectedSourceLanguage,
+                    translatedText = translatedText,
+                    sourceLanguage = "en",
                     targetLanguage = "ar",
                     originalText = request.Text
                 });
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 return StatusCode(500, new { error = $"Translation failed: {ex.Message}" });
             }
         }
 
         [HttpPost("ar-to-en")]
-        public IActionResult TranslateArToEn([FromBody] TranslateRequest request)
+        public async Task<IActionResult> TranslateArToEn([FromBody] TranslateRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Text))
                 return BadRequest(new { error = "Text is required" });
 
             try
             {
-                var response = _client.TranslateText(request.Text, "en", "ar");
+                var translatedText = await TranslateWithMyMemory(request.Text, "ar", "en");
 
                 return Ok(new TranslateResponse
                 {
-                    translatedText = response.TranslatedText,
-                    sourceLanguage = response.DetectedSourceLanguage,
+                    translatedText = translatedText,
+                    sourceLanguage = "ar",
                     targetLanguage = "en",
                     originalText = request.Text
                 });
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 return StatusCode(500, new { error = $"Translation failed: {ex.Message}" });
             }
         }
 
         [HttpPost("auto")]
-        public IActionResult TranslateAuto([FromBody] TranslateAutoRequest request)
+        public async Task<IActionResult> TranslateAuto([FromBody] TranslateAutoRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Text))
                 return BadRequest(new { error = "Text is required" });
@@ -75,24 +74,24 @@ namespace HelpEmpowermentApi.Controllers
 
             try
             {
-                var response = _client.TranslateText(request.Text, request.Target);
+                var translatedText = await TranslateWithMyMemory(request.Text, null, request.Target);
 
                 return Ok(new TranslateResponse
                 {
-                    translatedText = response.TranslatedText,
-                    sourceLanguage = response.DetectedSourceLanguage,
+                    translatedText = translatedText,
+                    sourceLanguage = "auto",
                     targetLanguage = request.Target,
                     originalText = request.Text
                 });
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 return StatusCode(500, new { error = $"Translation failed: {ex.Message}" });
             }
         }
 
         [HttpPost("translate")]
-        public IActionResult Translate([FromBody] TranslateFullRequest request)
+        public async Task<IActionResult> Translate([FromBody] TranslateFullRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Text))
                 return BadRequest(new { error = "Text is required" });
@@ -103,17 +102,17 @@ namespace HelpEmpowermentApi.Controllers
             try
             {
                 var source = string.IsNullOrWhiteSpace(request.Source) ? null : request.Source;
-                var response = _client.TranslateText(request.Text, request.Target, source);
+                var translatedText = await TranslateWithMyMemory(request.Text, source, request.Target);
 
                 return Ok(new TranslateResponse
                 {
-                    translatedText = response.TranslatedText,
-                    sourceLanguage = response.DetectedSourceLanguage,
+                    translatedText = translatedText,
+                    sourceLanguage = source ?? "auto",
                     targetLanguage = request.Target,
                     originalText = request.Text
                 });
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 return StatusCode(500, new { error = $"Translation failed: {ex.Message}" });
             }
@@ -122,7 +121,6 @@ namespace HelpEmpowermentApi.Controllers
         [HttpGet("languages")]
         public IActionResult GetSupportedLanguages()
         {
-            // قائمة مختصرة، يمكن التوسع حسب الحاجة
             var languages = new List<LanguageInfo>
             {
                 new() { code = "en", name = "English" },
@@ -135,9 +133,49 @@ namespace HelpEmpowermentApi.Controllers
 
             return Ok(languages);
         }
+
+        private async Task<string> TranslateWithMyMemory(string text, string? sourceLanguage, string targetLanguage)
+        {
+            var langPair = string.IsNullOrWhiteSpace(sourceLanguage)
+                ? $"en|{targetLanguage}"
+                : $"{sourceLanguage}|{targetLanguage}";
+
+            var encodedText = Uri.EscapeDataString(text);
+            var url = $"https://api.mymemory.translated.net/get?q={encodedText}&langpair={langPair}";
+
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<MyMemoryResponse>(json);
+
+            if (result?.ResponseData?.TranslatedText == null)
+                throw new Exception("Translation returned no result");
+
+            return result.ResponseData.TranslatedText;
+        }
     }
 
-    // طلبات واستجابات
+    // MyMemory API response models
+    public class MyMemoryResponse
+    {
+        [JsonPropertyName("responseData")]
+        public MyMemoryResponseData? ResponseData { get; set; }
+
+        [JsonPropertyName("responseStatus")]
+        public int ResponseStatus { get; set; }
+    }
+
+    public class MyMemoryResponseData
+    {
+        [JsonPropertyName("translatedText")]
+        public string? TranslatedText { get; set; }
+
+        [JsonPropertyName("match")]
+        public double Match { get; set; }
+    }
+
+    // Request/Response DTOs
     public class TranslateRequest
     {
         public string Text { get; set; } = string.Empty;

@@ -19,9 +19,6 @@ namespace HelpEmpowermentApi
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // ✅ Configure Google Credentials
-            ConfigureGoogleCredentials(builder.Environment);
-
             // Register DbContext
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             {
@@ -199,58 +196,6 @@ namespace HelpEmpowermentApi
             services.AddScoped<IServiceContactUsService, ServiceContactUsService>();
         }
 
-        private static void ConfigureGoogleCredentials(IWebHostEnvironment environment)
-        {
-            const string CREDENTIAL_FILE = "test-erp-68be7-b83f4e97f6be.json";
 
-            try
-            {
-                // Define search paths in priority order
-                var searchPaths = new[]
-                {
-                    // Path 1: Common folder in content root (Local Development)
-                    Path.Combine(environment.ContentRootPath, "Common", CREDENTIAL_FILE),
-                    
-                    // Path 2: Common folder in base directory (Published App)
-                    Path.Combine(AppContext.BaseDirectory, "Common", CREDENTIAL_FILE),
-                    
-                    // Path 3: Base directory root (Docker fallback)
-                    Path.Combine(AppContext.BaseDirectory, CREDENTIAL_FILE),
-                    
-                    // Path 4: Current directory
-                    Path.Combine(Directory.GetCurrentDirectory(), "Common", CREDENTIAL_FILE)
-                };
-
-                // Try to find credentials file
-                foreach (var path in searchPaths)
-                {
-                    if (File.Exists(path))
-                    {
-                        // Set environment variable pointing to file
-                        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", path);
-
-                        Console.WriteLine("✅ Google Cloud Translation API configured");
-                        Console.WriteLine($"   Environment: {environment.EnvironmentName}");
-                        Console.WriteLine($"   Credentials: {path}");
-                        return;
-                    }
-                }
-
-                // Credentials not found
-                Console.WriteLine("⚠️  Google Cloud credentials not found");
-                Console.WriteLine($"   Translation API will be unavailable");
-                Console.WriteLine($"   Searched paths:");
-                foreach (var path in searchPaths)
-                {
-                    Console.WriteLine($"     - {path}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Error loading Google credentials: {ex.Message}");
-            }
-        }
-
-      
     }
 }
