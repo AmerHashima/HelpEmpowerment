@@ -9,6 +9,9 @@ namespace HelpEmpowermentApi.DTOs
         public bool? IsCorrect { get; set; }
         public int? QuestionScore { get; set; }
         public int? ObtainedScore { get; set; }
+        public Guid? QuestionStatusLookupId { get; set; }
+        public string? QuestionStatusName { get; set; }
+
         public List<StudentExamQuestionAnswerDto> Answers { get; set; } = new();
         public DateTime? CreatedAt { get; set; }
         public Guid? CreatedBy { get; set; }
@@ -27,6 +30,8 @@ namespace HelpEmpowermentApi.DTOs
     public class CreateStudentExamQuestionDto
     {
         public Guid StudentExamOid { get; set; }
+        public Guid? QuestionStatusLookupId { get; set; }
+
         public Guid QuestionOid { get; set; }
         public List<Guid> SelectedAnswerOids { get; set; } = new();
         public Guid? CreatedBy { get; set; }
@@ -35,6 +40,8 @@ namespace HelpEmpowermentApi.DTOs
     public class UpdateStudentExamQuestionDto
     {
         public Guid Oid { get; set; }
+        public Guid? QuestionStatusLookupId { get; set; }
+
         public List<Guid> SelectedAnswerOids { get; set; } = new();
         public bool? IsCorrect { get; set; }
         public int? QuestionScore { get; set; }

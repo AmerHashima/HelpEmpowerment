@@ -477,6 +477,7 @@ namespace HelpEmpowermentApi.Data
             var courseLevelHeaderId = Guid.Parse("11111111-1111-1111-1111-111111111111");
             var courseCategoryHeaderId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var questionTypeHeaderId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+            var questionStatusHeaderId = Guid.Parse("44444444-4444-4444-4444-444444444444");
 
             // Seed Lookup Headers
             modelBuilder.Entity<AppLookupHeader>().HasData(
@@ -506,6 +507,16 @@ namespace HelpEmpowermentApi.Data
                     LookupCode = "QUESTION_TYPE",
                     LookupNameAr = "نوع السؤال",
                     LookupNameEn = "Question Type",
+                    IsActive = true,
+                    CreatedAt = seedDate,
+                    CreatedBy = null
+                },
+                new AppLookupHeader
+                {
+                    Oid = questionStatusHeaderId,
+                    LookupCode = "QUESTION_STATUS",
+                    LookupNameAr = "حالة السؤال",
+                    LookupNameEn = "Question Status",
                     IsActive = true,
                     CreatedAt = seedDate,
                     CreatedBy = null
@@ -722,6 +733,46 @@ namespace HelpEmpowermentApi.Data
                     LookupNameAr = "مطابقة",
                     LookupNameEn = "Matching",
                     OrderNo = 6,
+                    IsActive = true,
+                    CreatedAt = seedDate,
+                    CreatedBy = null
+                }
+            );
+
+            // Seed Lookup Details - Question Status
+            modelBuilder.Entity<AppLookupDetail>().HasData(
+                new AppLookupDetail
+                {
+                    Oid = Guid.Parse("44444444-4444-4444-4444-444444444401"),
+                    LookupHeaderId = questionStatusHeaderId,
+                    LookupValue = "CORRECT",
+                    LookupNameAr = "صحيح",
+                    LookupNameEn = "Correct",
+                    OrderNo = 1,
+                    IsActive = true,
+                    CreatedAt = seedDate,
+                    CreatedBy = null
+                },
+                new AppLookupDetail
+                {
+                    Oid = Guid.Parse("44444444-4444-4444-4444-444444444402"),
+                    LookupHeaderId = questionStatusHeaderId,
+                    LookupValue = "INCORRECT",
+                    LookupNameAr = "غير صحيح",
+                    LookupNameEn = "Incorrect",
+                    OrderNo = 2,
+                    IsActive = true,
+                    CreatedAt = seedDate,
+                    CreatedBy = null
+                },
+                new AppLookupDetail
+                {
+                    Oid = Guid.Parse("44444444-4444-4444-4444-444444444403"),
+                    LookupHeaderId = questionStatusHeaderId,
+                    LookupValue = "NOT_ANSWERED",
+                    LookupNameAr = "لم يتم الإجابة",
+                    LookupNameEn = "Not Answered",
+                    OrderNo = 3,
                     IsActive = true,
                     CreatedAt = seedDate,
                     CreatedBy = null

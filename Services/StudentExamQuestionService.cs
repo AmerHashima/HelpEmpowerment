@@ -8,6 +8,11 @@ namespace HelpEmpowermentApi.Services
 {
     public class StudentExamQuestionService : IStudentExamQuestionService
     {
+        // Question Status Lookup IDs
+        private static readonly Guid QuestionStatusCorrect = Guid.Parse("44444444-4444-4444-4444-444444444401");
+        private static readonly Guid QuestionStatusIncorrect = Guid.Parse("44444444-4444-4444-4444-444444444402");
+        private static readonly Guid QuestionStatusNotAnswered = Guid.Parse("44444444-4444-4444-4444-444444444403");
+
         private readonly IStudentExamQuestionRepository _studentExamQuestionRepository;
         private readonly IStudentExamQuestionAnswerRepository _studentExamQuestionAnswerRepository;
         private readonly IStudentExamRepository _studentExamRepository;
@@ -126,6 +131,7 @@ namespace HelpEmpowermentApi.Services
                 {
                     // Update existing question row
                     examQuestion.IsCorrect = isCorrect;
+                    examQuestion.QuestionStatusLookupId = isCorrect ? QuestionStatusCorrect : QuestionStatusIncorrect;
                     examQuestion.QuestionScore = question.QuestionScore;
                     examQuestion.ObtainedScore = obtainedScore;
                     examQuestion.UpdatedBy = dto.CreatedBy;
@@ -143,6 +149,7 @@ namespace HelpEmpowermentApi.Services
                         StudentExamOid = dto.StudentExamOid,
                         QuestionOid = dto.QuestionOid,
                         IsCorrect = isCorrect,
+                        QuestionStatusLookupId = isCorrect ? QuestionStatusCorrect : QuestionStatusIncorrect,
                         QuestionScore = question.QuestionScore,
                         ObtainedScore = obtainedScore,
                         CreatedBy = dto.CreatedBy,
@@ -200,6 +207,7 @@ namespace HelpEmpowermentApi.Services
                     var obtainedScore = isCorrect ? examQuestion.QuestionScore ?? 0 : 0;
 
                     examQuestion.IsCorrect = isCorrect;
+                    examQuestion.QuestionStatusLookupId = isCorrect ? QuestionStatusCorrect : QuestionStatusIncorrect;
                     examQuestion.ObtainedScore = obtainedScore;
                     examQuestion.UpdatedBy = dto.UpdatedBy;
                     examQuestion.UpdatedAt = DateTime.UtcNow;
@@ -264,6 +272,8 @@ namespace HelpEmpowermentApi.Services
                 QuestionOid = examQuestion.QuestionOid,
                 QuestionText = examQuestion.Question?.QuestionText,
                 IsCorrect = examQuestion.IsCorrect,
+                QuestionStatusLookupId = examQuestion.QuestionStatusLookupId,
+                QuestionStatusName = examQuestion.QuestionStatus?.LookupNameEn,
                 QuestionScore = examQuestion.QuestionScore,
                 ObtainedScore = examQuestion.ObtainedScore,
                 Answers = examQuestion.Answers?
@@ -384,6 +394,9 @@ namespace HelpEmpowermentApi.Services
                         if (existingQuestion != null)
                         {
                             existingQuestion.IsCorrect = isCorrect;
+                            existingQuestion.QuestionStatusLookupId = (questionSubmission.SelectedAnswerOids != null && questionSubmission.SelectedAnswerOids.Any())
+                                ? (isCorrect ? QuestionStatusCorrect : QuestionStatusIncorrect)
+                                : QuestionStatusNotAnswered;
                             existingQuestion.QuestionScore = question.QuestionScore;
                             existingQuestion.ObtainedScore = questionObtainedScore;
                             existingQuestion.UpdatedBy = dto.CreatedBy;
@@ -402,6 +415,9 @@ namespace HelpEmpowermentApi.Services
                                 StudentExamOid = dto.StudentExamOid,
                                 QuestionOid = questionSubmission.QuestionOid,
                                 IsCorrect = isCorrect,
+                                QuestionStatusLookupId = (questionSubmission.SelectedAnswerOids != null && questionSubmission.SelectedAnswerOids.Any())
+                                    ? (isCorrect ? QuestionStatusCorrect : QuestionStatusIncorrect)
+                                    : QuestionStatusNotAnswered,
                                 QuestionScore = question.QuestionScore,
                                 ObtainedScore = questionObtainedScore,
                                 CreatedBy = dto.CreatedBy,
@@ -555,6 +571,7 @@ namespace HelpEmpowermentApi.Services
                 if (examQuestion != null)
                 {
                     examQuestion.IsCorrect = isCorrect;
+                    examQuestion.QuestionStatusLookupId = isCorrect ? QuestionStatusCorrect : QuestionStatusIncorrect;
                     examQuestion.QuestionScore = question.QuestionScore;
                     examQuestion.ObtainedScore = obtainedScore;
                     examQuestion.UpdatedBy = dto.CreatedBy;
@@ -568,6 +585,7 @@ namespace HelpEmpowermentApi.Services
                         StudentExamOid = dto.StudentExamOid,
                         QuestionOid = dto.QuestionOid,
                         IsCorrect = isCorrect,
+                        QuestionStatusLookupId = isCorrect ? QuestionStatusCorrect : QuestionStatusIncorrect,
                         QuestionScore = question.QuestionScore,
                         ObtainedScore = obtainedScore,
                         CreatedBy = dto.CreatedBy,
