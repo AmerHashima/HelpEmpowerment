@@ -64,5 +64,12 @@ namespace HelpEmpowermentApi.Controllers
             var response = await _studentExamService.DeleteAsync(id);
             return response.Success ? Ok(response) : NotFound(response);
         }
+
+        [HttpPost("summary")]
+        public async Task<ActionResult<ApiResponse<StudentExamSummaryDto>>> GetStudentExamSummary([FromBody] StudentExamSummaryRequestDto request)
+        {
+            var response = await _studentExamService.GetStudentExamSummaryAsync(request.StudentId, request.ExamId);
+            return response.Success ? Ok(response) : NotFound(response);
+        }
     }
 }

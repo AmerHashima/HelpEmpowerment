@@ -150,6 +150,7 @@ namespace HelpEmpowermentApi.Services
                 }
 
                 // Create student exam questions
+                var questionStatusNotAnswered = Guid.Parse("44444444-4444-4444-4444-444444444403");
                 int totalScore = 0;
                 foreach (var question in questions)
                 {
@@ -157,6 +158,7 @@ namespace HelpEmpowermentApi.Services
                     {
                         StudentExamOid = createdExam.Oid,
                         QuestionOid = question.Oid,
+                        QuestionStatusLookupId = questionStatusNotAnswered,
                         QuestionScore = question.QuestionScore,
                         CreatedAt = DateTime.UtcNow
                     };
@@ -309,6 +311,73 @@ namespace HelpEmpowermentApi.Services
                     UpdatedBy = q.UpdatedBy
                 }).ToList()
             };
+        }
+
+        public async Task<ApiResponse<StudentExamSummaryDto>> GetStudentExamSummaryAsync(Guid studentId, Guid examId)
+        {
+            try
+            {
+                // Get the last exam for this student and master exam
+                var studentExams = await _studentExamRepository.GetByStudentIdAsync(studentId);
+                var lastExam = studentExams
+                    .Where(e => e.CoursesMasterExamOid == examId)
+                    .FirstOrDefault();
+                if (lastExam == null)
+                    return ApiResponse<StudentExamSummaryDto>.ErrorResponse("No exams found for this student and exam");
+
+                // Get questions with status for the last exam
+                var examQuestions = await _studentExamQuestionRepository.GetByStudentExamIdAsync(lastExam.Oid);
+
+                int totalQuestions = examQuestions.Count;
+
+                // Group by QuestionStatusLookupId
+                var statusGroups = examQuestions
+                    .GroupBy(q => new
+                    {
+                        q.QuestionStatusLookupId,
+                        StatusName = q.QuestionStatus?.LookupNameEn
+                    })
+                    .Select(g => new QuestionStatusSummaryDto
+                    {
+                        QuestionStatusLookupId = g.Key.QuestionStatusLookupId,
+                        StatusName = g.Key.StatusName,
+                        Count = g.Count(),
+                        Percentage = totalQuestions > 0
+                            ? Math.Round((decimal)g.Count() / totalQuestions * 100, 2)
+                            : 0
+                    })
+                    .OrderBy(s => s.StatusName)
+                    .ToList();
+
+                int totalScore = examQuestions.Sum(q => q.QuestionScore ?? 0);
+                int obtainedScore = examQuestions.Sum(q => q.ObtainedScore ?? 0);
+                decimal percentage = totalScore > 0
+                    ? Math.Round((decimal)obtainedScore / totalScore * 100, 2)
+                    : 0;
+
+                var summary = new StudentExamSummaryDto
+                {
+                    StudentExamOid = lastExam.Oid,
+                    StudentOid = lastExam.StudentOid,
+                    StudentName = lastExam.Student?.NameEn ?? lastExam.Student?.Username,
+                    ExamName = lastExam.MasterExam?.CourseName,
+                    AttemptNo = lastExam.AttemptNo,
+                    TotalScore = totalScore,
+                    ObtainedScore = obtainedScore,
+                    Percentage = percentage,
+                    IsPassed = lastExam.IsPassed,
+                    StartedAt = lastExam.StartedAt,
+                    FinishedAt = lastExam.FinishedAt,
+                    TotalQuestions = totalQuestions,
+                    StatusSummary = statusGroups
+                };
+
+                return ApiResponse<StudentExamSummaryDto>.SuccessResponse(summary);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<StudentExamSummaryDto>.ErrorResponse($"Error retrieving exam summary: {ex.Message}");
+            }
         }
     }
 }

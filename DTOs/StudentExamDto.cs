@@ -56,4 +56,35 @@ namespace HelpEmpowermentApi.DTOs
         public Guid QuestionOid { get; set; }
         public Guid? SelectedAnswerOid { get; set; }
     }
+
+    public class StudentExamSummaryRequestDto
+    {
+        public Guid StudentId { get; set; }
+        public Guid ExamId { get; set; }
+    }
+
+    public class StudentExamSummaryDto
+    {
+        public Guid StudentExamOid { get; set; }
+        public Guid StudentOid { get; set; }
+        public string? StudentName { get; set; }
+        public string? ExamName { get; set; }
+        public int AttemptNo { get; set; }
+        public int? TotalScore { get; set; }
+        public int? ObtainedScore { get; set; }
+        public decimal? Percentage { get; set; }
+        public bool? IsPassed { get; set; }
+        public DateTime? StartedAt { get; set; }
+        public DateTime? FinishedAt { get; set; }
+        public int TotalQuestions { get; set; }
+        public List<QuestionStatusSummaryDto> StatusSummary { get; set; } = new();
+    }
+
+    public class QuestionStatusSummaryDto
+    {
+        public Guid? QuestionStatusLookupId { get; set; }
+        public string? StatusName { get; set; }
+        public int Count { get; set; }
+        public decimal Percentage { get; set; }
+    }
 }
