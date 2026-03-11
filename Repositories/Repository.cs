@@ -43,7 +43,16 @@ namespace HelpEmpowermentApi.Repositories
         public async Task<T> UpdateAsync(T entity)
         {
             entity.UpdatedAt = DateTime.UtcNow;
-            _dbSet.Update(entity);
+
+            var tracked = _context.ChangeTracker.Entries<T>()
+                .FirstOrDefault(e => e.Entity.Oid == entity.Oid);
+
+            if (tracked != null && tracked.Entity != entity)
+            {
+                tracked.State = EntityState.Detached;
+            }
+
+            _context.Entry(entity).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return entity;
         }

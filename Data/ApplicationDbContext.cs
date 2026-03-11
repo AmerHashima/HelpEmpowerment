@@ -32,6 +32,7 @@ namespace HelpEmpowermentApi.Data
         // NEW DbSets - STUDENT EXAMS
         public DbSet<StudentExam> StudentExams { get; set; }
         public DbSet<StudentExamQuestion> StudentExamQuestions { get; set; }
+        public DbSet<StudentExamQuestionAnswer> StudentExamQuestionAnswers { get; set; }
 
         // NEW DbSets - LIVE SESSIONS
         public DbSet<CourseLiveSession> CourseLiveSessions { get; set; }
@@ -331,14 +332,28 @@ namespace HelpEmpowermentApi.Data
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired(true);
 
-                entity.HasOne(seq => seq.SelectedAnswer)
-                    .WithMany()
-                    .HasForeignKey(seq => seq.SelectedAnswerOid)
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .IsRequired(false);
-
                 entity.HasIndex(e => e.StudentExamOid);
                 entity.HasIndex(e => e.QuestionOid);
+                entity.HasIndex(e => e.IsDeleted);
+                entity.HasIndex(e => new { e.StudentExamOid, e.QuestionOid });
+            });
+
+            // Configure StudentExamQuestionAnswer
+            modelBuilder.Entity<StudentExamQuestionAnswer>(entity =>
+            {
+                entity.HasOne(a => a.StudentExamQuestion)
+                    .WithMany(q => q.Answers)
+                    .HasForeignKey(a => a.StudentExamQuestionOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasOne(a => a.SelectedAnswer)
+                    .WithMany()
+                    .HasForeignKey(a => a.SelectedAnswerOid)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasIndex(e => e.StudentExamQuestionOid);
                 entity.HasIndex(e => e.IsDeleted);
             });
 

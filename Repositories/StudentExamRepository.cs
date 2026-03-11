@@ -70,7 +70,7 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
                     .ThenInclude(eq => eq.Question)
                 .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
-                    .ThenInclude(eq => eq.SelectedAnswer)
+                   // .ThenInclude(eq => eq.SelectedAnswer)
                 .FirstOrDefaultAsync(se => se.Oid == id && !se.IsDeleted);
         }
 

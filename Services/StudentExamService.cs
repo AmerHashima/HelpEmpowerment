@@ -165,7 +165,7 @@ namespace HelpEmpowermentApi.Services
                 }
 
                 // Update total score
-                createdExam.TotalScore = totalScore;
+                createdExam.TotalScore = 0;
                 await _studentExamRepository.UpdateAsync(createdExam);
 
                 return ApiResponse<StudentExamDto>.SuccessResponse(MapToDto(createdExam), "Exam started successfully");
@@ -184,43 +184,23 @@ namespace HelpEmpowermentApi.Services
                 if (studentExam == null)
                     return ApiResponse<StudentExamDto>.ErrorResponse("Student exam not found");
 
-                int obtainedScore = 0;
+                // Calculate scores from existing question rows
+                int totalScore = studentExam.ExamQuestions
+                    .Where(q => !q.IsDeleted)
+                    .Sum(q => q.QuestionScore ?? 0);
 
-                // Process each answer
-                foreach (var answer in dto.Answers)
-                {
-                    var examQuestion = studentExam.ExamQuestions.FirstOrDefault(q => q.QuestionOid == answer.QuestionOid);
-                    if (examQuestion == null) continue;
-
-                    // Get the correct answer
-                    var correctAnswer = await _courseAnswerRepository.FindAsync(
-                        a => a.QuestionId == answer.QuestionOid && a.IsCorrect && !a.IsDeleted);
-                    var correctAnswerId = correctAnswer.FirstOrDefault()?.Oid;
-
-                    // Check if answer is correct
-                    bool isCorrect = answer.SelectedAnswerOid == correctAnswerId;
-                    int questionScore = examQuestion.QuestionScore ?? 0;
-                    int scoreObtained = isCorrect ? questionScore : 0;
-
-                    // Update student exam question
-                    examQuestion.SelectedAnswerOid = answer.SelectedAnswerOid;
-                    examQuestion.IsCorrect = isCorrect;
-                    examQuestion.ObtainedScore = scoreObtained;
-                    examQuestion.UpdatedBy = dto.UpdatedBy;
-                    examQuestion.UpdatedAt = DateTime.UtcNow;
-
-                    await _studentExamQuestionRepository.UpdateAsync(examQuestion);
-
-                    obtainedScore += scoreObtained;
-                }
+                int obtainedScore = studentExam.ExamQuestions
+                    .Where(q => !q.IsDeleted)
+                    .Sum(q => q.ObtainedScore ?? 0);
 
                 // Calculate percentage and pass status
-                decimal percentage = studentExam.TotalScore > 0 
-                    ? (decimal)obtainedScore / studentExam.TotalScore.Value * 100 
+                decimal percentage = totalScore > 0
+                    ? (decimal)obtainedScore / totalScore * 100
                     : 0;
                 bool isPassed = percentage >= (studentExam.PassPercent ?? 60);
 
                 // Update student exam
+                studentExam.TotalScore = totalScore;
                 studentExam.ObtainedScore = obtainedScore;
                 studentExam.IsPassed = isPassed;
                 studentExam.FinishedAt = DateTime.UtcNow;
@@ -229,8 +209,14 @@ namespace HelpEmpowermentApi.Services
 
                 var updatedExam = await _studentExamRepository.UpdateAsync(studentExam);
 
-                return ApiResponse<StudentExamDto>.SuccessResponse(MapToDto(updatedExam), 
-                    isPassed ? "Exam submitted successfully. You passed!" : "Exam submitted successfully. You did not pass.");
+                var resultDto = MapToDto(updatedExam);
+                resultDto.Percentage = Math.Round(percentage, 2);
+
+                var message = isPassed
+                    ? $"Exam submitted successfully. You passed! Score: {obtainedScore}/{totalScore} ({Math.Round(percentage, 2)}%)"
+                    : $"Exam submitted successfully. You did not pass. Score: {obtainedScore}/{totalScore} ({Math.Round(percentage, 2)}%)";
+
+                return ApiResponse<StudentExamDto>.SuccessResponse(resultDto, message);
             }
             catch (Exception ex)
             {
@@ -307,11 +293,16 @@ namespace HelpEmpowermentApi.Services
                     StudentExamOid = q.StudentExamOid,
                     QuestionOid = q.QuestionOid,
                     QuestionText = q.Question?.QuestionText,
-                    SelectedAnswerOid = q.SelectedAnswerOid,
-                    SelectedAnswerText = q.SelectedAnswer?.AnswerText,
                     IsCorrect = q.IsCorrect,
                     QuestionScore = q.QuestionScore,
                     ObtainedScore = q.ObtainedScore,
+                    Answers = q.Answers?.Where(a => !a.IsDeleted).Select(a => new StudentExamQuestionAnswerDto
+                    {
+                        Oid = a.Oid,
+                        SelectedAnswerOid = a.SelectedAnswerOid,
+                        SelectedAnswerText = a.SelectedAnswer?.AnswerText,
+                        AnswerSelectedAnswerOid = a.AnswerSelectedAnswerOid
+                    }).ToList() ?? new List<StudentExamQuestionAnswerDto>(),
                     CreatedAt = q.CreatedAt,
                     CreatedBy = q.CreatedBy,
                     UpdatedAt = q.UpdatedAt,

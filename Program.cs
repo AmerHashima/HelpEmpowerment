@@ -153,6 +153,7 @@ namespace HelpEmpowermentApi
             services.AddScoped<ICourseVideoAttachmentRepository, CourseVideoAttachmentRepository>();
             services.AddScoped<IStudentExamRepository, StudentExamRepository>();
             services.AddScoped<IStudentExamQuestionRepository, StudentExamQuestionRepository>();
+            services.AddScoped<IStudentExamQuestionAnswerRepository, StudentExamQuestionAnswerRepository>();
             services.AddScoped<ICourseLiveSessionRepository, CourseLiveSessionRepository>();
             services.AddScoped<ICourseLiveSessionStudentRepository, CourseLiveSessionStudentRepository>();
             services.AddScoped<ICourseInstructorRepository, CourseInstructorRepository>();

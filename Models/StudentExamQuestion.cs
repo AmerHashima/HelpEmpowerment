@@ -13,9 +13,6 @@ namespace HelpEmpowermentApi.Models
         [Required]
         public Guid QuestionOid { get; set; }
 
-        public Guid? SelectedAnswerOid { get; set; }
-        public Guid? AnswerSelectedAnswerOid { get; set; }
-
         public bool? IsCorrect { get; set; }
 
         public int? QuestionScore { get; set; }
@@ -33,9 +30,6 @@ namespace HelpEmpowermentApi.Models
         [ForeignKey(nameof(QuestionOid))]
         public virtual CourseQuestion? Question { get; set; }
 
-        [ForeignKey(nameof(SelectedAnswerOid))]
-        public virtual CourseAnswer? SelectedAnswer { get; set; }
-        [ForeignKey(nameof(AnswerSelectedAnswerOid))]
-        public virtual CourseAnswer? AnswerSelectedAnswer { get; set; }
+        public virtual ICollection<StudentExamQuestionAnswer> Answers { get; set; } = new List<StudentExamQuestionAnswer>();
     }
 }

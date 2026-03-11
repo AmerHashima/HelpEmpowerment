@@ -9,17 +9,20 @@ namespace HelpEmpowermentApi.Services
     public class StudentExamQuestionService : IStudentExamQuestionService
     {
         private readonly IStudentExamQuestionRepository _studentExamQuestionRepository;
+        private readonly IStudentExamQuestionAnswerRepository _studentExamQuestionAnswerRepository;
         private readonly IStudentExamRepository _studentExamRepository;
         private readonly ICourseQuestionRepository _courseQuestionRepository;
         private readonly ICourseAnswerRepository _courseAnswerRepository;
 
         public StudentExamQuestionService(
             IStudentExamQuestionRepository studentExamQuestionRepository,
+            IStudentExamQuestionAnswerRepository studentExamQuestionAnswerRepository,
             IStudentExamRepository studentExamRepository,
             ICourseQuestionRepository courseQuestionRepository,
             ICourseAnswerRepository courseAnswerRepository)
         {
             _studentExamQuestionRepository = studentExamQuestionRepository;
+            _studentExamQuestionAnswerRepository = studentExamQuestionAnswerRepository;
             _studentExamRepository = studentExamRepository;
             _courseQuestionRepository = courseQuestionRepository;
             _courseAnswerRepository = courseAnswerRepository;
@@ -72,24 +75,8 @@ namespace HelpEmpowermentApi.Services
             try
             {
                 var examQuestions = await _studentExamQuestionRepository.GetByStudentExamIdAsync(studentExamId);
-
-                // Group by question to combine multiple answer rows
-                var groupedQuestions = examQuestions
-                    .GroupBy(eq => eq.QuestionOid)
-                    .Select(g =>
-                    {
-                        var first = g.First();
-                        var dto = MapToDto(first);
-                        // Collect all selected answer IDs for this question
-                        dto.SelectedAnswerOids = g
-                            .Where(eq => eq.SelectedAnswerOid.HasValue)
-                            .Select(eq => eq.SelectedAnswerOid!.Value)
-                            .ToList();
-                        return dto;
-                    })
-                    .ToList();
-
-                return ApiResponse<List<StudentExamQuestionDto>>.SuccessResponse(groupedQuestions);
+                var dtos = examQuestions.Select(MapToDto).ToList();
+                return ApiResponse<List<StudentExamQuestionDto>>.SuccessResponse(dtos);
             }
             catch (Exception ex)
             {
@@ -131,37 +118,57 @@ namespace HelpEmpowermentApi.Services
                 bool isCorrect = selectedSet.SequenceEqual(correctSet);
                 int obtainedScore = isCorrect ? question.QuestionScore : 0;
 
-                // Delete existing answers for this question
-                var existingAnswers = await _studentExamQuestionRepository.GetByStudentExamIdAsync(dto.StudentExamOid);
-                var existingForQuestion = existingAnswers.Where(eq => eq.QuestionOid == dto.QuestionOid).ToList();
-                foreach (var existing in existingForQuestion)
-                {
-                    await _studentExamQuestionRepository.SoftDeleteAsync(existing.Oid);
-                }
+                // Find or create the question row
+                var existingQuestions = await _studentExamQuestionRepository.GetByStudentExamIdAsync(dto.StudentExamOid);
+                var examQuestion = existingQuestions.FirstOrDefault(eq => eq.QuestionOid == dto.QuestionOid);
 
-                // Create multiple rows - one for each selected answer
-                StudentExamQuestion? firstCreatedQuestion = null;
-                foreach (var answerId in dto.SelectedAnswerOids)
+                if (examQuestion != null)
                 {
-                    var examQuestion = new StudentExamQuestion
+                    // Update existing question row
+                    examQuestion.IsCorrect = isCorrect;
+                    examQuestion.QuestionScore = question.QuestionScore;
+                    examQuestion.ObtainedScore = obtainedScore;
+                    examQuestion.UpdatedBy = dto.CreatedBy;
+                    examQuestion.UpdatedAt = DateTime.UtcNow;
+                    await _studentExamQuestionRepository.UpdateAsync(examQuestion);
+
+                    // Update answers
+                    await UpdateAnswersForQuestion(examQuestion.Oid, dto.SelectedAnswerOids, dto.CreatedBy);
+                }
+                else
+                {
+                    // Create new question row
+                    examQuestion = new StudentExamQuestion
                     {
                         StudentExamOid = dto.StudentExamOid,
                         QuestionOid = dto.QuestionOid,
-                        SelectedAnswerOid = answerId,
                         IsCorrect = isCorrect,
                         QuestionScore = question.QuestionScore,
                         ObtainedScore = obtainedScore,
                         CreatedBy = dto.CreatedBy,
                         CreatedAt = DateTime.UtcNow
                     };
+                    examQuestion = await _studentExamQuestionRepository.AddAsync(examQuestion);
 
-                    var created = await _studentExamQuestionRepository.AddAsync(examQuestion);
-                    if (firstCreatedQuestion == null)
-                        firstCreatedQuestion = created;
+                    // Create answer rows
+                    foreach (var answerId in dto.SelectedAnswerOids)
+                    {
+                        var answerRow = new StudentExamQuestionAnswer
+                        {
+                            StudentExamQuestionOid = examQuestion.Oid,
+                            SelectedAnswerOid = answerId,
+                            CreatedBy = dto.CreatedBy,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        await _studentExamQuestionAnswerRepository.AddAsync(answerRow);
+                    }
                 }
 
+                // Recalculate total score for the student exam
+                await CalcAndUpdateStudentExamScoreAsync(dto.StudentExamOid);
+
                 return ApiResponse<StudentExamQuestionDto>.SuccessResponse(
-                    MapToDto(firstCreatedQuestion!), 
+                    MapToDto(examQuestion),
                     "Student exam question created successfully");
             }
             catch (Exception ex)
@@ -178,66 +185,38 @@ namespace HelpEmpowermentApi.Services
                 if (examQuestion == null)
                     return ApiResponse<StudentExamQuestionDto>.ErrorResponse("Student exam question not found");
 
-                // Validate answers if provided
                 if (dto.SelectedAnswerOids != null && dto.SelectedAnswerOids.Any())
                 {
-                    // Get all answers for the question
                     var allAnswers = await _courseAnswerRepository.GetByQuestionIdAsync(examQuestion.QuestionOid);
 
-                    // Validate all selected answers exist
                     var invalidAnswers = dto.SelectedAnswerOids.Where(id => !allAnswers.Any(a => a.Oid == id)).ToList();
                     if (invalidAnswers.Any())
                         return ApiResponse<StudentExamQuestionDto>.ErrorResponse("Invalid Answer(s). Please select valid answers.");
 
-                    // Get correct answers for the question
                     var correctAnswerOids = allAnswers.Where(a => a.IsCorrect).Select(a => a.Oid).ToList();
-
-                    // Check if selected answers match correct answers exactly
                     var selectedSet = dto.SelectedAnswerOids.OrderBy(x => x).ToList();
                     var correctSet = correctAnswerOids.OrderBy(x => x).ToList();
                     var isCorrect = selectedSet.SequenceEqual(correctSet);
-
-                    // Calculate score
                     var obtainedScore = isCorrect ? examQuestion.QuestionScore ?? 0 : 0;
 
-                    // Delete all existing answers for this question
-                    var existingAnswers = await _studentExamQuestionRepository.GetByStudentExamIdAsync(examQuestion.StudentExamOid);
-                    var existingForQuestion = existingAnswers.Where(eq => eq.QuestionOid == examQuestion.QuestionOid).ToList();
-                    foreach (var existing in existingForQuestion)
-                    {
-                        await _studentExamQuestionRepository.SoftDeleteAsync(existing.Oid);
-                    }
+                    examQuestion.IsCorrect = isCorrect;
+                    examQuestion.ObtainedScore = obtainedScore;
+                    examQuestion.UpdatedBy = dto.UpdatedBy;
+                    examQuestion.UpdatedAt = DateTime.UtcNow;
+                    await _studentExamQuestionRepository.UpdateAsync(examQuestion);
 
-                    // Create new rows for each selected answer
-                    StudentExamQuestion? firstCreatedQuestion = null;
-                    foreach (var answerId in dto.SelectedAnswerOids)
-                    {
-                        var newExamQuestion = new StudentExamQuestion
-                        {
-                            StudentExamOid = examQuestion.StudentExamOid,
-                            QuestionOid = examQuestion.QuestionOid,
-                            SelectedAnswerOid = answerId,
-                            IsCorrect = isCorrect,
-                            QuestionScore = examQuestion.QuestionScore,
-                            ObtainedScore = obtainedScore,
-                            CreatedBy = examQuestion.CreatedBy,
-                            CreatedAt = examQuestion.CreatedAt,
-                            UpdatedBy = dto.UpdatedBy,
-                            UpdatedAt = DateTime.UtcNow
-                        };
+                    // Update answers
+                    await UpdateAnswersForQuestion(examQuestion.Oid, dto.SelectedAnswerOids, dto.UpdatedBy);
 
-                        var created = await _studentExamQuestionRepository.AddAsync(newExamQuestion);
-                        if (firstCreatedQuestion == null)
-                            firstCreatedQuestion = created;
-                    }
+                    // Recalculate total score for the student exam
+                    await CalcAndUpdateStudentExamScoreAsync(examQuestion.StudentExamOid);
 
                     return ApiResponse<StudentExamQuestionDto>.SuccessResponse(
-                        MapToDto(firstCreatedQuestion!), 
+                        MapToDto(examQuestion),
                         "Student exam question updated successfully");
                 }
                 else if (dto.IsCorrect.HasValue || dto.ObtainedScore.HasValue || dto.QuestionScore.HasValue)
                 {
-                    // Manual override of values
                     examQuestion.IsCorrect = dto.IsCorrect ?? examQuestion.IsCorrect;
                     examQuestion.QuestionScore = dto.QuestionScore ?? examQuestion.QuestionScore;
                     examQuestion.ObtainedScore = dto.ObtainedScore ?? examQuestion.ObtainedScore;
@@ -245,6 +224,10 @@ namespace HelpEmpowermentApi.Services
                     examQuestion.UpdatedAt = DateTime.UtcNow;
 
                     var updatedExamQuestion = await _studentExamQuestionRepository.UpdateAsync(examQuestion);
+
+                    // Recalculate total score for the student exam
+                    await CalcAndUpdateStudentExamScoreAsync(examQuestion.StudentExamOid);
+
                     return ApiResponse<StudentExamQuestionDto>.SuccessResponse(MapToDto(updatedExamQuestion), "Student exam question updated successfully");
                 }
 
@@ -280,17 +263,56 @@ namespace HelpEmpowermentApi.Services
                 StudentExamOid = examQuestion.StudentExamOid,
                 QuestionOid = examQuestion.QuestionOid,
                 QuestionText = examQuestion.Question?.QuestionText,
-                SelectedAnswerOid = examQuestion.SelectedAnswerOid,
-                SelectedAnswerOids = new List<Guid>(), // Will be populated by caller if needed
-                SelectedAnswerText = examQuestion.SelectedAnswer?.AnswerText,
                 IsCorrect = examQuestion.IsCorrect,
                 QuestionScore = examQuestion.QuestionScore,
                 ObtainedScore = examQuestion.ObtainedScore,
+                Answers = examQuestion.Answers?
+                    .Where(a => !a.IsDeleted)
+                    .Select(a => new StudentExamQuestionAnswerDto
+                    {
+                        Oid = a.Oid,
+                        SelectedAnswerOid = a.SelectedAnswerOid,
+                        SelectedAnswerText = a.SelectedAnswer?.AnswerText,
+                        AnswerSelectedAnswerOid = a.AnswerSelectedAnswerOid
+                    }).ToList() ?? new List<StudentExamQuestionAnswerDto>(),
                 CreatedAt = examQuestion.CreatedAt,
                 CreatedBy = examQuestion.CreatedBy,
                 UpdatedAt = examQuestion.UpdatedAt,
                 UpdatedBy = examQuestion.UpdatedBy
             };
+        }
+
+        private async Task UpdateAnswersForQuestion(Guid studentExamQuestionOid, List<Guid> selectedAnswerOids, Guid? userId)
+        {
+            var existingAnswers = await _studentExamQuestionAnswerRepository.GetByStudentExamQuestionIdAsync(studentExamQuestionOid);
+            var processedIds = new HashSet<Guid>();
+
+            foreach (var answerId in selectedAnswerOids)
+            {
+                var existing = existingAnswers.FirstOrDefault(a => a.SelectedAnswerOid == answerId);
+                if (existing == null)
+                    existing = existingAnswers.FirstOrDefault(a => !processedIds.Contains(a.Oid));
+
+                if (existing != null)
+                {
+                    processedIds.Add(existing.Oid);
+                    existing.SelectedAnswerOid = answerId;
+                    existing.UpdatedBy = userId;
+                    existing.UpdatedAt = DateTime.UtcNow;
+                    await _studentExamQuestionAnswerRepository.UpdateAsync(existing);
+                }
+                else
+                {
+                    var answerRow = new StudentExamQuestionAnswer
+                    {
+                        StudentExamQuestionOid = studentExamQuestionOid,
+                        SelectedAnswerOid = answerId,
+                        CreatedBy = userId,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _studentExamQuestionAnswerRepository.AddAsync(answerRow);
+                }
+            }
         }
 
         public async Task<ApiResponse<MultipleQuestionsSubmissionResult>> SubmitMultipleQuestionsAsync(SubmitMultipleQuestionsDto dto)
@@ -348,7 +370,7 @@ namespace HelpEmpowermentApi.Services
                             }
 
                             // Check if selected answers match correct answers exactly
-                            var selectedSet = questionSubmission.SelectedAnswerOids.OrderBy(x => x).ToList();
+                             var selectedSet = questionSubmission.SelectedAnswerOids.OrderBy(x => x).ToList();
                             var correctSet = correctAnswerOids.OrderBy(x => x).ToList();
                             isCorrect = selectedSet.SequenceEqual(correctSet);
 
@@ -356,31 +378,50 @@ namespace HelpEmpowermentApi.Services
                             questionObtainedScore = isCorrect ? question.QuestionScore : 0;
                         }
 
-                        // Delete existing answers for this question
-                        var existingForQuestion = existingAnswers.Where(eq => eq.QuestionOid == questionSubmission.QuestionOid).ToList();
-                        foreach (var existing in existingForQuestion)
-                        {
-                            await _studentExamQuestionRepository.SoftDeleteAsync(existing.Oid);
-                        }
+                        // Find or create question row
+                        var existingQuestion = existingAnswers.FirstOrDefault(eq => eq.QuestionOid == questionSubmission.QuestionOid);
 
-                        // Create multiple rows - one for each selected answer
-                        if (questionSubmission.SelectedAnswerOids != null && questionSubmission.SelectedAnswerOids.Any())
+                        if (existingQuestion != null)
                         {
-                            foreach (var answerId in questionSubmission.SelectedAnswerOids)
+                            existingQuestion.IsCorrect = isCorrect;
+                            existingQuestion.QuestionScore = question.QuestionScore;
+                            existingQuestion.ObtainedScore = questionObtainedScore;
+                            existingQuestion.UpdatedBy = dto.CreatedBy;
+                            existingQuestion.UpdatedAt = DateTime.UtcNow;
+                            await _studentExamQuestionRepository.UpdateAsync(existingQuestion);
+
+                            if (questionSubmission.SelectedAnswerOids != null && questionSubmission.SelectedAnswerOids.Any())
                             {
-                                var examQuestion = new StudentExamQuestion
-                                {
-                                    StudentExamOid = dto.StudentExamOid,
-                                    QuestionOid = questionSubmission.QuestionOid,
-                                    SelectedAnswerOid = answerId,
-                                    IsCorrect = isCorrect,
-                                    QuestionScore = question.QuestionScore,
-                                    ObtainedScore = questionObtainedScore,
-                                    CreatedBy = dto.CreatedBy,
-                                    CreatedAt = DateTime.UtcNow
-                                };
+                                await UpdateAnswersForQuestion(existingQuestion.Oid, questionSubmission.SelectedAnswerOids, dto.CreatedBy);
+                            }
+                        }
+                        else
+                        {
+                            var examQuestion = new StudentExamQuestion
+                            {
+                                StudentExamOid = dto.StudentExamOid,
+                                QuestionOid = questionSubmission.QuestionOid,
+                                IsCorrect = isCorrect,
+                                QuestionScore = question.QuestionScore,
+                                ObtainedScore = questionObtainedScore,
+                                CreatedBy = dto.CreatedBy,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            examQuestion = await _studentExamQuestionRepository.AddAsync(examQuestion);
 
-                                await _studentExamQuestionRepository.AddAsync(examQuestion);
+                            if (questionSubmission.SelectedAnswerOids != null && questionSubmission.SelectedAnswerOids.Any())
+                            {
+                                foreach (var answerId in questionSubmission.SelectedAnswerOids)
+                                {
+                                    var answerRow = new StudentExamQuestionAnswer
+                                    {
+                                        StudentExamQuestionOid = examQuestion.Oid,
+                                        SelectedAnswerOid = answerId,
+                                        CreatedBy = dto.CreatedBy,
+                                        CreatedAt = DateTime.UtcNow
+                                    };
+                                    await _studentExamQuestionAnswerRepository.AddAsync(answerRow);
+                                }
                             }
                         }
 
@@ -422,12 +463,10 @@ namespace HelpEmpowermentApi.Services
                     }
                 }
 
-                //result.CorrectAnswers = correctAnswers;
-                //result.TotalScore = totalScore;
-                //result.ObtainedScore = obtainedScore;
-                //result.Message = $"Submitted {result.Questions.Count} of {dto.Questions.Count} questions successfully. " +
-                //                $"Score: {obtainedScore}/{totalScore} ({correctAnswers}/{dto.Questions.Count} correct)";
-                result.Message = "submited";
+                // Recalculate total score for the student exam
+                await CalcAndUpdateStudentExamScoreAsync(dto.StudentExamOid);
+
+                result.Message = "submitted";
                 if (result.Errors.Any())
                 {
                     result.Success = false;
@@ -509,35 +548,71 @@ namespace HelpEmpowermentApi.Services
                 // Calculate score
                 int obtainedScore = isCorrect ? question.QuestionScore : 0;
 
-                // Delete existing answers for this question
-                var existingAnswers = await _studentExamQuestionRepository.GetByStudentExamIdAsync(dto.StudentExamOid);
-                var existingForQuestion = existingAnswers.Where(eq => eq.QuestionOid == dto.QuestionOid).ToList();
-                foreach (var existing in existingForQuestion)
+                // Find or create the question row
+                var existingQuestions = await _studentExamQuestionRepository.GetByStudentExamIdAsync(dto.StudentExamOid);
+                var examQuestion = existingQuestions.FirstOrDefault(eq => eq.QuestionOid == dto.QuestionOid);
+
+                if (examQuestion != null)
                 {
-                    await _studentExamQuestionRepository.SoftDeleteAsync(existing.Oid);
+                    examQuestion.IsCorrect = isCorrect;
+                    examQuestion.QuestionScore = question.QuestionScore;
+                    examQuestion.ObtainedScore = obtainedScore;
+                    examQuestion.UpdatedBy = dto.CreatedBy;
+                    examQuestion.UpdatedAt = DateTime.UtcNow;
+                    await _studentExamQuestionRepository.UpdateAsync(examQuestion);
                 }
-
-                // Create StudentExamQuestion rows - one for each selected answer
-                foreach (var answerId in submittedAnswerOids)
+                else
                 {
-                    // Find the corresponding AnswerSubmission for this answerId
-                    var answerSubmission = dto.Answers.FirstOrDefault(a => a.SelectedAnswerOid == answerId);
-
-                    var examQuestion = new StudentExamQuestion
+                    examQuestion = new StudentExamQuestion
                     {
                         StudentExamOid = dto.StudentExamOid,
                         QuestionOid = dto.QuestionOid,
-                        SelectedAnswerOid = answerId,
-                        AnswerSelectedAnswerOid = answerSubmission?.AnswerSelectedAnswerOid,
                         IsCorrect = isCorrect,
                         QuestionScore = question.QuestionScore,
                         ObtainedScore = obtainedScore,
                         CreatedBy = dto.CreatedBy,
                         CreatedAt = DateTime.UtcNow
                     };
-
-                    await _studentExamQuestionRepository.AddAsync(examQuestion);
+                    examQuestion = await _studentExamQuestionRepository.AddAsync(examQuestion);
                 }
+
+                // Update or create answer rows
+                var existingAnswerRows = await _studentExamQuestionAnswerRepository.GetByStudentExamQuestionIdAsync(examQuestion.Oid);
+                var processedAnswerIds = new HashSet<Guid>();
+
+                foreach (var answerId in submittedAnswerOids)
+                {
+                    var answerSubmission = dto.Answers.FirstOrDefault(a => a.SelectedAnswerOid == answerId);
+
+                    var existingAnswer = existingAnswerRows.FirstOrDefault(a => a.SelectedAnswerOid == answerId);
+                    if (existingAnswer == null)
+                        existingAnswer = existingAnswerRows.FirstOrDefault(a => !processedAnswerIds.Contains(a.Oid));
+
+                    if (existingAnswer != null)
+                    {
+                        processedAnswerIds.Add(existingAnswer.Oid);
+                        existingAnswer.SelectedAnswerOid = answerId;
+                        existingAnswer.AnswerSelectedAnswerOid = answerSubmission?.AnswerSelectedAnswerOid;
+                        existingAnswer.UpdatedBy = dto.CreatedBy;
+                        existingAnswer.UpdatedAt = DateTime.UtcNow;
+                        await _studentExamQuestionAnswerRepository.UpdateAsync(existingAnswer);
+                    }
+                    else
+                    {
+                        var answerRow = new StudentExamQuestionAnswer
+                        {
+                            StudentExamQuestionOid = examQuestion.Oid,
+                            SelectedAnswerOid = answerId,
+                            AnswerSelectedAnswerOid = answerSubmission?.AnswerSelectedAnswerOid,
+                            CreatedBy = dto.CreatedBy,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        await _studentExamQuestionAnswerRepository.AddAsync(answerRow);
+                    }
+                }
+
+                // Recalculate total score for the student exam
+                await CalcAndUpdateStudentExamScoreAsync(dto.StudentExamOid);
 
                 // Build answer details
                 var answerDetails = allAnswers.Select(a => new AnswerValidationDetail
@@ -576,5 +651,31 @@ namespace HelpEmpowermentApi.Services
                 return ApiResponse<AnswerValidationResult>.ErrorResponse($"Error validating answers: {ex.Message}");
             }
         }
-    }
-}
+                    private async Task CalcAndUpdateStudentExamScoreAsync(Guid studentExamOid)
+                    {
+                        var allQuestions = await _studentExamQuestionRepository.GetByStudentExamIdAsync(studentExamOid);
+
+                        int totalScore = allQuestions.Sum(q => q.QuestionScore ?? 0);
+                        int obtainedScore = allQuestions.Sum(q => q.ObtainedScore ?? 0);
+
+                        // Use the already-tracked StudentExam from navigation to avoid tracking conflict
+                        var studentExam = allQuestions.FirstOrDefault()?.StudentExam
+                                          ?? await _studentExamRepository.GetByIdAsync(studentExamOid);
+
+                        if (studentExam != null)
+                        {
+                            studentExam.TotalScore = totalScore;
+                            studentExam.ObtainedScore = obtainedScore;
+
+                            if (studentExam.PassPercent.HasValue && totalScore > 0)
+                            {
+                                decimal percentage = (decimal)obtainedScore / totalScore * 100;
+                                studentExam.IsPassed = percentage >= studentExam.PassPercent.Value;
+                            }
+
+                            studentExam.UpdatedAt = DateTime.UtcNow;
+                            await _studentExamRepository.UpdateAsync(studentExam);
+                        }
+                    }
+                }
+            }

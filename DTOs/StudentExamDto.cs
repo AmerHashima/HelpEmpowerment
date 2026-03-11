@@ -11,6 +11,7 @@ namespace HelpEmpowermentApi.DTOs
         public int? TotalScore { get; set; }
         public int? ObtainedScore { get; set; }
         public int? PassPercent { get; set; }
+        public decimal? Percentage { get; set; }
         public bool? IsPassed { get; set; }
         public Guid? ExamStatusLookupId { get; set; }
         public string? ExamStatusName { get; set; }
@@ -46,7 +47,7 @@ namespace HelpEmpowermentApi.DTOs
     public class SubmitStudentExamDto
     {
         public Guid StudentExamOid { get; set; }
-        public List<SubmitAnswerDto> Answers { get; set; } = new();
+      // public List<SubmitAnswerDto> Answers { get; set; } = new();
         public Guid? UpdatedBy { get; set; }
     }
 
