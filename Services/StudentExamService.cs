@@ -309,8 +309,28 @@ namespace HelpEmpowermentApi.Services
                     CreatedBy = q.CreatedBy,
                     UpdatedAt = q.UpdatedAt,
                     UpdatedBy = q.UpdatedBy
-                }).ToList()
+                }).ToList(),
+                StatusSummary = CalcStatusSummary(exam.ExamQuestions)
             };
+        }
+
+        private static List<QuestionStatusSummaryDto> CalcStatusSummary(IEnumerable<StudentExamQuestion> questions)
+        {
+            var list = questions.ToList();
+            int total = list.Count;
+            if (total == 0) return new();
+
+            return list
+                .GroupBy(q => new { q.QuestionStatusLookupId, StatusName = q.QuestionStatus?.LookupNameEn })
+                .Select(g => new QuestionStatusSummaryDto
+                {
+                    QuestionStatusLookupId = g.Key.QuestionStatusLookupId,
+                    StatusName = g.Key.StatusName,
+                    Count = g.Count(),
+                    Percentage = Math.Round((decimal)g.Count() / total * 100, 2)
+                })
+                .OrderBy(s => s.StatusName)
+                .ToList();
         }
 
         public async Task<ApiResponse<StudentExamSummaryDto>> GetStudentExamSummaryAsync(Guid studentId, Guid examId)
@@ -329,26 +349,6 @@ namespace HelpEmpowermentApi.Services
                 var examQuestions = await _studentExamQuestionRepository.GetByStudentExamIdAsync(lastExam.Oid);
 
                 int totalQuestions = examQuestions.Count;
-
-                // Group by QuestionStatusLookupId
-                var statusGroups = examQuestions
-                    .GroupBy(q => new
-                    {
-                        q.QuestionStatusLookupId,
-                        StatusName = q.QuestionStatus?.LookupNameEn
-                    })
-                    .Select(g => new QuestionStatusSummaryDto
-                    {
-                        QuestionStatusLookupId = g.Key.QuestionStatusLookupId,
-                        StatusName = g.Key.StatusName,
-                        Count = g.Count(),
-                        Percentage = totalQuestions > 0
-                            ? Math.Round((decimal)g.Count() / totalQuestions * 100, 2)
-                            : 0
-                    })
-                    .OrderBy(s => s.StatusName)
-                    .ToList();
-
                 int totalScore = examQuestions.Sum(q => q.QuestionScore ?? 0);
                 int obtainedScore = examQuestions.Sum(q => q.ObtainedScore ?? 0);
                 decimal percentage = totalScore > 0
@@ -369,7 +369,7 @@ namespace HelpEmpowermentApi.Services
                     StartedAt = lastExam.StartedAt,
                     FinishedAt = lastExam.FinishedAt,
                     TotalQuestions = totalQuestions,
-                    StatusSummary = statusGroups
+                    StatusSummary = CalcStatusSummary(examQuestions)
                 };
 
                 return ApiResponse<StudentExamSummaryDto>.SuccessResponse(summary);

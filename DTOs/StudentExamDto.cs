@@ -22,6 +22,7 @@ namespace HelpEmpowermentApi.DTOs
         public DateTime? UpdatedAt { get; set; }
         public Guid? UpdatedBy { get; set; }
         public List<StudentExamQuestionDto> ExamQuestions { get; set; } = new();
+        public List<QuestionStatusSummaryDto> StatusSummary { get; set; } = new();
     }
 
     public class CreateStudentExamDto
