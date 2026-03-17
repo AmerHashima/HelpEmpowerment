@@ -24,6 +24,7 @@ namespace HelpEmpowermentApi.Models
         public bool? IsPassed { get; set; }
 
         public Guid? ExamStatusLookupId { get; set; }
+        public Guid? ExamModeLookupId { get; set; }
 
         public DateTime? StartedAt { get; set; }
 
@@ -42,7 +43,8 @@ namespace HelpEmpowermentApi.Models
 
         [ForeignKey(nameof(ExamStatusLookupId))]
         public virtual AppLookupDetail? ExamStatusLookup { get; set; }
-
+        [ForeignKey(nameof(ExamModeLookupId))]
+        public virtual AppLookupDetail? ExamModeLookup { get; set; }
         public virtual ICollection<StudentExamQuestion> ExamQuestions { get; set; } = new List<StudentExamQuestion>();
     }
 }
