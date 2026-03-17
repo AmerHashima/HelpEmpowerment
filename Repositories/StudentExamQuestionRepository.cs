@@ -18,6 +18,9 @@ namespace HelpEmpowermentApi.Repositories
             var query = _dbSet
                 .Include(seq => seq.StudentExam)
                 .Include(seq => seq.Question)
+                    .ThenInclude(q => q.QuestionTypeLookup)
+                .Include(seq => seq.Question)
+                    .ThenInclude(q => q.MasterExam)
                 .Include(seq => seq.QuestionStatus)
                 .Include(seq => seq.Answers.Where(a => !a.IsDeleted))
                     .ThenInclude(a => a.SelectedAnswer)
@@ -46,6 +49,9 @@ namespace HelpEmpowermentApi.Repositories
             return await _dbSet
                 .Include(seq => seq.StudentExam)
                 .Include(seq => seq.Question)
+                    .ThenInclude(q => q.QuestionTypeLookup)
+                .Include(seq => seq.Question)
+                    .ThenInclude(q => q.MasterExam)
                 .Include(seq => seq.QuestionStatus)
                 .Include(seq => seq.Answers.Where(a => !a.IsDeleted))
                     .ThenInclude(a => a.SelectedAnswer)
