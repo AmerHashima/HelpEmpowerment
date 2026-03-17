@@ -11,7 +11,18 @@ namespace HelpEmpowermentApi.DTOs
         public int? ObtainedScore { get; set; }
         public Guid? QuestionStatusLookupId { get; set; }
         public string? QuestionStatusName { get; set; }
+        public string? ExamName { get; set; }
+        public string QuestionText_Ar { get; set; } = string.Empty;
 
+        public Guid? QuestionTypeLookupId { get; set; }
+        public string QuestionExplination { get; set; } = string.Empty;
+
+        public string? QuestionTypeName { get; set; }
+        public int? OrderNo { get; set; }
+        public bool IsActive { get; set; }
+        public bool CorrectAnswer { get; set; }
+        public bool Question { get; set; }
+        public Guid? CorrectChoiceOid { get; set; }
         public List<StudentExamQuestionAnswerDto> Answers { get; set; } = new();
         public DateTime? CreatedAt { get; set; }
         public Guid? CreatedBy { get; set; }

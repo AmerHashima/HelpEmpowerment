@@ -19,6 +19,7 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(se => se.Student)
                 .Include(se => se.MasterExam)
                 .Include(se => se.ExamStatusLookup)
+                .Include(se => se.ExamModeLookup)
                 .Where(se => !se.IsDeleted)
                 .AsQueryable();
 
@@ -45,6 +46,7 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(se => se.Student)
                 .Include(se => se.MasterExam)
                 .Include(se => se.ExamStatusLookup)
+                .Include(se => se.ExamModeLookup)
                 .Where(se => se.StudentOid == studentId && !se.IsDeleted)
                 .OrderByDescending(se => se.CreatedAt)
                 .ToListAsync();
@@ -56,6 +58,7 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(se => se.Student)
                 .Include(se => se.MasterExam)
                 .Include(se => se.ExamStatusLookup)
+                .Include(se => se.ExamModeLookup)
                 .Where(se => se.CoursesMasterExamOid == masterExamId && !se.IsDeleted)
                 .OrderByDescending(se => se.CreatedAt)
                 .ToListAsync();
@@ -67,10 +70,18 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(se => se.Student)
                 .Include(se => se.MasterExam)
                 .Include(se => se.ExamStatusLookup)
+                .Include(se => se.ExamModeLookup)
                 .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
                     .ThenInclude(eq => eq.Question)
+                        .ThenInclude(q => q.QuestionTypeLookup)
                 .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
-                   // .ThenInclude(eq => eq.SelectedAnswer)
+                    .ThenInclude(eq => eq.Question)
+                        .ThenInclude(q => q.MasterExam)
+                .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
+                    .ThenInclude(eq => eq.QuestionStatus)
+                .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
+                    .ThenInclude(eq => eq.Answers.Where(a => !a.IsDeleted))
+                        .ThenInclude(a => a.SelectedAnswer)
                 .FirstOrDefaultAsync(se => se.Oid == id && !se.IsDeleted);
         }
 

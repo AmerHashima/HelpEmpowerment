@@ -15,6 +15,8 @@ namespace HelpEmpowermentApi.DTOs
         public bool? IsPassed { get; set; }
         public Guid? ExamStatusLookupId { get; set; }
         public string? ExamStatusName { get; set; }
+        public Guid? ExamModeLookupId { get; set; }
+        public string? ExamModeName { get; set; }
         public DateTime? StartedAt { get; set; }
         public DateTime? FinishedAt { get; set; }
         public DateTime? CreatedAt { get; set; }
@@ -30,6 +32,7 @@ namespace HelpEmpowermentApi.DTOs
         public Guid StudentOid { get; set; }
         public Guid CoursesMasterExamOid { get; set; }
         public int AttemptNo { get; set; } = 1;
+        public Guid? ExamModeLookupId { get; set; }
         public Guid? CreatedBy { get; set; }
     }
 
@@ -41,6 +44,7 @@ namespace HelpEmpowermentApi.DTOs
         public int? PassPercent { get; set; }
         public bool? IsPassed { get; set; }
         public Guid? ExamStatusLookupId { get; set; }
+        public Guid? ExamModeLookupId { get; set; }
         public DateTime? FinishedAt { get; set; }
         public Guid? UpdatedBy { get; set; }
     }
@@ -75,6 +79,8 @@ namespace HelpEmpowermentApi.DTOs
         public int? ObtainedScore { get; set; }
         public decimal? Percentage { get; set; }
         public bool? IsPassed { get; set; }
+        public Guid? ExamModeLookupId { get; set; }
+        public string? ExamModeName { get; set; }
         public DateTime? StartedAt { get; set; }
         public DateTime? FinishedAt { get; set; }
         public int TotalQuestions { get; set; }

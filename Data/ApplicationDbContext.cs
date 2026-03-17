@@ -311,6 +311,12 @@ namespace HelpEmpowermentApi.Data
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired(false);
 
+                entity.HasOne(se => se.ExamModeLookup)
+                    .WithMany()
+                    .HasForeignKey(se => se.ExamModeLookupId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
+
                 entity.HasIndex(e => e.StudentOid);
                 entity.HasIndex(e => e.CoursesMasterExamOid);
                 entity.HasIndex(e => new { e.StudentOid, e.CoursesMasterExamOid });
