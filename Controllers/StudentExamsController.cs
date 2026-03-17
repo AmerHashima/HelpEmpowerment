@@ -68,7 +68,7 @@ namespace HelpEmpowermentApi.Controllers
         [HttpPost("summary")]
         public async Task<ActionResult<ApiResponse<StudentExamSummaryDto>>> GetStudentExamSummary([FromBody] StudentExamSummaryRequestDto request)
         {
-            var response = await _studentExamService.GetStudentExamSummaryAsync(request.StudentId, request.ExamId);
+            var response = await _studentExamService.GetStudentExamSummaryAsync(request.StudentId, request.MasrterExamId);
             return response.Success ? Ok(response) : NotFound(response);
         }
     }
