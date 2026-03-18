@@ -227,6 +227,43 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
+        public async Task<ApiResponse<StudentExamDto>> UpdateAsync(UpdateStudentExamDto dto)
+        {
+            try
+            {
+                var studentExam = await _studentExamRepository.GetByIdAsync(dto.Oid);
+                if (studentExam == null)
+                    return ApiResponse<StudentExamDto>.ErrorResponse("Student exam not found");
+
+                if (dto.TotalScore.HasValue)
+                    studentExam.TotalScore = dto.TotalScore;
+                if (dto.ObtainedScore.HasValue)
+                    studentExam.ObtainedScore = dto.ObtainedScore;
+                if (dto.PassPercent.HasValue)
+                    studentExam.PassPercent = dto.PassPercent;
+                if (dto.IsPassed.HasValue)
+                    studentExam.IsPassed = dto.IsPassed;
+                if (dto.ExamStatusLookupId.HasValue)
+                    studentExam.ExamStatusLookupId = dto.ExamStatusLookupId;
+                if (dto.ExamModeLookupId.HasValue)
+                    studentExam.ExamModeLookupId = dto.ExamModeLookupId;
+                if (dto.FinishedAt.HasValue)
+                    studentExam.FinishedAt = dto.FinishedAt;
+
+                studentExam.UpdatedBy = dto.UpdatedBy;
+                studentExam.UpdatedAt = DateTime.UtcNow;
+
+                await _studentExamRepository.UpdateAsync(studentExam);
+
+                var updated = await _studentExamRepository.GetByIdAsync(dto.Oid);
+                return ApiResponse<StudentExamDto>.SuccessResponse(MapToDto(updated!), "Student exam updated successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<StudentExamDto>.ErrorResponse($"Error updating student exam: {ex.Message}");
+            }
+        }
+
         public async Task<ApiResponse<bool>> DeleteAsync(Guid id)
         {
             try

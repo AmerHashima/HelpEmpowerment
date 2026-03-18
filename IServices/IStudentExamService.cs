@@ -11,6 +11,7 @@ namespace HelpEmpowermentApi.IServices
         Task<ApiResponse<StudentExamDto>> GetWithQuestionsAsync(Guid id);
         Task<ApiResponse<StudentExamDto>> StartExamAsync(CreateStudentExamDto dto);
         Task<ApiResponse<StudentExamDto>> SubmitExamAsync(SubmitStudentExamDto dto);
+        Task<ApiResponse<StudentExamDto>> UpdateAsync(UpdateStudentExamDto dto);
         Task<ApiResponse<bool>> DeleteAsync(Guid id);
         Task<ApiResponse<StudentExamSummaryDto>> GetStudentExamSummaryAsync(Guid studentId, Guid examId);
     }

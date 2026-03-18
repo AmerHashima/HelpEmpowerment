@@ -58,6 +58,13 @@ namespace HelpEmpowermentApi.Controllers
             return response.Success ? Ok(response) : BadRequest(response);
         }
 
+        [HttpPut]
+        public async Task<ActionResult<ApiResponse<StudentExamDto>>> Update([FromBody] UpdateStudentExamDto dto)
+        {
+            var response = await _studentExamService.UpdateAsync(dto);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
         [HttpDelete("{id}")]
         public async Task<ActionResult<ApiResponse<bool>>> Delete(Guid id)
         {
