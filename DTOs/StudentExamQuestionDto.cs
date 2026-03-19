@@ -12,6 +12,7 @@ namespace HelpEmpowermentApi.DTOs
         public Guid? QuestionStatusLookupId { get; set; }
         public string? QuestionStatusName { get; set; }
         public string? ExamName { get; set; }
+        public Guid? CoursesMasterExamOid { get; set; }
         public string QuestionText_Ar { get; set; } = string.Empty;
 
         public Guid? QuestionTypeLookupId { get; set; }

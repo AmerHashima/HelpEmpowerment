@@ -271,6 +271,7 @@ namespace HelpEmpowermentApi.Services
                 StudentExamOid = examQuestion.StudentExamOid,
                 QuestionOid = examQuestion.QuestionOid,
                 QuestionText = examQuestion.Question?.QuestionText,
+                CoursesMasterExamOid = examQuestion.Question?.CoursesMasterExamOid,
                 QuestionText_Ar = examQuestion.Question?.QuestionText_Ar ?? string.Empty,
                 QuestionExplination = examQuestion.Question?.QuestionExplination ?? string.Empty,
                 ExamName = examQuestion.Question?.MasterExam?.CourseName,
