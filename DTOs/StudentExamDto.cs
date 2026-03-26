@@ -74,6 +74,7 @@ namespace HelpEmpowermentApi.DTOs
         public Guid StudentOid { get; set; }
         public string? StudentName { get; set; }
         public string? ExamName { get; set; }
+        public Guid? ExamStatusLookupId { get; set; }
         public int AttemptNo { get; set; }
         public int? TotalScore { get; set; }
         public int? ObtainedScore { get; set; }

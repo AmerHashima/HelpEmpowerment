@@ -414,6 +414,7 @@ namespace HelpEmpowermentApi.Services
                 {
                     StudentExamOid = lastExam.Oid,
                     StudentOid = lastExam.StudentOid,
+                    ExamStatusLookupId = lastExam.ExamStatusLookupId,
                     StudentName = lastExam.Student?.NameEn ?? lastExam.Student?.Username,
                     ExamName = lastExam.MasterExam?.CourseName,
                     AttemptNo = lastExam.AttemptNo,
