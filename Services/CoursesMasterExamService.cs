@@ -128,6 +128,7 @@ namespace HelpEmpowermentApi.Services
                     CourseOid = dto.CourseOid,
                     CourseName = dto.CourseName,
                     ExamName = dto.ExamName,
+                    FreeExam = dto.FreeExam,
                     CourseLevelLookupId = dto.CourseLevelLookupId,
                     CourseCategoryLookupId = dto.CourseCategoryLookupId,
                     QuestionCount = dto.QuestionCount,
@@ -174,6 +175,7 @@ namespace HelpEmpowermentApi.Services
                 exam.CourseOid = dto.CourseOid;
                 exam.CourseName = dto.CourseName;
                 exam.ExamName = dto.ExamName;
+                exam.FreeExam = dto.FreeExam;
 
                 exam.QuestionCount = exam.QuestionCount;
                 exam.DurationMinutes = exam.DurationMinutes;
