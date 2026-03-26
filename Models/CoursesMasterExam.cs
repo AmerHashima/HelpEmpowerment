@@ -21,6 +21,7 @@ namespace HelpEmpowermentApi.Models
 
         // ADD THESE PROPERTIES
         public int? PassPercent { get; set; } = 60;
+        public bool? FreeExam { get; set; } = false;
 
         public int? DurationMinutes { get; set; }
         public int? QuestionCount { get; set; }

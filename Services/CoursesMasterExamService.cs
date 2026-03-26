@@ -214,6 +214,7 @@ namespace HelpEmpowermentApi.Services
                 Oid = exam.Oid,
                 CourseOid = exam.CourseOid,
                 ExamName = exam.ExamName,
+                FreeExam = exam.FreeExam,
                 CourseName = exam.CourseName,
                 CourseCode = exam.Course?.CourseCode,
                 CourseLevelLookupId = exam.CourseLevelLookupId,

@@ -4,7 +4,7 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid Oid { get; set; }
         public string ExamName { get; set; } = string.Empty;
-
+        public bool? FreeExam { get; set; }
         public Guid CourseOid { get; set; }
         public string CourseName { get; set; } = string.Empty;
         public string? CourseCode { get; set; }
@@ -24,6 +24,7 @@ namespace HelpEmpowermentApi.DTOs
     public class CreateCoursesMasterExamDto
     {
         public Guid CourseOid { get; set; }
+        public bool? FreeExam { get; set; }
         public string ExamName { get; set; } = string.Empty;
 
         public string CourseName { get; set; } = string.Empty;
@@ -39,7 +40,7 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid Oid { get; set; }
         public string ExamName { get; set; } = string.Empty;
-
+        public bool? FreeExam { get; set; }
         public Guid CourseOid { get; set; }
         public string CourseName { get; set; } = string.Empty;
         public int? DurationMinutes { get; set; }
