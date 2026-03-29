@@ -205,6 +205,7 @@ namespace HelpEmpowermentApi.Services
                 // Update student exam
                 studentExam.TotalScore = totalScore;
                 studentExam.ObtainedScore = obtainedScore;
+                studentExam.ExamStatusLookupId = '77777777-7777-7777-7777-777777777703';
                 studentExam.IsPassed = isPassed;
                 studentExam.FinishedAt = DateTime.UtcNow;
                 studentExam.UpdatedBy = dto.UpdatedBy;
