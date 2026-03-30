@@ -396,7 +396,7 @@ namespace HelpEmpowermentApi.Services
                 // Get the last exam for this student and master exam
                 var studentExams = await _studentExamRepository.GetByStudentIdAsync(studentId);
                 var lastExam = studentExams
-                    .Where(e => e.CoursesMasterExamOid == examId && e.ExamStatusLookupId.ToString() == "77777777-7777-7777-7777-777777777703" && e.ExamModeLookupId.ToString() == "DDDDDDDD-DDDD-DDDD-1212-DDDDDDDDDD02")
+                    .Where(e => e.CoursesMasterExamOid == examId && e.ExamStatusLookupId == new Guid("77777777-7777-7777-7777-777777777703") && e.ExamModeLookupId== new Guid("DDDDDDDD-DDDD-DDDD-1212-DDDDDDDDDD02"))
                     .FirstOrDefault();
                 if (lastExam == null)
                     return ApiResponse<StudentExamSummaryDto>.ErrorResponse("No exams found for this student and exam");
