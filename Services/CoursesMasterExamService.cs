@@ -177,8 +177,8 @@ namespace HelpEmpowermentApi.Services
                 exam.ExamName = dto.ExamName;
                 exam.FreeExam = dto.FreeExam;
 
-                exam.QuestionCount = exam.QuestionCount;
-                exam.DurationMinutes = exam.DurationMinutes;
+                exam.QuestionCount = dto.QuestionCount;
+                exam.DurationMinutes = dto.DurationMinutes;
                 exam.CourseLevelLookupId = dto.CourseLevelLookupId;
                 exam.CourseCategoryLookupId = dto.CourseCategoryLookupId;
                 exam.IsActive = dto.IsActive;
