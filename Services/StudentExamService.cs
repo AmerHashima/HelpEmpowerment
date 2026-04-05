@@ -304,8 +304,7 @@ namespace HelpEmpowermentApi.Services
                 CreatedAt = exam.CreatedAt,
                 CreatedBy = exam.CreatedBy,
                 UpdatedAt = exam.UpdatedAt,
-                UpdatedBy = exam.UpdatedBy,
-                StatusSummary = CalcStatusSummary(exam.ExamQuestions)
+                UpdatedBy = exam.UpdatedBy
             };
         }
 

@@ -10,6 +10,7 @@ namespace HelpEmpowermentApi.Controllers
     public class CourseVideosController : ControllerBase
     {
         private readonly ICourseVideoService _courseVideoService;
+        private readonly string videoPath = "/var/www/videos";
 
         public CourseVideosController(ICourseVideoService courseVideoService)
         {
@@ -36,7 +37,20 @@ namespace HelpEmpowermentApi.Controllers
             var response = await _courseVideoService.GetByCourseIdAsync(courseId);
             return response.Success ? Ok(response) : NotFound(response);
         }
+  
 
+            [HttpGet("{fileName}")]
+            public IActionResult GetVideo(string fileName)
+            {
+                var path = Path.Combine(videoPath, fileName);
+
+                if (!System.IO.File.Exists(path))
+                    return NotFound();
+
+                var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
+                return File(stream, "video/mp4", enableRangeProcessing: true);
+            }
+        
         [HttpGet("{id}/with-attachments")]
         public async Task<ActionResult<ApiResponse<CourseVideoDto>>> GetWithAttachments(Guid id)
         {
