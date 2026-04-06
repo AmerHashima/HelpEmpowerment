@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HelpEmpowermentApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260215231358_data")]
-    partial class data
+    [Migration("20260406090842_InitialDaa")]
+    partial class InitialDaa
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -288,6 +288,606 @@ namespace HelpEmpowermentApi.Migrations
                             LookupNameEn = "Matching",
                             LookupValue = "MATCHING",
                             OrderNo = 6
+                        },
+                        new
+                        {
+                            Oid = new Guid("44444444-4444-4444-4444-444444444401"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            LookupNameAr = "صحيح",
+                            LookupNameEn = "Correct",
+                            LookupValue = "CORRECT",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("44444444-4444-4444-4444-444444444402"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            LookupNameAr = "غير صحيح",
+                            LookupNameEn = "Incorrect",
+                            LookupValue = "INCORRECT",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("44444444-4444-4444-4444-444444444403"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            LookupNameAr = "لم يتم الإجابة",
+                            LookupNameEn = "Not Answered",
+                            LookupValue = "NOT_ANSWERED",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("55555555-5555-5555-5555-555555555501"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            LookupNameAr = "مدير النظام",
+                            LookupNameEn = "Admin",
+                            LookupValue = "ADMIN",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("55555555-5555-5555-5555-555555555502"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            LookupNameAr = "مدرب",
+                            LookupNameEn = "Instructor",
+                            LookupValue = "INSTRUCTOR",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("55555555-5555-5555-5555-555555555503"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            LookupNameAr = "طالب",
+                            LookupNameEn = "Student",
+                            LookupValue = "STUDENT",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("55555555-5555-5555-5555-555555555504"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            LookupNameAr = "الدعم الفني",
+                            LookupNameEn = "Support",
+                            LookupValue = "SUPPORT",
+                            OrderNo = 4
+                        },
+                        new
+                        {
+                            Oid = new Guid("66666666-6666-6666-6666-666666666601"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("66666666-6666-6666-6666-666666666666"),
+                            LookupNameAr = "نشط",
+                            LookupNameEn = "Active",
+                            LookupValue = "ACTIVE",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("66666666-6666-6666-6666-666666666602"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("66666666-6666-6666-6666-666666666666"),
+                            LookupNameAr = "غير نشط",
+                            LookupNameEn = "Inactive",
+                            LookupValue = "INACTIVE",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("66666666-6666-6666-6666-666666666603"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("66666666-6666-6666-6666-666666666666"),
+                            LookupNameAr = "معلق",
+                            LookupNameEn = "Suspended",
+                            LookupValue = "SUSPENDED",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("66666666-6666-6666-6666-666666666604"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("66666666-6666-6666-6666-666666666666"),
+                            LookupNameAr = "قيد الانتظار",
+                            LookupNameEn = "Pending",
+                            LookupValue = "PENDING",
+                            OrderNo = 4
+                        },
+                        new
+                        {
+                            Oid = new Guid("77777777-7777-7777-7777-777777777701"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("77777777-7777-7777-7777-777777777777"),
+                            LookupNameAr = "لم يبدأ",
+                            LookupNameEn = "Not Started",
+                            LookupValue = "NOT_STARTED",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("77777777-7777-7777-7777-777777777702"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("77777777-7777-7777-7777-777777777777"),
+                            LookupNameAr = "قيد التنفيذ",
+                            LookupNameEn = "In Progress",
+                            LookupValue = "IN_PROGRESS",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("77777777-7777-7777-7777-777777777703"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("77777777-7777-7777-7777-777777777777"),
+                            LookupNameAr = "تم التقديم",
+                            LookupNameEn = "Submitted",
+                            LookupValue = "SUBMITTED",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("77777777-7777-7777-7777-777777777704"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("77777777-7777-7777-7777-777777777777"),
+                            LookupNameAr = "تمت المراجعة",
+                            LookupNameEn = "Reviewed",
+                            LookupValue = "REVIEWED",
+                            OrderNo = 4
+                        },
+                        new
+                        {
+                            Oid = new Guid("77777777-7777-7777-7777-777777777705"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("77777777-7777-7777-7777-777777777777"),
+                            LookupNameAr = "تم الحذف",
+                            LookupNameEn = "Deleted",
+                            LookupValue = "DELETED",
+                            OrderNo = 5
+                        },
+                        new
+                        {
+                            Oid = new Guid("88888888-8888-8888-8888-888888888801"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("88888888-8888-8888-8888-888888888888"),
+                            LookupNameAr = "قيد الانتظار",
+                            LookupNameEn = "Pending",
+                            LookupValue = "PENDING",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("88888888-8888-8888-8888-888888888802"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("88888888-8888-8888-8888-888888888888"),
+                            LookupNameAr = "مدفوع",
+                            LookupNameEn = "Paid",
+                            LookupValue = "PAID",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("88888888-8888-8888-8888-888888888803"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("88888888-8888-8888-8888-888888888888"),
+                            LookupNameAr = "فشل",
+                            LookupNameEn = "Failed",
+                            LookupValue = "FAILED",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("88888888-8888-8888-8888-888888888804"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("88888888-8888-8888-8888-888888888888"),
+                            LookupNameAr = "مسترد",
+                            LookupNameEn = "Refunded",
+                            LookupValue = "REFUNDED",
+                            OrderNo = 4
+                        },
+                        new
+                        {
+                            Oid = new Guid("99999999-9999-9999-9999-999999999901"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("99999999-9999-9999-9999-999999999999"),
+                            LookupNameAr = "نشط",
+                            LookupNameEn = "Active",
+                            LookupValue = "ACTIVE",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("99999999-9999-9999-9999-999999999902"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("99999999-9999-9999-9999-999999999999"),
+                            LookupNameAr = "منتهي",
+                            LookupNameEn = "Expired",
+                            LookupValue = "EXPIRED",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("99999999-9999-9999-9999-999999999903"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("99999999-9999-9999-9999-999999999999"),
+                            LookupNameAr = "معلق",
+                            LookupNameEn = "Suspended",
+                            LookupValue = "SUSPENDED",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("99999999-9999-9999-9999-999999999904"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("99999999-9999-9999-9999-999999999999"),
+                            LookupNameAr = "مكتمل",
+                            LookupNameEn = "Completed",
+                            LookupValue = "COMPLETED",
+                            OrderNo = 4
+                        },
+                        new
+                        {
+                            Oid = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            LookupNameAr = "فيديو",
+                            LookupNameEn = "Video",
+                            LookupValue = "VIDEO",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa02"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            LookupNameAr = "بي دي إف",
+                            LookupNameEn = "PDF",
+                            LookupValue = "PDF",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa03"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            LookupNameAr = "اختبار",
+                            LookupNameEn = "Quiz",
+                            LookupValue = "QUIZ",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa04"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            LookupNameAr = "واجب",
+                            LookupNameEn = "Assignment",
+                            LookupValue = "ASSIGNMENT",
+                            OrderNo = 4
+                        },
+                        new
+                        {
+                            Oid = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa05"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            LookupNameAr = "مقال",
+                            LookupNameEn = "Article",
+                            LookupValue = "ARTICLE",
+                            OrderNo = 5
+                        },
+                        new
+                        {
+                            Oid = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb01"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            LookupNameAr = "مقدمة",
+                            LookupNameEn = "Introduction",
+                            LookupValue = "INTRODUCTION",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb02"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            LookupNameAr = "محاضرة",
+                            LookupNameEn = "Lecture",
+                            LookupValue = "LECTURE",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb03"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            LookupNameAr = "درس تعليمي",
+                            LookupNameEn = "Tutorial",
+                            LookupValue = "TUTORIAL",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb04"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            LookupNameAr = "عرض توضيحي",
+                            LookupNameEn = "Demo",
+                            LookupValue = "DEMO",
+                            OrderNo = 4
+                        },
+                        new
+                        {
+                            Oid = new Guid("cccccccc-cccc-cccc-cccc-cccccccccc01"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                            LookupNameAr = "بي دي إف",
+                            LookupNameEn = "PDF",
+                            LookupValue = "PDF",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("cccccccc-cccc-cccc-cccc-cccccccccc02"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                            LookupNameAr = "وورد",
+                            LookupNameEn = "Word Document",
+                            LookupValue = "DOCX",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("cccccccc-cccc-cccc-cccc-cccccccccc03"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                            LookupNameAr = "باوربوينت",
+                            LookupNameEn = "PowerPoint",
+                            LookupValue = "PPTX",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("cccccccc-cccc-cccc-cccc-cccccccccc04"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                            LookupNameAr = "ملف مضغوط",
+                            LookupNameEn = "ZIP Archive",
+                            LookupValue = "ZIP",
+                            OrderNo = 4
+                        },
+                        new
+                        {
+                            Oid = new Guid("dddddddd-dddd-dddd-dddd-dddddddddd01"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                            LookupNameAr = "نشط",
+                            LookupNameEn = "Active",
+                            LookupValue = "ACTIVE",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("dddddddd-dddd-dddd-dddd-dddddddddd02"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                            LookupNameAr = "تم الدفع",
+                            LookupNameEn = "Checked Out",
+                            LookupValue = "CHECKED_OUT",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("dddddddd-dddd-dddd-dddd-dddddddddd03"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                            LookupNameAr = "متروك",
+                            LookupNameEn = "Abandoned",
+                            LookupValue = "ABANDONED",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeee01"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                            LookupNameAr = "دعم فني",
+                            LookupNameEn = "Technical Support",
+                            LookupValue = "TECHNICAL_SUPPORT",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeee02"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                            LookupNameAr = "الفوترة",
+                            LookupNameEn = "Billing",
+                            LookupValue = "BILLING",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeee03"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                            LookupNameAr = "استفسار عام",
+                            LookupNameEn = "General Inquiry",
+                            LookupValue = "GENERAL_INQUIRY",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeee04"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                            LookupNameAr = "شكوى",
+                            LookupNameEn = "Complaint",
+                            LookupValue = "COMPLAINT",
+                            OrderNo = 4
+                        },
+                        new
+                        {
+                            Oid = new Guid("ffffffff-ffff-ffff-ffff-ffffffffff01"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                            LookupNameAr = "جديد",
+                            LookupNameEn = "New",
+                            LookupValue = "NEW",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("ffffffff-ffff-ffff-ffff-ffffffffff02"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                            LookupNameAr = "قيد المعالجة",
+                            LookupNameEn = "In Progress",
+                            LookupValue = "IN_PROGRESS",
+                            OrderNo = 2
+                        },
+                        new
+                        {
+                            Oid = new Guid("ffffffff-ffff-ffff-ffff-ffffffffff03"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                            LookupNameAr = "تم الحل",
+                            LookupNameEn = "Resolved",
+                            LookupValue = "RESOLVED",
+                            OrderNo = 3
+                        },
+                        new
+                        {
+                            Oid = new Guid("ffffffff-ffff-ffff-ffff-ffffffffff04"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                            LookupNameAr = "مغلق",
+                            LookupNameEn = "Closed",
+                            LookupValue = "CLOSED",
+                            OrderNo = 4
+                        },
+                        new
+                        {
+                            Oid = new Guid("dddddddd-dddd-dddd-1212-dddddddddd01"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("12121212-1212-1212-1212-121212121212"),
+                            LookupNameAr = "وضع الممارسة",
+                            LookupNameEn = "Practice Mode",
+                            LookupValue = "PRACTICE_MODE",
+                            OrderNo = 1
+                        },
+                        new
+                        {
+                            Oid = new Guid("dddddddd-dddd-dddd-1212-dddddddddd02"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupHeaderId = new Guid("12121212-1212-1212-1212-121212121212"),
+                            LookupNameAr = "وضع الامتحان",
+                            LookupNameEn = "Exam Mode",
+                            LookupValue = "EXAM_MODE",
+                            OrderNo = 2
                         });
                 });
 
@@ -377,6 +977,136 @@ namespace HelpEmpowermentApi.Migrations
                             LookupCode = "QUESTION_TYPE",
                             LookupNameAr = "نوع السؤال",
                             LookupNameEn = "Question Type"
+                        },
+                        new
+                        {
+                            Oid = new Guid("44444444-4444-4444-4444-444444444444"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "QUESTION_STATUS",
+                            LookupNameAr = "حالة السؤال",
+                            LookupNameEn = "Question Status"
+                        },
+                        new
+                        {
+                            Oid = new Guid("55555555-5555-5555-5555-555555555555"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "USER_ROLE",
+                            LookupNameAr = "دور المستخدم",
+                            LookupNameEn = "User Role"
+                        },
+                        new
+                        {
+                            Oid = new Guid("66666666-6666-6666-6666-666666666666"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "USER_STATUS",
+                            LookupNameAr = "حالة المستخدم",
+                            LookupNameEn = "User Status"
+                        },
+                        new
+                        {
+                            Oid = new Guid("77777777-7777-7777-7777-777777777777"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "EXAM_STATUS",
+                            LookupNameAr = "حالة الامتحان",
+                            LookupNameEn = "Exam Status"
+                        },
+                        new
+                        {
+                            Oid = new Guid("88888888-8888-8888-8888-888888888888"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "PAYMENT_STATUS",
+                            LookupNameAr = "حالة الدفع",
+                            LookupNameEn = "Payment Status"
+                        },
+                        new
+                        {
+                            Oid = new Guid("99999999-9999-9999-9999-999999999999"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "ENROLLMENT_STATUS",
+                            LookupNameAr = "حالة التسجيل",
+                            LookupNameEn = "Enrollment Status"
+                        },
+                        new
+                        {
+                            Oid = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "CONTENT_TYPE",
+                            LookupNameAr = "نوع المحتوى",
+                            LookupNameEn = "Content Type"
+                        },
+                        new
+                        {
+                            Oid = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "VIDEO_TYPE",
+                            LookupNameAr = "نوع الفيديو",
+                            LookupNameEn = "Video Type"
+                        },
+                        new
+                        {
+                            Oid = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "FILE_TYPE",
+                            LookupNameAr = "نوع الملف",
+                            LookupNameEn = "File Type"
+                        },
+                        new
+                        {
+                            Oid = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "BASKET_STATUS",
+                            LookupNameAr = "حالة السلة",
+                            LookupNameEn = "Basket Status"
+                        },
+                        new
+                        {
+                            Oid = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "CONTACT_TYPE",
+                            LookupNameAr = "نوع الاتصال",
+                            LookupNameEn = "Contact Type"
+                        },
+                        new
+                        {
+                            Oid = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "CONTACT_STATUS",
+                            LookupNameAr = "حالة الاتصال",
+                            LookupNameEn = "Contact Status"
+                        },
+                        new
+                        {
+                            Oid = new Guid("12121212-1212-1212-1212-121212121212"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            LookupCode = "EXAM_MODE",
+                            LookupNameAr = "وضع الامتحان",
+                            LookupNameEn = "Exam Mode"
                         });
                 });
 
@@ -1073,6 +1803,13 @@ namespace HelpEmpowermentApi.Migrations
                     b.Property<int?>("DurationMinutes")
                         .HasColumnType("int");
 
+                    b.Property<string>("ExamName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool?>("FreeExam")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -1369,10 +2106,16 @@ namespace HelpEmpowermentApi.Migrations
                     b.Property<decimal?>("DiscountAmount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<bool>("ExamSimulationReserv")
+                        .HasColumnType("bit");
+
                     b.Property<decimal>("FinalPrice")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("LiveCourseReserv")
                         .HasColumnType("bit");
 
                     b.Property<string>("Notes")
@@ -1384,6 +2127,9 @@ namespace HelpEmpowermentApi.Migrations
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
+
+                    b.Property<bool>("RecordedCourseReserv")
+                        .HasColumnType("bit");
 
                     b.Property<Guid>("StudentId")
                         .HasColumnType("uniqueidentifier");
@@ -1442,6 +2188,9 @@ namespace HelpEmpowermentApi.Migrations
                     b.Property<Guid?>("EnrollmentStatusLookupId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("ExamSimulationReserv")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("ExpiryDate")
                         .HasColumnType("datetime2");
 
@@ -1449,6 +2198,9 @@ namespace HelpEmpowermentApi.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("LiveCourseReserv")
                         .HasColumnType("bit");
 
                     b.Property<string>("Notes")
@@ -1473,6 +2225,9 @@ namespace HelpEmpowermentApi.Migrations
 
                     b.Property<int>("ProgressPercentage")
                         .HasColumnType("int");
+
+                    b.Property<bool>("RecordedCourseReserv")
+                        .HasColumnType("bit");
 
                     b.Property<Guid>("StudentId")
                         .HasColumnType("uniqueidentifier");
@@ -1527,6 +2282,9 @@ namespace HelpEmpowermentApi.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("ExamModeLookupId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("ExamStatusLookupId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1563,6 +2321,8 @@ namespace HelpEmpowermentApi.Migrations
                     b.HasKey("Oid");
 
                     b.HasIndex("CoursesMasterExamOid");
+
+                    b.HasIndex("ExamModeLookupId");
 
                     b.HasIndex("ExamStatusLookupId");
 
@@ -1605,7 +2365,7 @@ namespace HelpEmpowermentApi.Migrations
                     b.Property<int?>("QuestionScore")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("SelectedAnswerOid")
+                    b.Property<Guid?>("QuestionStatusLookupId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("StudentExamOid")
@@ -1623,11 +2383,59 @@ namespace HelpEmpowermentApi.Migrations
 
                     b.HasIndex("QuestionOid");
 
-                    b.HasIndex("SelectedAnswerOid");
+                    b.HasIndex("QuestionStatusLookupId");
 
                     b.HasIndex("StudentExamOid");
 
+                    b.HasIndex("StudentExamOid", "QuestionOid");
+
                     b.ToTable("student_exam_questions");
+                });
+
+            modelBuilder.Entity("HelpEmpowermentApi.Models.StudentExamQuestionAnswer", b =>
+                {
+                    b.Property<Guid>("Oid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AnswerSelectedAnswerOid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("SelectedAnswerOid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("StudentExamQuestionOid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Oid");
+
+                    b.HasIndex("AnswerSelectedAnswerOid");
+
+                    b.HasIndex("IsDeleted");
+
+                    b.HasIndex("SelectedAnswerOid");
+
+                    b.HasIndex("StudentExamQuestionOid");
+
+                    b.ToTable("student_exam_question_answers");
                 });
 
             modelBuilder.Entity("HelpEmpowermentApi.Models.User", b =>
@@ -2045,6 +2853,11 @@ namespace HelpEmpowermentApi.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("HelpEmpowermentApi.Models.AppLookupDetail", "ExamModeLookup")
+                        .WithMany()
+                        .HasForeignKey("ExamModeLookupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("HelpEmpowermentApi.Models.AppLookupDetail", "ExamStatusLookup")
                         .WithMany()
                         .HasForeignKey("ExamStatusLookupId")
@@ -2055,6 +2868,8 @@ namespace HelpEmpowermentApi.Migrations
                         .HasForeignKey("StudentOid")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ExamModeLookup");
 
                     b.Navigation("ExamStatusLookup");
 
@@ -2071,9 +2886,9 @@ namespace HelpEmpowermentApi.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("HelpEmpowermentApi.Models.CourseAnswer", "SelectedAnswer")
+                    b.HasOne("HelpEmpowermentApi.Models.AppLookupDetail", "QuestionStatus")
                         .WithMany()
-                        .HasForeignKey("SelectedAnswerOid")
+                        .HasForeignKey("QuestionStatusLookupId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("HelpEmpowermentApi.Models.StudentExam", "StudentExam")
@@ -2084,9 +2899,34 @@ namespace HelpEmpowermentApi.Migrations
 
                     b.Navigation("Question");
 
-                    b.Navigation("SelectedAnswer");
+                    b.Navigation("QuestionStatus");
 
                     b.Navigation("StudentExam");
+                });
+
+            modelBuilder.Entity("HelpEmpowermentApi.Models.StudentExamQuestionAnswer", b =>
+                {
+                    b.HasOne("HelpEmpowermentApi.Models.CourseAnswer", "AnswerSelectedAnswer")
+                        .WithMany()
+                        .HasForeignKey("AnswerSelectedAnswerOid");
+
+                    b.HasOne("HelpEmpowermentApi.Models.CourseAnswer", "SelectedAnswer")
+                        .WithMany()
+                        .HasForeignKey("SelectedAnswerOid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HelpEmpowermentApi.Models.StudentExamQuestion", "StudentExamQuestion")
+                        .WithMany("Answers")
+                        .HasForeignKey("StudentExamQuestionOid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AnswerSelectedAnswer");
+
+                    b.Navigation("SelectedAnswer");
+
+                    b.Navigation("StudentExamQuestion");
                 });
 
             modelBuilder.Entity("HelpEmpowermentApi.Models.User", b =>
@@ -2173,6 +3013,11 @@ namespace HelpEmpowermentApi.Migrations
             modelBuilder.Entity("HelpEmpowermentApi.Models.StudentExam", b =>
                 {
                     b.Navigation("ExamQuestions");
+                });
+
+            modelBuilder.Entity("HelpEmpowermentApi.Models.StudentExamQuestion", b =>
+                {
+                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("HelpEmpowermentApi.Models.User", b =>
