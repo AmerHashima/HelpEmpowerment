@@ -37,7 +37,18 @@ namespace HelpEmpowermentApi.Controllers
             var response = await _courseVideoService.GetByCourseIdAsync(courseId);
             return response.Success ? Ok(response) : NotFound(response);
         }
+        [HttpGet("streamVideo/{*fileName}")]
+        public IActionResult GetVideo(string fileName)
+        {
+            fileName = Uri.UnescapeDataString(fileName); // مهم للـ URL encoding
+            var fullPath = Path.Combine("/var/www/videos", fileName);
 
+            if (!System.IO.File.Exists(fullPath))
+                return NotFound();
+
+            var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read);
+            return File(stream, "video/mp4", enableRangeProcessing: true);
+        }
 
         [HttpGet("stream/{fileName}")]
         public IActionResult GetVideo(string fileName)
