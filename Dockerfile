@@ -15,12 +15,15 @@ COPY . .
 RUN dotnet build "HelpEmpowermentApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Publish stage
+# Publish stage
 FROM build AS publish
 RUN dotnet publish "HelpEmpowermentApi.csproj" -c $BUILD_CONFIGURATION -o /src/publish /p:UseAppHost=false
 
 # Final stage
 FROM base AS final
 WORKDIR /app
+
+# Copy published files
 COPY --from=publish /src/publish .
 
 # Copy Google credentials
