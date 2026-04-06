@@ -27,4 +27,4 @@ jobs:
             git pull origin master &&
             cd /root/DockerSetup/ &&
             docker compose down &&   
-            docker compose up 
+            docker compose up -d --build
