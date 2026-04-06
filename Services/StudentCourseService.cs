@@ -11,15 +11,18 @@ namespace HelpEmpowermentApi.Services
         private readonly IStudentCourseRepository _repository;
         private readonly IStudentRepository _studentRepository;
         private readonly ICourseRepository _courseRepository;
+        private readonly ICourseVideoRepository _courseVideoRepository;
 
         public StudentCourseService(
             IStudentCourseRepository repository,
             IStudentRepository studentRepository,
-            ICourseRepository courseRepository)
+            ICourseRepository courseRepository,
+            ICourseVideoRepository courseVideoRepository)
         {
             _repository = repository;
             _studentRepository = studentRepository;
             _courseRepository = courseRepository;
+            _courseVideoRepository = courseVideoRepository;
         }
 
         public async Task<PagedResponse<StudentCourseDto>> GetPagedAsync(DataRequest request)
@@ -118,6 +121,8 @@ namespace HelpEmpowermentApi.Services
                     coursePrice = parsedPrice;
                 }
 
+                var totalLessons = (await _courseVideoRepository.GetByCourseIdAsync(dto.CourseId)).Count;
+
                 var entity = new StudentCourse
                 {
                     StudentId = dto.StudentId,
@@ -126,6 +131,7 @@ namespace HelpEmpowermentApi.Services
                     DiscountAmount = dto.DiscountAmount,
                     PaymentMethod = dto.PaymentMethod,
                     EnrollmentDate = DateTime.UtcNow,
+                    TotalLessons = totalLessons,
                     CreatedBy = dto.CreatedBy,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -148,6 +154,8 @@ namespace HelpEmpowermentApi.Services
                 if (entity == null)
                     return ApiResponse<StudentCourseDto>.ErrorResponse("Enrollment not found");
 
+                var totalLessons = (await _courseVideoRepository.GetByCourseIdAsync(entity.CourseId)).Count;
+
                 entity.PaymentStatusLookupId = dto.PaymentStatusLookupId;
                 entity.PaidAmount = dto.PaidAmount;
                 entity.TransactionId = dto.TransactionId;
@@ -155,6 +163,7 @@ namespace HelpEmpowermentApi.Services
                 entity.EnrollmentStatusLookupId = dto.EnrollmentStatusLookupId;
                 entity.ProgressPercentage = dto.ProgressPercentage;
                 entity.CompletedLessons = dto.CompletedLessons;
+                entity.TotalLessons = totalLessons;
                 entity.UpdatedBy = dto.UpdatedBy;
                 entity.UpdatedAt = DateTime.UtcNow;
 
