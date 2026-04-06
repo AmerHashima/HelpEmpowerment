@@ -23,7 +23,8 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}      # المفتاح الخاص SSH (deploy key)
           port: 22
           script: |
-            cd /root/DockerSetup &&
+            cd /root/DockerSetup/backend/src &&
             git pull origin master &&
-            docker compose down &&
+            cd /root/DockerSetup/ &&
+            docker compose down &&   
             docker compose up -d --build
