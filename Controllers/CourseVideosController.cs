@@ -38,7 +38,7 @@ namespace HelpEmpowermentApi.Controllers
             return response.Success ? Ok(response) : NotFound(response);
         }
         [HttpGet("streamVideo/{*fileName}")]
-        public IActionResult GetVideo(string fileName)
+        public IActionResult streamVideo(string fileName)
         {
             fileName = Uri.UnescapeDataString(fileName); // مهم للـ URL encoding
             var fullPath = Path.Combine("/var/www/videos", fileName);
