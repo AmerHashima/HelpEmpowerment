@@ -1,32 +1,29 @@
-﻿# Base runtime
+﻿# Base runtime# Base image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 8080
 
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
+# Copy project and restore
 COPY ["HelpEmpowermentApi.csproj", "./"]
 RUN dotnet restore "HelpEmpowermentApi.csproj"
 
+# Copy all files
 COPY . .
-RUN dotnet build "HelpEmpowermentApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "HelpEmpowermentApi.csproj" -c Release -o /app/build
+RUN dotnet publish "HelpEmpowermentApi.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Publish stage
-# Publish stage
-FROM build AS publish
-RUN dotnet publish "HelpEmpowermentApi.csproj" -c $BUILD_CONFIGURATION -o /src/publish /p:UseAppHost=false
-
-# Final stage
+# Final image
 FROM base AS final
 WORKDIR /app
 
-# Copy published files
-COPY --from=publish /src/publish .
+# نسخ من build مباشرة بدل publish stage
+COPY --from=build /app/publish . 
 
-# Copy Google credentials
+# نسخ الـ Google credentials
 COPY --from=build /src/test-erp-68be7-b83f4e97f6be.json /app/Common/test-erp-68be7-b83f4e97f6be.json
 
 ENTRYPOINT ["dotnet", "HelpEmpowermentApi.dll"]
