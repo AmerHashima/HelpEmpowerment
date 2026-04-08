@@ -379,6 +379,7 @@ namespace HelpEmpowermentApi.Services
                 QuestionText_Ar = question.QuestionText_Ar,
                 QuestionTypeLookupId = question.QuestionTypeLookupId,
                 QuestionTypeName = question.QuestionTypeLookup?.LookupNameEn,
+                QuestionImage = question.QuestionImage,
                 QuestionScore = question.QuestionScore,
                 OrderNo = question.OrderNo,
                 IsActive = question.IsActive,
