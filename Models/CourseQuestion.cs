@@ -24,7 +24,7 @@ namespace HelpEmpowermentApi.Models
         public int? OrderNo { get; set; }
 
         public bool IsActive { get; set; } = true;
-
+        public string QuestionImage { get; set; } = string.Empty;
         public bool CorrectAnswer { get; set; } = false;
 
         /// <summary>

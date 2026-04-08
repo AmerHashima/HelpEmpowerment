@@ -1,5 +1,6 @@
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
+using Microsoft.AspNetCore.Http;
 
 namespace HelpEmpowermentApi.IServices
 {
@@ -13,5 +14,7 @@ namespace HelpEmpowermentApi.IServices
         Task<ApiResponse<CourseQuestionDto>> CreateAsync(CreateCourseQuestionDto dto);
         Task<ApiResponse<CourseQuestionDto>> UpdateAsync(UpdateCourseQuestionDto dto);
         Task<ApiResponse<bool>> DeleteAsync(Guid id);
+        Task<ApiResponse<CourseQuestionDto>> UploadImageAsync(Guid id, IFormFile image);
+        Task<ApiResponse<string>> GetImagePathAsync(Guid id);
     }
 }

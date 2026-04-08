@@ -71,5 +71,41 @@ namespace HelpEmpowermentApi.Controllers
             var response = await _questionService.DeleteAsync(id);
             return response.Success ? Ok(response) : NotFound(response);
         }
+
+        [HttpPost("{id}/image")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ApiResponse<CourseQuestionDto>>> UploadImage(Guid id, IFormFile image)
+        {
+            if (image == null || image.Length == 0)
+                return BadRequest(ApiResponse<CourseQuestionDto>.ErrorResponse("No image file provided"));
+
+            var response = await _questionService.UploadImageAsync(id, image);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
+        [HttpGet("{id}/image")]
+        public async Task<IActionResult> GetImage(Guid id)
+        {
+            var pathResponse = await _questionService.GetImagePathAsync(id);
+            if (!pathResponse.Success)
+                return NotFound(pathResponse);
+
+            var filePath = pathResponse.Data!;
+            if (!System.IO.File.Exists(filePath))
+                return NotFound("Image file not found on server");
+
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            var contentType = ext switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png"            => "image/png",
+                ".gif"            => "image/gif",
+                ".webp"           => "image/webp",
+                _                 => "application/octet-stream"
+            };
+
+            var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            return File(stream, contentType);
+        }
     }
 }

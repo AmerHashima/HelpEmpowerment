@@ -3,6 +3,7 @@ using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace HelpEmpowermentApi.Services
 {
@@ -305,6 +306,65 @@ namespace HelpEmpowermentApi.Services
             catch (Exception ex)
             {
                 return ApiResponse<bool>.ErrorResponse($"Error deleting question: {ex.Message}");
+            }
+        }
+
+        private static readonly HashSet<string> _allowedImageExtensions = new() { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        private const string _imageStoragePath = "/var/www/images/questions";
+
+        public async Task<ApiResponse<CourseQuestionDto>> UploadImageAsync(Guid id, IFormFile image)
+        {
+            try
+            {
+                var question = await _questionRepository.GetByIdAsync(id);
+                if (question == null)
+                    return ApiResponse<CourseQuestionDto>.ErrorResponse("Question not found");
+
+                var ext = Path.GetExtension(image.FileName).ToLowerInvariant();
+                if (!_allowedImageExtensions.Contains(ext))
+                    return ApiResponse<CourseQuestionDto>.ErrorResponse($"Invalid file type. Allowed: {string.Join(", ", _allowedImageExtensions)}");
+
+                Directory.CreateDirectory(_imageStoragePath);
+
+                // Delete previous image if it exists
+                if (!string.IsNullOrEmpty(question.QuestionImage) && File.Exists(question.QuestionImage))
+                    File.Delete(question.QuestionImage);
+
+                var fileName = $"{id}{ext}";
+                var filePath = Path.Combine(_imageStoragePath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                    await image.CopyToAsync(stream);
+
+                question.QuestionImage = filePath;
+                question.UpdatedAt = DateTime.UtcNow;
+                await _questionRepository.UpdateAsync(question);
+
+                var result = await _questionRepository.GetWithAnswersAsync(id);
+                return ApiResponse<CourseQuestionDto>.SuccessResponse(MapToDto(result!), "Image uploaded successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<CourseQuestionDto>.ErrorResponse($"Error uploading image: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<string>> GetImagePathAsync(Guid id)
+        {
+            try
+            {
+                var question = await _questionRepository.GetByIdAsync(id);
+                if (question == null)
+                    return ApiResponse<string>.ErrorResponse("Question not found");
+
+                if (string.IsNullOrEmpty(question.QuestionImage))
+                    return ApiResponse<string>.ErrorResponse("No image uploaded for this question");
+
+                return ApiResponse<string>.SuccessResponse(question.QuestionImage);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<string>.ErrorResponse($"Error: {ex.Message}");
             }
         }
 
