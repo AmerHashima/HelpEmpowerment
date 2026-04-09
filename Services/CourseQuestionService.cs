@@ -4,6 +4,7 @@ using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace HelpEmpowermentApi.Services
 {
@@ -13,17 +14,20 @@ namespace HelpEmpowermentApi.Services
         private readonly ICourseAnswerRepository _answerRepository;
         private readonly IAppLookupDetailRepository _lookupDetailRepository;
         private readonly ICoursesMasterExamRepository _examRepository;
+        private readonly IConfiguration _configuration;
 
         public CourseQuestionService(
             ICourseQuestionRepository questionRepository, 
             ICourseAnswerRepository answerRepository,
             IAppLookupDetailRepository lookupDetailRepository,
-            ICoursesMasterExamRepository examRepository)
+            ICoursesMasterExamRepository examRepository,
+            IConfiguration configuration)
         {
             _questionRepository = questionRepository;
             _answerRepository = answerRepository;
             _lookupDetailRepository = lookupDetailRepository;
             _examRepository = examRepository;
+            _configuration = configuration;
         }
 
         public async Task<PagedResponse<CourseQuestionDto>> GetPagedAsync(DataRequest request)
@@ -310,7 +314,7 @@ namespace HelpEmpowermentApi.Services
         }
 
         private static readonly HashSet<string> _allowedImageExtensions = new() { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-        private const string _imageStoragePath = "/var/www/images/questions";
+        private string ImageStoragePath => _configuration["FileStorage:QuestionImagesPath"] ?? "/var/www/images/questions";
 
         public async Task<ApiResponse<CourseQuestionDto>> UploadImageAsync(Guid id, IFormFile image)
         {
@@ -324,19 +328,25 @@ namespace HelpEmpowermentApi.Services
                 if (!_allowedImageExtensions.Contains(ext))
                     return ApiResponse<CourseQuestionDto>.ErrorResponse($"Invalid file type. Allowed: {string.Join(", ", _allowedImageExtensions)}");
 
-                Directory.CreateDirectory(_imageStoragePath);
+                var basePath = ImageStoragePath;
+                Directory.CreateDirectory(basePath);
 
-                // Delete previous image if it exists
-                if (!string.IsNullOrEmpty(question.QuestionImage) && File.Exists(question.QuestionImage))
-                    File.Delete(question.QuestionImage);
+                // Delete previous image file if it exists
+                if (!string.IsNullOrEmpty(question.QuestionImage))
+                {
+                    var oldFilePath = Path.Combine(basePath, question.QuestionImage);
+                    if (File.Exists(oldFilePath))
+                        File.Delete(oldFilePath);
+                }
 
                 var fileName = $"{id}{ext}";
-                var filePath = Path.Combine(_imageStoragePath, fileName);
+                var filePath = Path.Combine(basePath, fileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                     await image.CopyToAsync(stream);
 
-                question.QuestionImage = filePath;
+                // Store only the filename, not the full path
+                question.QuestionImage = fileName;
                 question.UpdatedAt = DateTime.UtcNow;
                 await _questionRepository.UpdateAsync(question);
 
@@ -360,6 +370,7 @@ namespace HelpEmpowermentApi.Services
                 if (string.IsNullOrEmpty(question.QuestionImage))
                     return ApiResponse<string>.ErrorResponse("No image uploaded for this question");
 
+                // Return only the filename; the controller resolves the full path
                 return ApiResponse<string>.SuccessResponse(question.QuestionImage);
             }
             catch (Exception ex)

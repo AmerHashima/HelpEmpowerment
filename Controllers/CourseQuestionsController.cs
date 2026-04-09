@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
+using Microsoft.Extensions.Configuration;
 
 namespace HelpEmpowermentApi.Controllers
 {
@@ -10,10 +11,12 @@ namespace HelpEmpowermentApi.Controllers
     public class CourseQuestionsController : ControllerBase
     {
         private readonly ICourseQuestionService _questionService;
+        private readonly IConfiguration _configuration;
 
-        public CourseQuestionsController(ICourseQuestionService questionService)
+        public CourseQuestionsController(ICourseQuestionService questionService, IConfiguration configuration)
         {
             _questionService = questionService;
+            _configuration = configuration;
         }
 
         [HttpPost("search")]
@@ -86,13 +89,15 @@ namespace HelpEmpowermentApi.Controllers
         [HttpGet("{id}/image")]
         public async Task<IActionResult> GetImage(Guid id)
         {
-            var pathResponse = await _questionService.GetImagePathAsync(id);
-            if (!pathResponse.Success)
-                return NotFound(pathResponse);
+            var fileNameResponse = await _questionService.GetImagePathAsync(id);
+            if (!fileNameResponse.Success)
+                return NotFound(fileNameResponse);
 
-            var filePath = pathResponse.Data!;
+            var basePath = _configuration["FileStorage:QuestionImagesPath"] ?? "/var/www/images/questions";
+            var filePath = Path.Combine(basePath, fileNameResponse.Data!);
+
             if (!System.IO.File.Exists(filePath))
-                return NotFound("Image file not found on server");
+                return NotFound($"Image file not found on server. Looked in: {filePath}");
 
             var ext = Path.GetExtension(filePath).ToLowerInvariant();
             var contentType = ext switch
