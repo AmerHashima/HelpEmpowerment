@@ -112,5 +112,12 @@ namespace HelpEmpowermentApi.Controllers
             var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             return File(stream, contentType);
         }
+
+        [HttpDelete("{id}/image")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteImage(Guid id)
+        {
+            var response = await _questionService.DeleteImageAsync(id);
+            return response.Success ? Ok(response) : NotFound(response);
+        }
     }
 }

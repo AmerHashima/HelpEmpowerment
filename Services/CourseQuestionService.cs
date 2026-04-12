@@ -379,6 +379,33 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
+        public async Task<ApiResponse<bool>> DeleteImageAsync(Guid id)
+        {
+            try
+            {
+                var question = await _questionRepository.GetByIdAsync(id);
+                if (question == null)
+                    return ApiResponse<bool>.ErrorResponse("Question not found");
+
+                if (string.IsNullOrEmpty(question.QuestionImage))
+                    return ApiResponse<bool>.ErrorResponse("No image to delete for this question");
+
+                var filePath = Path.Combine(ImageStoragePath, question.QuestionImage);
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+
+                question.QuestionImage = string.Empty;
+                question.UpdatedAt = DateTime.UtcNow;
+                await _questionRepository.UpdateAsync(question);
+
+                return ApiResponse<bool>.SuccessResponse(true, "Image deleted successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<bool>.ErrorResponse($"Error deleting image: {ex.Message}");
+            }
+        }
+
         private static CourseQuestionDto MapToDto(CourseQuestion question)
         {
             return new CourseQuestionDto

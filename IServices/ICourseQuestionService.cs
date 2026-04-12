@@ -16,5 +16,6 @@ namespace HelpEmpowermentApi.IServices
         Task<ApiResponse<bool>> DeleteAsync(Guid id);
         Task<ApiResponse<CourseQuestionDto>> UploadImageAsync(Guid id, IFormFile image);
         Task<ApiResponse<string>> GetImagePathAsync(Guid id);
+        Task<ApiResponse<bool>> DeleteImageAsync(Guid id);
     }
 }
