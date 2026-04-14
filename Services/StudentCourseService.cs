@@ -130,6 +130,9 @@ namespace HelpEmpowermentApi.Services
                     Price = dto.Price ?? coursePrice,  // ✅ Fixed: Now both are decimal?
                     DiscountAmount = dto.DiscountAmount,
                     PaymentMethod = dto.PaymentMethod,
+                    LiveCourseReserv = dto.LiveCourseReserv,
+                    RecordedCourseReserv = dto.RecordedCourseReserv,
+                    ExamSimulationReserv = dto.ExamSimulationReserv,
                     EnrollmentDate = DateTime.UtcNow,
                     TotalLessons = totalLessons,
                     CreatedBy = dto.CreatedBy,

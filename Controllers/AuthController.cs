@@ -117,7 +117,7 @@ namespace HelpEmpowermentApi.Controllers
         /// <summary>
         /// Logout and revoke refresh token
         /// </summary>
-        [Authorize]
+       // [Authorize]
         [HttpPost("logout")]
         public async Task<ActionResult<ApiResponse<bool>>> Logout()
         {
