@@ -18,7 +18,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost("search")]
-     //   [Authorize]
+     //   //[Authorize]
         public async Task<ActionResult<PagedResponse<ServiceContactUsDto>>> Search([FromBody] DataRequest request)
         {
             var response = await _service.GetPagedAsync(request);
@@ -47,7 +47,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpGet("unread")]
-        [Authorize]
+        //[Authorize]
         public async Task<ActionResult<ApiResponse<List<ServiceContactUsDto>>>> GetUnread()
         {
             var response = await _service.GetUnreadAsync();
@@ -55,7 +55,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpGet("unread/count")]
-        [Authorize]
+        //[Authorize]
         public async Task<ActionResult<ApiResponse<int>>> GetUnreadCount()
         {
             var response = await _service.GetUnreadCountAsync();
@@ -70,7 +70,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost("{id}/respond")]
-        [Authorize]
+        //[Authorize]
         public async Task<ActionResult<ApiResponse<ServiceContactUsDto>>> Respond(Guid id, [FromBody] RespondContactUsDto dto)
         {
             dto.Oid = id;
@@ -79,7 +79,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPut("{id}/read")]
-        [Authorize]
+        //[Authorize]
         public async Task<ActionResult<ApiResponse<bool>>> MarkAsRead(Guid id, [FromBody] MarkAsReadRequest request)
         {
             var response = await _service.MarkAsReadAsync(id, request.ReadBy);
@@ -87,7 +87,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPut("{id}/status")]
-        [Authorize]
+        //[Authorize]
         public async Task<ActionResult<ApiResponse<bool>>> UpdateStatus(Guid id, [FromBody] UpdateStatusRequest request)
         {
             var response = await _service.UpdateStatusAsync(id, request.StatusLookupId);
@@ -95,7 +95,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
+        //[Authorize]
         public async Task<ActionResult<ApiResponse<bool>>> Delete(Guid id)
         {
             var response = await _service.DeleteAsync(id);
