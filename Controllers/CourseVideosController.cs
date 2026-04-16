@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
-using Microsoft.Extensions.Configuration;
 
 namespace HelpEmpowermentApi.Controllers
 {
@@ -11,13 +10,11 @@ namespace HelpEmpowermentApi.Controllers
     public class CourseVideosController : ControllerBase
     {
         private readonly ICourseVideoService _courseVideoService;
-        private readonly IConfiguration _configuration;
-        private string VideosPath => _configuration["FileStorage:VideosPath"] ?? "/var/www/videos";
+        private readonly string videoPath = "/var/www/videos";
 
-        public CourseVideosController(ICourseVideoService courseVideoService, IConfiguration configuration)
+        public CourseVideosController(ICourseVideoService courseVideoService)
         {
             _courseVideoService = courseVideoService;
-            _configuration = configuration;
         }
 
         [HttpPost("search")]
@@ -40,37 +37,29 @@ namespace HelpEmpowermentApi.Controllers
             var response = await _courseVideoService.GetByCourseIdAsync(courseId);
             return response.Success ? Ok(response) : NotFound(response);
         }
-
-        [HttpGet("streamVideo")]
-        public IActionResult streamVideo([FromQuery] string fileName)
+        [HttpGet("streamVideo/{*fileName}")]
+        public IActionResult streamVideo(string fileName)
         {
-            if (string.IsNullOrWhiteSpace(fileName))
-                return BadRequest("fileName query parameter is required");
-
-            var basePath = Path.GetFullPath(VideosPath);
-            var fullPath = Path.GetFullPath(Path.Combine(basePath, fileName));
-
-            if (!fullPath.StartsWith(basePath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
-                && !fullPath.Equals(basePath, StringComparison.OrdinalIgnoreCase))
-                return BadRequest("Invalid file path");
+            fileName = Uri.UnescapeDataString(fileName); // مهم للـ URL encoding
+            var fullPath = Path.Combine("/var/www/videos", fileName);
 
             if (!System.IO.File.Exists(fullPath))
-                return NotFound($"Video not found: {fileName}");
+                return NotFound();
 
-            var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read);
             return File(stream, "video/mp4", enableRangeProcessing: true);
         }
 
         [HttpGet("stream/{fileName}")]
         public IActionResult GetVideo(string fileName)
         {
-            fileName = Path.GetFileName(fileName);
-            var path = Path.Combine(VideosPath, fileName);
+            fileName = Path.GetFileName(fileName); // Security: prevent path traversal
+            var path = Path.Combine(videoPath, fileName);
 
             if (!System.IO.File.Exists(path))
                 return NotFound();
 
-            var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
             return File(stream, "video/mp4", enableRangeProcessing: true);
         }
 
