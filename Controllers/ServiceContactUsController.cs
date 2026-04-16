@@ -18,7 +18,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost("search")]
-        [Authorize]
+     //   [Authorize]
         public async Task<ActionResult<PagedResponse<ServiceContactUsDto>>> Search([FromBody] DataRequest request)
         {
             var response = await _service.GetPagedAsync(request);
