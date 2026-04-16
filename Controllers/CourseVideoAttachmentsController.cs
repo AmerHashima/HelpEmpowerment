@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
+using Microsoft.Extensions.Configuration;
 
 namespace HelpEmpowermentApi.Controllers
 {
@@ -10,10 +11,18 @@ namespace HelpEmpowermentApi.Controllers
     public class CourseVideoAttachmentsController : ControllerBase
     {
         private readonly ICourseVideoAttachmentService _attachmentService;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
+        private string AttachmentsPath => _configuration["FileStorage:AttachmentsPath"] ?? "/var/www/attachments";
 
-        public CourseVideoAttachmentsController(ICourseVideoAttachmentService attachmentService)
+        public CourseVideoAttachmentsController(
+            ICourseVideoAttachmentService attachmentService,
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration)
         {
             _attachmentService = attachmentService;
+            _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         }
 
         [HttpPost("search")]
@@ -35,6 +44,44 @@ namespace HelpEmpowermentApi.Controllers
         {
             var response = await _attachmentService.GetByVideoIdAsync(videoId);
             return response.Success ? Ok(response) : NotFound(response);
+        }
+
+        [HttpGet("{id}/download")]
+        public async Task<IActionResult> Download(Guid id)
+        {
+            var response = await _attachmentService.GetByIdAsync(id);
+            if (!response.Success || response.Data == null)
+                return NotFound("Attachment not found");
+
+            var fileUrl = response.Data.FileUrl;
+            if (string.IsNullOrWhiteSpace(fileUrl))
+                return NotFound("No file URL associated with this attachment");
+
+            var fileName = response.Data.FileName ?? Path.GetFileName(fileUrl) ?? $"{id}.pdf";
+            const string contentType = "application/pdf";
+
+            // Remote HTTP/HTTPS URL → proxy the download
+            if (fileUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                fileUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                var client = _httpClientFactory.CreateClient();
+                var fileBytes = await client.GetByteArrayAsync(fileUrl);
+                return File(fileBytes, contentType, fileName);
+            }
+
+            // Local file path → serve from disk
+            var basePath = Path.GetFullPath(AttachmentsPath);
+            var fullPath = Path.GetFullPath(Path.Combine(basePath, fileUrl));
+
+            if (!fullPath.StartsWith(basePath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                && !fullPath.Equals(basePath, StringComparison.OrdinalIgnoreCase))
+                return BadRequest("Invalid file path");
+
+            if (!System.IO.File.Exists(fullPath))
+                return NotFound($"File not found on server: {fullPath}");
+
+            var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return File(stream, contentType, fileName);
         }
 
         [HttpPost]
