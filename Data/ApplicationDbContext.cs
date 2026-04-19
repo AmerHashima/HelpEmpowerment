@@ -47,6 +47,10 @@ namespace HelpEmpowermentApi.Data
         public DbSet<StudentBasket> StudentBaskets { get; set; }
         public DbSet<ServiceContactUs> ServiceContactUs { get; set; }
 
+        // Live Events
+        public DbSet<LiveCourse> LiveCourses { get; set; }
+        public DbSet<LiveWebinar> LiveWebinars { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

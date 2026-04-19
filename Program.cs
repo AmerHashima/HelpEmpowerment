@@ -164,6 +164,8 @@ namespace HelpEmpowermentApi
             services.AddScoped<IStudentCourseRepository, StudentCourseRepository>();
             services.AddScoped<IStudentBasketRepository, StudentBasketRepository>();
             services.AddScoped<IServiceContactUsRepository, ServiceContactUsRepository>();
+            services.AddScoped<ILiveCourseRepository, LiveCourseRepository>();
+            services.AddScoped<ILiveWebinarRepository, LiveWebinarRepository>();
         }
 
         private static void RegisterServices(IServiceCollection services)
@@ -195,6 +197,8 @@ namespace HelpEmpowermentApi
             services.AddScoped<IStudentCourseService, StudentCourseService>();
             services.AddScoped<IStudentBasketService, StudentBasketService>();
             services.AddScoped<IServiceContactUsService, ServiceContactUsService>();
+            services.AddScoped<ILiveCourseService, LiveCourseService>();
+            services.AddScoped<ILiveWebinarService, LiveWebinarService>();
         }
 
 
