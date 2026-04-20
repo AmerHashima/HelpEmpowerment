@@ -11,6 +11,8 @@ namespace HelpEmpowermentApi.Models
         [MaxLength(100)]
         public string WebinarName { get; set; } = string.Empty;
 
+        public Guid? CourseOid { get; set; }
+
         [MaxLength(50)]
         public string? WebinarFormat { get; set; }
 
@@ -35,5 +37,9 @@ namespace HelpEmpowermentApi.Models
 
         public Guid? CreatedBy { get; set; }
         public Guid? UpdatedBy { get; set; }
+
+        // Navigation properties
+        [ForeignKey(nameof(CourseOid))]
+        public virtual Course? Course { get; set; }
     }
 }

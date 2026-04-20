@@ -16,6 +16,7 @@ namespace HelpEmpowermentApi.Repositories
         public async Task<PagedResult<LiveWebinar>> GetPagedAsync(DataRequest request)
         {
             var query = _dbSet
+                .Include(x => x.Course)
                 .Where(x => !x.IsDeleted)
                 .AsQueryable();
 

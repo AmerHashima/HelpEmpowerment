@@ -4,6 +4,8 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid Oid { get; set; }
         public string CourseName { get; set; } = string.Empty;
+        public Guid? CourseOid { get; set; }
+        public string? CourseTitle { get; set; }
         public string? CourseFormat { get; set; }
         public DateTime? StartDate { get; set; }
         public string? StartTime { get; set; }
@@ -23,6 +25,7 @@ namespace HelpEmpowermentApi.DTOs
     public class CreateLiveCourseDto
     {
         public string CourseName { get; set; } = string.Empty;
+        public Guid? CourseOid { get; set; }
         public string? CourseFormat { get; set; }
         public DateTime? StartDate { get; set; }
         public string? StartTime { get; set; }
@@ -40,6 +43,7 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid Oid { get; set; }
         public string CourseName { get; set; } = string.Empty;
+        public Guid? CourseOid { get; set; }
         public string? CourseFormat { get; set; }
         public DateTime? StartDate { get; set; }
         public string? StartTime { get; set; }

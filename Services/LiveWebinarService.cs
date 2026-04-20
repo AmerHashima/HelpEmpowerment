@@ -58,6 +58,7 @@ namespace HelpEmpowermentApi.Services
                 var entity = new LiveWebinar
                 {
                     WebinarName = dto.WebinarName,
+                    CourseOid = dto.CourseOid,
                     WebinarFormat = dto.WebinarFormat,
                     WebinarDate = dto.WebinarDate,
                     WebinarStartTime = dto.WebinarStartTime,
@@ -88,6 +89,7 @@ namespace HelpEmpowermentApi.Services
                     return ApiResponse<LiveWebinarDto>.ErrorResponse("Live webinar not found");
 
                 entity.WebinarName = dto.WebinarName;
+                entity.CourseOid = dto.CourseOid;
                 entity.WebinarFormat = dto.WebinarFormat;
                 entity.WebinarDate = dto.WebinarDate;
                 entity.WebinarStartTime = dto.WebinarStartTime;
@@ -128,6 +130,8 @@ namespace HelpEmpowermentApi.Services
         {
             Oid = entity.Oid,
             WebinarName = entity.WebinarName,
+            CourseOid = entity.CourseOid,
+            CourseName = entity.Course?.CourseName,
             WebinarFormat = entity.WebinarFormat,
             WebinarDate = entity.WebinarDate,
             WebinarStartTime = entity.WebinarStartTime,

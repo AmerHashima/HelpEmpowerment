@@ -4,6 +4,8 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid Oid { get; set; }
         public string WebinarName { get; set; } = string.Empty;
+        public Guid? CourseOid { get; set; }
+        public string? CourseName { get; set; }
         public string? WebinarFormat { get; set; }
         public DateTime? WebinarDate { get; set; }
         public string? WebinarStartTime { get; set; }
@@ -21,6 +23,7 @@ namespace HelpEmpowermentApi.DTOs
     public class CreateLiveWebinarDto
     {
         public string WebinarName { get; set; } = string.Empty;
+        public Guid? CourseOid { get; set; }
         public string? WebinarFormat { get; set; }
         public DateTime? WebinarDate { get; set; }
         public string? WebinarStartTime { get; set; }
@@ -36,6 +39,7 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid Oid { get; set; }
         public string WebinarName { get; set; } = string.Empty;
+        public Guid? CourseOid { get; set; }
         public string? WebinarFormat { get; set; }
         public DateTime? WebinarDate { get; set; }
         public string? WebinarStartTime { get; set; }

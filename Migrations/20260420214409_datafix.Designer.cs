@@ -4,6 +4,7 @@ using HelpEmpowermentApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HelpEmpowermentApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260420214409_datafix")]
+    partial class datafix
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1874,9 +1877,6 @@ namespace HelpEmpowermentApi.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<Guid?>("CourseOid")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -1930,8 +1930,6 @@ namespace HelpEmpowermentApi.Migrations
 
                     b.HasKey("Oid");
 
-                    b.HasIndex("CourseOid");
-
                     b.ToTable("live_courses");
                 });
 
@@ -1939,9 +1937,6 @@ namespace HelpEmpowermentApi.Migrations
                 {
                     b.Property<Guid>("Oid")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CourseOid")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("CreatedAt")
@@ -1999,8 +1994,6 @@ namespace HelpEmpowermentApi.Migrations
                         .HasColumnType("nvarchar(255)");
 
                     b.HasKey("Oid");
-
-                    b.HasIndex("CourseOid");
 
                     b.ToTable("live_webinars");
                 });
@@ -2894,24 +2887,6 @@ namespace HelpEmpowermentApi.Migrations
                     b.Navigation("CourseCategoryLookup");
 
                     b.Navigation("CourseLevelLookup");
-                });
-
-            modelBuilder.Entity("HelpEmpowermentApi.Models.LiveCourse", b =>
-                {
-                    b.HasOne("HelpEmpowermentApi.Models.Course", "Course")
-                        .WithMany()
-                        .HasForeignKey("CourseOid");
-
-                    b.Navigation("Course");
-                });
-
-            modelBuilder.Entity("HelpEmpowermentApi.Models.LiveWebinar", b =>
-                {
-                    b.HasOne("HelpEmpowermentApi.Models.Course", "Course")
-                        .WithMany()
-                        .HasForeignKey("CourseOid");
-
-                    b.Navigation("Course");
                 });
 
             modelBuilder.Entity("HelpEmpowermentApi.Models.ServiceContactUs", b =>

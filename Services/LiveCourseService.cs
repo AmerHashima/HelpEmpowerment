@@ -58,6 +58,7 @@ namespace HelpEmpowermentApi.Services
                 var entity = new LiveCourse
                 {
                     CourseName = dto.CourseName,
+                    CourseOid = dto.CourseOid,
                     CourseFormat = dto.CourseFormat,
                     StartDate = dto.StartDate,
                     StartTime = dto.StartTime,
@@ -90,6 +91,7 @@ namespace HelpEmpowermentApi.Services
                     return ApiResponse<LiveCourseDto>.ErrorResponse("Live course not found");
 
                 entity.CourseName = dto.CourseName;
+                entity.CourseOid = dto.CourseOid;
                 entity.CourseFormat = dto.CourseFormat;
                 entity.StartDate = dto.StartDate;
                 entity.StartTime = dto.StartTime;
@@ -132,6 +134,8 @@ namespace HelpEmpowermentApi.Services
         {
             Oid = entity.Oid,
             CourseName = entity.CourseName,
+            CourseOid = entity.CourseOid,
+            CourseTitle = entity.Course?.CourseName,
             CourseFormat = entity.CourseFormat,
             StartDate = entity.StartDate,
             StartTime = entity.StartTime,
