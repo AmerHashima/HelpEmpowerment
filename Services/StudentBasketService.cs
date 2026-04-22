@@ -74,6 +74,9 @@ namespace HelpEmpowermentApi.Services
                     FinalPrice = price - discountAmount,
                     CouponCode = dto.CouponCode,
                     Quantity = 1,
+                    RecordedCourseReserv = dto.RecordedCourseReserv,
+                    LiveCourseReserv = dto.LiveCourseReserv,
+                    ExamSimulationReserv = dto.ExamSimulationReserv,
                     AddedAt = DateTime.UtcNow,
                     CreatedBy = dto.StudentId,
                     CreatedAt = DateTime.UtcNow
@@ -272,6 +275,9 @@ namespace HelpEmpowermentApi.Services
                 FinalPrice = entity.FinalPrice,
                 CouponCode = entity.CouponCode,
                 Quantity = entity.Quantity,
+                RecordedCourseReserv = entity.RecordedCourseReserv,
+                LiveCourseReserv = entity.LiveCourseReserv,
+                ExamSimulationReserv = entity.ExamSimulationReserv,
                 AddedAt = entity.AddedAt
             };
         }
