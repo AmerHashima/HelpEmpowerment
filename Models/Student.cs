@@ -39,6 +39,16 @@ namespace HelpEmpowermentApi.Models
         public Guid? CreatedBy { get; set; }
         public Guid? UpdatedBy { get; set; }
 
+        // Promo code fields
+        [MaxLength(50)]
+        public string? PromoCode { get; set; }
+
+        public float? PromoDiscount { get; set; }
+
+        public int UsersUsedPromo { get; set; } = 0;
+
+        public float TotalMoneyWithPromo { get; set; } = 0;
+
         // Navigation properties
         public virtual ICollection<StudentExam> StudentExams { get; set; } = new List<StudentExam>();
         public virtual ICollection<CourseLiveSessionStudent> LiveSessionEnrollments { get; set; } = new List<CourseLiveSessionStudent>();

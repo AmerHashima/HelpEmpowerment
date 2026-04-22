@@ -99,6 +99,8 @@ namespace HelpEmpowermentApi.Services
                     Username = dto.Username,
                     PasswordHash = HashPassword(dto.Password),
                     IsActive = dto.IsActive,
+                    PromoCode = dto.PromoCode,
+                    PromoDiscount = dto.PromoDiscount,
                     CreatedBy = dto.CreatedBy,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -134,6 +136,10 @@ namespace HelpEmpowermentApi.Services
                 student.Mobile = dto.Mobile;
                 student.Username = dto.Username;
                 student.IsActive = dto.IsActive;
+                student.PromoCode = dto.PromoCode;
+                student.PromoDiscount = dto.PromoDiscount;
+                student.UsersUsedPromo = dto.UsersUsedPromo;
+                student.TotalMoneyWithPromo = dto.TotalMoneyWithPromo;
                 student.UpdatedBy = dto.UpdatedBy;
                 student.UpdatedAt = DateTime.UtcNow;
 
@@ -191,6 +197,10 @@ namespace HelpEmpowermentApi.Services
                 Mobile = student.Mobile,
                 Username = student.Username,
                 IsActive = student.IsActive,
+                PromoCode = student.PromoCode,
+                PromoDiscount = student.PromoDiscount,
+                UsersUsedPromo = student.UsersUsedPromo,
+                TotalMoneyWithPromo = student.TotalMoneyWithPromo,
                 CreatedAt = student.CreatedAt,
                 CreatedBy = student.CreatedBy,
                 UpdatedAt = student.UpdatedAt,

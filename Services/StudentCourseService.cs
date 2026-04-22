@@ -166,6 +166,9 @@ namespace HelpEmpowermentApi.Services
                 entity.EnrollmentStatusLookupId = dto.EnrollmentStatusLookupId;
                 entity.ProgressPercentage = dto.ProgressPercentage;
                 entity.CompletedLessons = dto.CompletedLessons;
+                entity.LiveCourseReserv = dto.LiveCourseReserv;
+                entity.RecordedCourseReserv = dto.RecordedCourseReserv;
+                entity.ExamSimulationReserv = dto.ExamSimulationReserv;
                 entity.TotalLessons = totalLessons;
                 entity.UpdatedBy = dto.UpdatedBy;
                 entity.UpdatedAt = DateTime.UtcNow;

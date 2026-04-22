@@ -98,6 +98,9 @@ namespace HelpEmpowermentApi.Services
                     return ApiResponse<StudentBasketDto>.ErrorResponse("Basket item not found");
 
                 entity.Quantity = dto.Quantity;
+                entity.ExamSimulationReserv = dto.ExamSimulationReserv;
+                entity.LiveCourseReserv = dto.LiveCourseReserv;
+                entity.RecordedCourseReserv = dto.RecordedCourseReserv;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _repository.UpdateAsync(entity);
