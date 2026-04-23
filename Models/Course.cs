@@ -31,6 +31,15 @@ namespace HelpEmpowermentApi.Models
         [Column(TypeName = "text")]
         public string? Price { get; set; }
 
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? RecordedCourseReservPrice { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? ExamSimulationReservPrice { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? LiveCourseReservPrice { get; set; }
+
         public Guid? CourseLevelLookupId { get; set; }
 
         public Guid? CourseCategoryLookupId { get; set; }

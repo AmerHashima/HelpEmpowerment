@@ -56,22 +56,29 @@ namespace HelpEmpowermentApi.Services
                 }
 
                 var price = coursePrice ?? 0;
+
+                decimal reservPrice = 0;
+                if (dto.RecordedCourseReserv) reservPrice += course.RecordedCourseReservPrice ?? 0;
+                if (dto.ExamSimulationReserv) reservPrice += course.ExamSimulationReservPrice ?? 0;
+                if (dto.LiveCourseReserv) reservPrice += course.LiveCourseReservPrice ?? 0;
+
+                var totalPrice = price + reservPrice;
                 decimal discountAmount = 0;
 
                 // Apply coupon if provided
                 if (!string.IsNullOrEmpty(dto.CouponCode))
                 {
                     // TODO: Validate coupon and calculate discount
-                    discountAmount = price * 0.1m; // Example: 10% discount
+                    discountAmount = totalPrice * 0.1m; // Example: 10% discount
                 }
 
                 var entity = new StudentBasket
                 {
                     StudentId = dto.StudentId,
                     CourseId = dto.CourseId,
-                    OriginalPrice = price,
+                    OriginalPrice = totalPrice,
                     DiscountAmount = discountAmount,
-                    FinalPrice = price - discountAmount,
+                    FinalPrice = totalPrice - discountAmount,
                     CouponCode = dto.CouponCode,
                     Quantity = 1,
                     RecordedCourseReserv = dto.RecordedCourseReserv,

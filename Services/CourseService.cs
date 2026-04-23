@@ -110,7 +110,10 @@ namespace HelpEmpowermentApi.Services
                     CourseLevelLookupId = dto.CourseLevelLookupId,
                     CourseCategoryLookupId = dto.CourseCategoryLookupId,
                     IsActive = dto.IsActive,
-                    CreatedBy = dto.CreatedBy
+                    CreatedBy = dto.CreatedBy,
+                    RecordedCourseReservPrice = dto.RecordedCourseReservPrice,
+                    ExamSimulationReservPrice = dto.ExamSimulationReservPrice,
+                    LiveCourseReservPrice = dto.LiveCourseReservPrice
                 };
 
                 var created = await _courseRepository.AddAsync(course);
@@ -159,6 +162,9 @@ namespace HelpEmpowermentApi.Services
                 course.CourseCategoryLookupId = dto.CourseCategoryLookupId;
                 course.IsActive = dto.IsActive;
                 course.UpdatedBy = dto.UpdatedBy;
+                course.RecordedCourseReservPrice = dto.RecordedCourseReservPrice;
+                course.ExamSimulationReservPrice = dto.ExamSimulationReservPrice;
+                course.LiveCourseReservPrice = dto.LiveCourseReservPrice;
 
                 var updated = await _courseRepository.UpdateAsync(course);
                 return ApiResponse<CourseDto>.SuccessResponse(MapToDto(updated), "Course updated successfully");
@@ -197,6 +203,9 @@ namespace HelpEmpowermentApi.Services
                 CourseLevelName = course.CourseLevelLookup?.LookupNameEn,
                 CourseCategoryLookupId = course.CourseCategoryLookupId,
                 CourseCategoryName = course.CourseCategoryLookup?.LookupNameEn,
+                RecordedCourseReservPrice = course.RecordedCourseReservPrice,
+                ExamSimulationReservPrice = course.ExamSimulationReservPrice,
+                LiveCourseReservPrice = course.LiveCourseReservPrice,
                 IsActive = course.IsActive,
                 CreatedAt = course.CreatedAt,
                 CreatedBy = course.CreatedBy,
