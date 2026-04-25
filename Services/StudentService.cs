@@ -101,6 +101,7 @@ namespace HelpEmpowermentApi.Services
                     IsActive = dto.IsActive,
                     PromoCode = dto.PromoCode,
                     PromoDiscount = dto.PromoDiscount,
+                    PromoToDateValid = dto.PromoToDateValid,
                     CreatedBy = dto.CreatedBy,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -140,6 +141,7 @@ namespace HelpEmpowermentApi.Services
                 student.PromoDiscount = dto.PromoDiscount;
                 student.UsersUsedPromo = dto.UsersUsedPromo;
                 student.TotalMoneyWithPromo = dto.TotalMoneyWithPromo;
+                student.PromoToDateValid = dto.PromoToDateValid;
                 student.UpdatedBy = dto.UpdatedBy;
                 student.UpdatedAt = DateTime.UtcNow;
 
@@ -201,6 +203,7 @@ namespace HelpEmpowermentApi.Services
                 PromoDiscount = student.PromoDiscount,
                 UsersUsedPromo = student.UsersUsedPromo,
                 TotalMoneyWithPromo = student.TotalMoneyWithPromo,
+                PromoToDateValid = student.PromoToDateValid,
                 CreatedAt = student.CreatedAt,
                 CreatedBy = student.CreatedBy,
                 UpdatedAt = student.UpdatedAt,

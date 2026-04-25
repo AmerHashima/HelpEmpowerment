@@ -8,6 +8,7 @@ namespace HelpEmpowermentApi.IRepositories
         Task<PagedResult<Student>> GetPagedAsync(DataRequest request);
         Task<Student?> GetByUsernameAsync(string username);
         Task<Student?> GetByEmailAsync(string email);
+        Task<Student?> GetByPromoCodeAsync(string promoCode);
         Task<bool> IsUsernameUniqueAsync(string username, Guid? excludeId = null);
         Task<bool> IsEmailUniqueAsync(string email, Guid? excludeId = null);
         Task<Student?> AuthenticateAsync(string username, string passwordHash);

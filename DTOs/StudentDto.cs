@@ -13,6 +13,7 @@
         public float? PromoDiscount { get; set; }
         public int UsersUsedPromo { get; set; }
         public float TotalMoneyWithPromo { get; set; }
+        public DateTime? PromoToDateValid { get; set; }
         public DateTime? CreatedAt { get; set; }
         public Guid? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
@@ -43,6 +44,7 @@
         public bool IsActive { get; set; } = true;
         public string? PromoCode { get; set; }
         public float? PromoDiscount { get; set; }
+        public DateTime? PromoToDateValid { get; set; }
         public Guid? CreatedBy { get; set; }
     }
 
@@ -59,6 +61,7 @@
         public float? PromoDiscount { get; set; }
         public int UsersUsedPromo { get; set; }
         public float TotalMoneyWithPromo { get; set; }
+        public DateTime? PromoToDateValid { get; set; }
         public Guid? UpdatedBy { get; set; }
     }
 }

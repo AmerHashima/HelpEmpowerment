@@ -16,6 +16,9 @@ namespace HelpEmpowermentApi.DTOs
         public bool ExamSimulationReserv { get; set; } = false;
         public bool RecordedCourseReserv { get; set; } = false;
         public bool LiveCourseReserv { get; set; } = false;
+        public decimal? RecordedCourseReservPrice { get; set; }
+        public decimal? ExamSimulationReservPrice { get; set; }
+        public decimal? LiveCourseReservPrice { get; set; }
         public DateTime AddedAt { get; set; }
     }
 

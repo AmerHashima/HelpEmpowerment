@@ -48,6 +48,12 @@ namespace HelpEmpowermentApi.Repositories
                 .FirstOrDefaultAsync(s => s.Email == email && !s.IsDeleted);
         }
 
+        public async Task<Student?> GetByPromoCodeAsync(string promoCode)
+        {
+            return await _dbSet
+                .FirstOrDefaultAsync(s => s.PromoCode == promoCode && !s.IsDeleted);
+        }
+
         public async Task<bool> IsUsernameUniqueAsync(string username, Guid? excludeId = null)
         {
             var query = _dbSet.Where(s => s.Username == username && !s.IsDeleted);

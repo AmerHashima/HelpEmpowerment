@@ -49,6 +49,8 @@ namespace HelpEmpowermentApi.Models
 
         public float TotalMoneyWithPromo { get; set; } = 0;
 
+        public DateTime? PromoToDateValid { get; set; }
+
         // Navigation properties
         public virtual ICollection<StudentExam> StudentExams { get; set; } = new List<StudentExam>();
         public virtual ICollection<CourseLiveSessionStudent> LiveSessionEnrollments { get; set; } = new List<CourseLiveSessionStudent>();

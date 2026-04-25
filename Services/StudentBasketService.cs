@@ -64,12 +64,22 @@ namespace HelpEmpowermentApi.Services
 
                 var totalPrice = price + reservPrice;
                 decimal discountAmount = 0;
+                string? appliedCoupon = null;
 
                 // Apply coupon if provided
                 if (!string.IsNullOrEmpty(dto.CouponCode))
                 {
-                    // TODO: Validate coupon and calculate discount
-                    discountAmount = totalPrice * 0.1m; // Example: 10% discount
+                    var promoOwner = await _studentRepository.GetByPromoCodeAsync(dto.CouponCode);
+
+                    if (promoOwner == null)
+                        return ApiResponse<StudentBasketDto>.ErrorResponse("Invalid coupon code");
+
+                    if (promoOwner.PromoToDateValid.HasValue && promoOwner.PromoToDateValid.Value < DateTime.UtcNow)
+                        return ApiResponse<StudentBasketDto>.ErrorResponse("Coupon code has expired");
+
+                    var discountPercent = (decimal)(promoOwner.PromoDiscount ?? 0);
+                    discountAmount = totalPrice * (discountPercent / 100);
+                    appliedCoupon = dto.CouponCode;
                 }
 
                 var entity = new StudentBasket
@@ -79,7 +89,7 @@ namespace HelpEmpowermentApi.Services
                     OriginalPrice = totalPrice,
                     DiscountAmount = discountAmount,
                     FinalPrice = totalPrice - discountAmount,
-                    CouponCode = dto.CouponCode,
+                    CouponCode = appliedCoupon,
                     Quantity = 1,
                     RecordedCourseReserv = dto.RecordedCourseReserv,
                     LiveCourseReserv = dto.LiveCourseReserv,
@@ -285,6 +295,9 @@ namespace HelpEmpowermentApi.Services
                 RecordedCourseReserv = entity.RecordedCourseReserv,
                 LiveCourseReserv = entity.LiveCourseReserv,
                 ExamSimulationReserv = entity.ExamSimulationReserv,
+                RecordedCourseReservPrice = entity.Course?.RecordedCourseReservPrice,
+                ExamSimulationReservPrice = entity.Course?.ExamSimulationReservPrice,
+                LiveCourseReservPrice = entity.Course?.LiveCourseReservPrice,
                 AddedAt = entity.AddedAt
             };
         }
