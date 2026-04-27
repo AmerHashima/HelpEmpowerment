@@ -11,7 +11,7 @@ namespace HelpEmpowermentApi.IServices
         Task<ApiResponse<BasketSummaryDto>> GetBasketAsync(Guid studentId);
         Task<ApiResponse<int>> GetBasketCountAsync(Guid studentId);
         Task<ApiResponse<bool>> ClearBasketAsync(Guid studentId);
-        Task<ApiResponse<StudentBasketDto>> ApplyCouponAsync(Guid basketId, string couponCode);
+        Task<ApiResponse<BasketSummaryDto>> ApplyCouponAsync(Guid studentId, string couponCode);
         Task<ApiResponse<List<StudentCourseDto>>> CheckoutAsync(Guid studentId, string paymentMethod);
     }
 }

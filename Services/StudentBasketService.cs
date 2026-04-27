@@ -199,29 +199,55 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
-        public async Task<ApiResponse<StudentBasketDto>> ApplyCouponAsync(Guid basketId, string couponCode)
+        public async Task<ApiResponse<BasketSummaryDto>> ApplyCouponAsync(Guid studentId, string couponCode)
         {
             try
             {
-                var entity = await _repository.GetByIdAsync(basketId);
-                if (entity == null)
-                    return ApiResponse<StudentBasketDto>.ErrorResponse("Basket item not found");
+                // Validate coupon against student promo table
+                var promoOwner = await _studentRepository.GetByPromoCodeAsync(couponCode);
 
-                // TODO: Validate coupon
-                var discount = entity.OriginalPrice * 0.1m; // Example: 10% discount
+                if (promoOwner == null)
+                    return ApiResponse<BasketSummaryDto>.ErrorResponse("Invalid coupon code");
 
-                entity.CouponCode = couponCode;
-                entity.DiscountAmount = discount;
-                entity.FinalPrice = entity.OriginalPrice - discount;
-                entity.UpdatedAt = DateTime.UtcNow;
+                if (promoOwner.PromoToDateValid.HasValue && promoOwner.PromoToDateValid.Value < DateTime.UtcNow)
+                    return ApiResponse<BasketSummaryDto>.ErrorResponse("Coupon code has expired");
 
-                await _repository.UpdateAsync(entity);
-                var result = await _repository.GetWithDetailsAsync(basketId);
-                return ApiResponse<StudentBasketDto>.SuccessResponse(MapToDto(result!), "Coupon applied");
+                var discountPercent = (decimal)(promoOwner.PromoDiscount ?? 0);
+
+                // Get all basket items for this student
+                var items = await _repository.GetByStudentIdAsync(studentId);
+                if (!items.Any())
+                    return ApiResponse<BasketSummaryDto>.ErrorResponse("Basket is empty");
+
+                // Apply discount to every item
+                foreach (var item in items)
+                {
+                    var discount = item.OriginalPrice * (discountPercent / 100);
+                    item.CouponCode = couponCode;
+                    item.DiscountAmount = discount;
+                    item.FinalPrice = item.OriginalPrice - discount;
+                    item.UpdatedAt = DateTime.UtcNow;
+                    await _repository.UpdateAsync(item);
+                }
+
+                // Return updated basket summary
+                var updatedItems = await _repository.GetByStudentIdAsync(studentId);
+                var dtos = updatedItems.Select(MapToDto).ToList();
+
+                var summary = new BasketSummaryDto
+                {
+                    Items = dtos,
+                    SubTotal = updatedItems.Sum(i => i.OriginalPrice * i.Quantity),
+                    TotalDiscount = updatedItems.Sum(i => (i.DiscountAmount ?? 0) * i.Quantity),
+                    Total = updatedItems.Sum(i => i.FinalPrice * i.Quantity),
+                    ItemCount = updatedItems.Sum(i => i.Quantity)
+                };
+
+                return ApiResponse<BasketSummaryDto>.SuccessResponse(summary, $"Coupon applied to all basket items ({discountPercent}% discount)");
             }
             catch (Exception ex)
             {
-                return ApiResponse<StudentBasketDto>.ErrorResponse($"Error: {ex.Message}");
+                return ApiResponse<BasketSummaryDto>.ErrorResponse($"Error: {ex.Message}");
             }
         }
 

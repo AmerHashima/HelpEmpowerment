@@ -59,10 +59,10 @@ namespace HelpEmpowermentApi.Controllers
             return response.Success ? Ok(response) : BadRequest(response);
         }
 
-        [HttpPost("{basketId}/coupon")]
-        public async Task<ActionResult<ApiResponse<StudentBasketDto>>> ApplyCoupon(Guid basketId, [FromBody] ApplyCouponRequest request)
+        [HttpPost("{studentId}/coupon")]
+        public async Task<ActionResult<ApiResponse<BasketSummaryDto>>> ApplyCoupon(Guid studentId, [FromBody] ApplyCouponRequest request)
         {
-            var response = await _service.ApplyCouponAsync(basketId, request.CouponCode);
+            var response = await _service.ApplyCouponAsync(studentId, request.CouponCode);
             return response.Success ? Ok(response) : BadRequest(response);
         }
 
