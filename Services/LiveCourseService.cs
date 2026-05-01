@@ -135,7 +135,7 @@ namespace HelpEmpowermentApi.Services
             Oid = entity.Oid,
             CourseName = entity.CourseName,
             CourseOid = entity.CourseOid,
-            CourseTitle = entity.Course?.CourseName,
+            CourseRefName = entity.Course?.CourseName,
             CourseFormat = entity.CourseFormat,
             StartDate = entity.StartDate,
             StartTime = entity.StartTime,
