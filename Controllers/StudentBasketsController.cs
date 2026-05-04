@@ -69,7 +69,7 @@ namespace HelpEmpowermentApi.Controllers
         [HttpPost("{studentId}/checkout")]
         public async Task<ActionResult<ApiResponse<List<StudentCourseDto>>>> Checkout(Guid studentId, [FromBody] CheckoutRequest request)
         {
-            var response = await _service.CheckoutAsync(studentId, request.PaymentMethod);
+            var response = await _service.CheckoutAsync(studentId, request.PaymentMethod, request.CouponCode);
             return response.Success ? Ok(response) : BadRequest(response);
         }
     }
@@ -82,5 +82,6 @@ namespace HelpEmpowermentApi.Controllers
     public class CheckoutRequest
     {
         public string PaymentMethod { get; set; } = string.Empty;
+        public string? CouponCode { get; set; }
     }
 }

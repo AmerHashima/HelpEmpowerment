@@ -117,10 +117,30 @@ namespace HelpEmpowermentApi.Services
                 if (entity == null)
                     return ApiResponse<StudentBasketDto>.ErrorResponse("Basket item not found");
 
+                // Load course to recalculate price from live data
+                var course = await _courseRepository.GetByIdAsync(entity.CourseId);
+                if (course == null)
+                    return ApiResponse<StudentBasketDto>.ErrorResponse("Course not found");
+
+                decimal basePrice = 0;
+                if (!string.IsNullOrEmpty(course.Price) && decimal.TryParse(course.Price, out var parsedPrice))
+                    basePrice = parsedPrice;
+
+                decimal reservPrice = 0;
+                if (dto.RecordedCourseReserv) reservPrice += course.RecordedCourseReservPrice ?? 0;
+                if (dto.ExamSimulationReserv) reservPrice += course.ExamSimulationReservPrice ?? 0;
+                if (dto.LiveCourseReserv) reservPrice += course.LiveCourseReservPrice ?? 0;
+
+                var totalPrice = basePrice + reservPrice;
+
                 entity.Quantity = dto.Quantity;
-                entity.ExamSimulationReserv = dto.ExamSimulationReserv;
-                entity.LiveCourseReserv = dto.LiveCourseReserv;
                 entity.RecordedCourseReserv = dto.RecordedCourseReserv;
+                entity.LiveCourseReserv = dto.LiveCourseReserv;
+                entity.ExamSimulationReserv = dto.ExamSimulationReserv;
+                entity.OriginalPrice = totalPrice;
+                entity.DiscountAmount = 0;
+                entity.FinalPrice = totalPrice;
+                entity.CouponCode = null;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _repository.UpdateAsync(entity);
@@ -214,36 +234,31 @@ namespace HelpEmpowermentApi.Services
 
                 var discountPercent = (decimal)(promoOwner.PromoDiscount ?? 0);
 
-                // Get all basket items for this student
+                // Load basket items — do NOT update DB; coupon may be removed before checkout
                 var items = await _repository.GetByStudentIdAsync(studentId);
                 if (!items.Any())
                     return ApiResponse<BasketSummaryDto>.ErrorResponse("Basket is empty");
 
-                // Apply discount to every item
-                foreach (var item in items)
+                // Calculate discounts in-memory only
+                var dtos = items.Select(item =>
                 {
-                    var discount = item.OriginalPrice * (discountPercent / 100);
-                    item.CouponCode = couponCode;
-                    item.DiscountAmount = discount;
-                    item.FinalPrice = item.OriginalPrice - discount;
-                    item.UpdatedAt = DateTime.UtcNow;
-                    await _repository.UpdateAsync(item);
-                }
-
-                // Return updated basket summary
-                var updatedItems = await _repository.GetByStudentIdAsync(studentId);
-                var dtos = updatedItems.Select(MapToDto).ToList();
+                    var dto = MapToDto(item);
+                    dto.CouponCode = couponCode;
+                    dto.DiscountAmount = item.OriginalPrice * (discountPercent / 100);
+                    dto.FinalPrice = item.OriginalPrice - (dto.DiscountAmount ?? 0);
+                    return dto;
+                }).ToList();
 
                 var summary = new BasketSummaryDto
                 {
                     Items = dtos,
-                    SubTotal = updatedItems.Sum(i => i.OriginalPrice * i.Quantity),
-                    TotalDiscount = updatedItems.Sum(i => (i.DiscountAmount ?? 0) * i.Quantity),
-                    Total = updatedItems.Sum(i => i.FinalPrice * i.Quantity),
-                    ItemCount = updatedItems.Sum(i => i.Quantity)
+                    SubTotal = dtos.Sum(i => i.OriginalPrice * i.Quantity),
+                    TotalDiscount = dtos.Sum(i => (i.DiscountAmount ?? 0) * i.Quantity),
+                    Total = dtos.Sum(i => i.FinalPrice * i.Quantity),
+                    ItemCount = dtos.Sum(i => i.Quantity)
                 };
 
-                return ApiResponse<BasketSummaryDto>.SuccessResponse(summary, $"Coupon applied to all basket items ({discountPercent}% discount)");
+                return ApiResponse<BasketSummaryDto>.SuccessResponse(summary, $"Coupon preview: {discountPercent}% discount applied (not saved — confirm at checkout)");
             }
             catch (Exception ex)
             {
@@ -251,7 +266,7 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
-        public async Task<ApiResponse<List<StudentCourseDto>>> CheckoutAsync(Guid studentId, string paymentMethod)
+        public async Task<ApiResponse<List<StudentCourseDto>>> CheckoutAsync(Guid studentId, string paymentMethod, string? couponCode = null)
         {
             try
             {
@@ -259,18 +274,48 @@ namespace HelpEmpowermentApi.Services
                 if (!basketItems.Any())
                     return ApiResponse<List<StudentCourseDto>>.ErrorResponse("Basket is empty");
 
+                // Validate coupon at checkout time (not from stored values)
+                decimal discountPercent = 0;
+                if (!string.IsNullOrEmpty(couponCode))
+                {
+                    var promoOwner = await _studentRepository.GetByPromoCodeAsync(couponCode);
+
+                    if (promoOwner == null)
+                        return ApiResponse<List<StudentCourseDto>>.ErrorResponse("Invalid coupon code");
+
+                    if (promoOwner.PromoToDateValid.HasValue && promoOwner.PromoToDateValid.Value < DateTime.UtcNow)
+                        return ApiResponse<List<StudentCourseDto>>.ErrorResponse("Coupon code has expired");
+
+                    discountPercent = (decimal)(promoOwner.PromoDiscount ?? 0);
+                }
+
                 var enrollments = new List<StudentCourseDto>();
 
                 foreach (var item in basketItems)
                 {
-                    // Create enrollment
+                    // Recalculate from live course data — never trust stored discount
+                    var course = await _courseRepository.GetByIdAsync(item.CourseId);
+
+                    decimal basePrice = 0;
+                    if (course != null && !string.IsNullOrEmpty(course.Price) && decimal.TryParse(course.Price, out var parsed))
+                        basePrice = parsed;
+
+                    decimal reservPrice = 0;
+                    if (item.RecordedCourseReserv) reservPrice += course?.RecordedCourseReservPrice ?? 0;
+                    if (item.ExamSimulationReserv) reservPrice += course?.ExamSimulationReservPrice ?? 0;
+                    if (item.LiveCourseReserv) reservPrice += course?.LiveCourseReservPrice ?? 0;
+
+                    var originalPrice = basePrice + reservPrice;
+                    var discountAmount = originalPrice * (discountPercent / 100);
+                    var paidAmount = originalPrice - discountAmount;
+
                     var enrollment = new StudentCourse
                     {
                         StudentId = studentId,
                         CourseId = item.CourseId,
-                        Price = item.OriginalPrice,
-                        DiscountAmount = item.DiscountAmount,
-                        PaidAmount = item.FinalPrice,
+                        Price = originalPrice,
+                        DiscountAmount = discountAmount,
+                        PaidAmount = paidAmount,
                         PaymentMethod = paymentMethod,
                         PaymentDate = DateTime.UtcNow,
                         EnrollmentDate = DateTime.UtcNow,
@@ -279,7 +324,7 @@ namespace HelpEmpowermentApi.Services
                     };
 
                     var created = await _studentCourseRepository.AddAsync(enrollment);
-                    
+
                     enrollments.Add(new StudentCourseDto
                     {
                         Oid = created.Oid,
