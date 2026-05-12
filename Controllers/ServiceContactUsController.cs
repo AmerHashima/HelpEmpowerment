@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
+using Microsoft.Extensions.Configuration;
 
 namespace HelpEmpowermentApi.Controllers
 {
@@ -11,10 +12,12 @@ namespace HelpEmpowermentApi.Controllers
     public class ServiceContactUsController : ControllerBase
     {
         private readonly IServiceContactUsService _service;
+        private readonly IConfiguration _configuration;
 
-        public ServiceContactUsController(IServiceContactUsService service)
+        public ServiceContactUsController(IServiceContactUsService service, IConfiguration configuration)
         {
             _service = service;
+            _configuration = configuration;
         }
 
         [HttpPost("search")]
@@ -100,6 +103,52 @@ namespace HelpEmpowermentApi.Controllers
         {
             var response = await _service.DeleteAsync(id);
             return response.Success ? Ok(response) : NotFound(response);
+        }
+
+        [HttpPost("{id}/attachment")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ApiResponse<string>>> UploadAttachment(Guid id, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(ApiResponse<string>.ErrorResponse("No file provided"));
+
+            var response = await _service.UploadAttachmentAsync(id, file);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
+        [HttpGet("{id}/attachment")]
+        public async Task<IActionResult> GetAttachment(Guid id)
+        {
+            var fileNameResponse = await _service.GetAttachmentFileNameAsync(id);
+            if (!fileNameResponse.Success)
+                return NotFound(fileNameResponse);
+
+            var basePath = _configuration["FileStorage:ContactAttachmentsPath"] ?? "/var/www/attachments/contact";
+            var filePath = Path.Combine(basePath, fileNameResponse.Data!);
+
+            if (!System.IO.File.Exists(filePath))
+                return NotFound("Attachment file not found on server");
+
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            var contentType = ext switch
+            {
+                ".pdf"  => "application/pdf",
+                ".doc"  => "application/msword",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png"  => "image/png",
+                _       => "application/octet-stream"
+            };
+
+            var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            return File(stream, contentType, fileNameResponse.Data!);
+        }
+
+        [HttpDelete("{id}/attachment")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteAttachment(Guid id)
+        {
+            var response = await _service.DeleteAttachmentAsync(id);
+            return response.Success ? Ok(response) : BadRequest(response);
         }
     }
 

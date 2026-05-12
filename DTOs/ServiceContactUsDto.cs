@@ -22,6 +22,7 @@ namespace HelpEmpowermentApi.DTOs
         public DateTime? RespondedAt { get; set; }
         public string? TicketNumber { get; set; }
         public bool IsRead { get; set; }
+        public string? AttachmentFileName { get; set; }
         public DateTime? CreatedAt { get; set; }
     }
 

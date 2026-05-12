@@ -1,5 +1,6 @@
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
+using Microsoft.AspNetCore.Http;
 
 namespace HelpEmpowermentApi.IServices
 {
@@ -16,5 +17,8 @@ namespace HelpEmpowermentApi.IServices
         Task<ApiResponse<bool>> MarkAsReadAsync(Guid id, Guid readBy);
         Task<ApiResponse<bool>> UpdateStatusAsync(Guid id, Guid statusLookupId);
         Task<ApiResponse<bool>> DeleteAsync(Guid id);
+        Task<ApiResponse<string>> UploadAttachmentAsync(Guid id, IFormFile file);
+        Task<ApiResponse<string>> GetAttachmentFileNameAsync(Guid id);
+        Task<ApiResponse<bool>> DeleteAttachmentAsync(Guid id);
     }
 }

@@ -1,18 +1,22 @@
+using System.Text.Json;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace HelpEmpowermentApi.Services
 {
     public class ServiceContactUsService : IServiceContactUsService
     {
         private readonly IServiceContactUsRepository _repository;
+        private readonly IConfiguration _configuration;
 
-        public ServiceContactUsService(IServiceContactUsRepository repository)
+        public ServiceContactUsService(IServiceContactUsRepository repository, IConfiguration configuration)
         {
             _repository = repository;
+            _configuration = configuration;
         }
 
         public async Task<PagedResponse<ServiceContactUsDto>> GetPagedAsync(DataRequest request)
@@ -231,6 +235,100 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
+        public async Task<ApiResponse<string>> UploadAttachmentAsync(Guid id, IFormFile file)
+        {
+            try
+            {
+                var entity = await _repository.GetByIdAsync(id);
+                if (entity == null)
+                    return ApiResponse<string>.ErrorResponse("Contact request not found");
+
+                var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png" };
+                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(ext))
+                    return ApiResponse<string>.ErrorResponse($"File type '{ext}' is not allowed");
+
+                var basePath = _configuration["FileStorage:ContactAttachmentsPath"] ?? "/var/www/attachments/contact";
+                Directory.CreateDirectory(basePath);
+
+                // Delete old file if exists
+                if (!string.IsNullOrEmpty(entity.Attachments))
+                {
+                    var oldPath = Path.Combine(basePath, entity.Attachments);
+                    if (System.IO.File.Exists(oldPath))
+                        System.IO.File.Delete(oldPath);
+                }
+
+                var fileName = $"{Guid.NewGuid()}{ext}";
+                var filePath = Path.Combine(basePath, fileName);
+
+                // Path traversal guard
+                if (!Path.GetFullPath(filePath).StartsWith(Path.GetFullPath(basePath)))
+                    return ApiResponse<string>.ErrorResponse("Invalid file path");
+
+                await using (var stream = new FileStream(filePath, FileMode.Create))
+                    await file.CopyToAsync(stream);
+
+                entity.Attachments = fileName;
+                entity.UpdatedAt = DateTime.UtcNow;
+                await _repository.UpdateAsync(entity);
+
+                return ApiResponse<string>.SuccessResponse(fileName, "Attachment uploaded");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<string>.ErrorResponse($"Error: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<string>> GetAttachmentFileNameAsync(Guid id)
+        {
+            try
+            {
+                var entity = await _repository.GetByIdAsync(id);
+                if (entity == null)
+                    return ApiResponse<string>.ErrorResponse("Contact request not found");
+
+                if (string.IsNullOrEmpty(entity.Attachments))
+                    return ApiResponse<string>.ErrorResponse("No attachment found");
+
+                return ApiResponse<string>.SuccessResponse(entity.Attachments);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<string>.ErrorResponse($"Error: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<bool>> DeleteAttachmentAsync(Guid id)
+        {
+            try
+            {
+                var entity = await _repository.GetByIdAsync(id);
+                if (entity == null)
+                    return ApiResponse<bool>.ErrorResponse("Contact request not found");
+
+                if (string.IsNullOrEmpty(entity.Attachments))
+                    return ApiResponse<bool>.ErrorResponse("No attachment to delete");
+
+                var basePath = _configuration["FileStorage:ContactAttachmentsPath"] ?? "/var/www/attachments/contact";
+                var filePath = Path.Combine(basePath, entity.Attachments);
+
+                if (System.IO.File.Exists(filePath))
+                    System.IO.File.Delete(filePath);
+
+                entity.Attachments = null;
+                entity.UpdatedAt = DateTime.UtcNow;
+                await _repository.UpdateAsync(entity);
+
+                return ApiResponse<bool>.SuccessResponse(true, "Attachment deleted");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<bool>.ErrorResponse($"Error: {ex.Message}");
+            }
+        }
+
         private static ServiceContactUsDto MapToDto(ServiceContactUs entity)
         {
             return new ServiceContactUsDto
@@ -255,6 +353,7 @@ namespace HelpEmpowermentApi.Services
                 RespondedAt = entity.RespondedAt,
                 TicketNumber = entity.TicketNumber,
                 IsRead = entity.IsRead,
+                AttachmentFileName = entity.Attachments,
                 CreatedAt = entity.CreatedAt
             };
         }
