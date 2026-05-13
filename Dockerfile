@@ -30,4 +30,4 @@ WORKDIR /app
 # Copy published files
 COPY --from=publish /app/publish .
 
-ENTRYPOINT ["dotnet", "HelpEmpowermentApi.dll"]find / -name "docker-compose.yml" 2>/dev/null
+ENTRYPOINT ["dotnet", "HelpEmpowermentApi.dll"]
