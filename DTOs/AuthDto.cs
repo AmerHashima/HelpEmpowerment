@@ -82,4 +82,36 @@ namespace HelpEmpowermentApi.DTOs
         public string RefreshToken { get; set; } = string.Empty;
         public DateTime TokenExpires { get; set; }
     }
+
+    // ============================================
+    // OTP DTOs
+    // ============================================
+
+    public class ForgotPasswordOtpDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string UserType { get; set; } = "Student"; // "User" or "Student"
+    }
+
+    public class VerifyOtpDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string OtpCode { get; set; } = string.Empty;
+        public string UserType { get; set; } = "Student"; // "User" or "Student"
+    }
+
+    public class VerifyOtpResponseDto
+    {
+        public string ResetToken { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string UserType { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordWithOtpDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string ResetToken { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
 }

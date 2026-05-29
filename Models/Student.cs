@@ -35,6 +35,8 @@ namespace HelpEmpowermentApi.Models
         public string? PasswordResetToken { get; set; }
         public DateTime? PasswordResetTokenExpiry { get; set; }
         public DateTime? LastLoginAt { get; set; }
+        public string? OtpCode { get; set; }
+        public DateTime? OtpExpiry { get; set; }
 
         public Guid? CreatedBy { get; set; }
         public Guid? UpdatedBy { get; set; }

@@ -32,6 +32,8 @@ namespace HelpEmpowermentApi.Models
         public string? PasswordResetToken { get; set; }
         public DateTime? PasswordResetTokenExpiry { get; set; }
         public DateTime? LastLoginAt { get; set; }
+        public string? OtpCode { get; set; }
+        public DateTime? OtpExpiry { get; set; }
         // Navigation properties
         [ForeignKey(nameof(RoleLookupId))]
         public virtual AppLookupDetail? RoleLookup { get; set; }

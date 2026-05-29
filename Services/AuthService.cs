@@ -589,6 +589,184 @@ namespace HelpEmpowermentApi.Services
 
         #endregion
 
+        #region OTP Password Reset
+
+        public async Task<ApiResponse<bool>> SendOtpAsync(ForgotPasswordOtpDto dto)
+        {
+            try
+            {
+                var otp = GenerateOtp();
+                var expiry = DateTime.UtcNow.AddMinutes(10);
+
+                if (dto.UserType.Equals("User", StringComparison.OrdinalIgnoreCase))
+                {
+                    var users = await _userRepository.FindAsync(
+                        u => u.Email == dto.Email && !u.IsDeleted);
+                    var user = users.FirstOrDefault();
+
+                    // Always return success to avoid email enumeration
+                    if (user == null)
+                        return ApiResponse<bool>.SuccessResponse(true, "If the email exists, an OTP has been sent");
+
+                    user.OtpCode = HashPassword(otp);
+                    user.OtpExpiry = expiry;
+                    await _userRepository.UpdateAsync(user);
+                }
+                else
+                {
+                    var students = await _studentRepository.FindAsync(
+                        s => s.Email == dto.Email && !s.IsDeleted);
+                    var student = students.FirstOrDefault();
+
+                    if (student == null)
+                        return ApiResponse<bool>.SuccessResponse(true, "If the email exists, an OTP has been sent");
+
+                    student.OtpCode = HashPassword(otp);
+                    student.OtpExpiry = expiry;
+                    await _studentRepository.UpdateAsync(student);
+                }
+
+                // TODO: Send OTP via email/SMS
+                _logger.LogInformation("OTP for {Email} ({UserType}): {Otp}", dto.Email, dto.UserType, otp);
+
+                return ApiResponse<bool>.SuccessResponse(true, "OTP sent successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending OTP");
+                return ApiResponse<bool>.ErrorResponse($"Failed to send OTP: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<VerifyOtpResponseDto>> VerifyOtpAsync(VerifyOtpDto dto)
+        {
+            try
+            {
+                if (dto.UserType.Equals("User", StringComparison.OrdinalIgnoreCase))
+                {
+                    var users = await _userRepository.FindAsync(
+                        u => u.Email == dto.Email && !u.IsDeleted);
+                    var user = users.FirstOrDefault();
+
+                    if (user == null || user.OtpCode == null || user.OtpExpiry == null)
+                        return ApiResponse<VerifyOtpResponseDto>.ErrorResponse("Invalid or expired OTP");
+
+                    if (user.OtpExpiry < DateTime.UtcNow)
+                        return ApiResponse<VerifyOtpResponseDto>.ErrorResponse("OTP has expired");
+
+                    if (!VerifyPassword(dto.OtpCode, user.OtpCode))
+                        return ApiResponse<VerifyOtpResponseDto>.ErrorResponse("Invalid OTP");
+
+                    // OTP verified — issue a short-lived reset token, clear OTP
+                    var resetToken = GeneratePasswordResetToken();
+                    user.PasswordResetToken = resetToken;
+                    user.PasswordResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+                    user.OtpCode = null;
+                    user.OtpExpiry = null;
+                    await _userRepository.UpdateAsync(user);
+
+                    return ApiResponse<VerifyOtpResponseDto>.SuccessResponse(new VerifyOtpResponseDto
+                    {
+                        ResetToken = resetToken,
+                        Email = dto.Email,
+                        UserType = dto.UserType
+                    }, "OTP verified successfully");
+                }
+                else
+                {
+                    var students = await _studentRepository.FindAsync(
+                        s => s.Email == dto.Email && !s.IsDeleted);
+                    var student = students.FirstOrDefault();
+
+                    if (student == null || student.OtpCode == null || student.OtpExpiry == null)
+                        return ApiResponse<VerifyOtpResponseDto>.ErrorResponse("Invalid or expired OTP");
+
+                    if (student.OtpExpiry < DateTime.UtcNow)
+                        return ApiResponse<VerifyOtpResponseDto>.ErrorResponse("OTP has expired");
+
+                    if (!VerifyPassword(dto.OtpCode, student.OtpCode))
+                        return ApiResponse<VerifyOtpResponseDto>.ErrorResponse("Invalid OTP");
+
+                    var resetToken = GeneratePasswordResetToken();
+                    student.PasswordResetToken = resetToken;
+                    student.PasswordResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+                    student.OtpCode = null;
+                    student.OtpExpiry = null;
+                    await _studentRepository.UpdateAsync(student);
+
+                    return ApiResponse<VerifyOtpResponseDto>.SuccessResponse(new VerifyOtpResponseDto
+                    {
+                        ResetToken = resetToken,
+                        Email = dto.Email,
+                        UserType = dto.UserType
+                    }, "OTP verified successfully");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error verifying OTP");
+                return ApiResponse<VerifyOtpResponseDto>.ErrorResponse($"Failed to verify OTP: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<bool>> ResetPasswordWithOtpAsync(ResetPasswordWithOtpDto dto)
+        {
+            try
+            {
+                if (dto.NewPassword != dto.ConfirmPassword)
+                    return ApiResponse<bool>.ErrorResponse("Passwords do not match");
+
+                var passwordValidation = ValidatePasswordStrength(dto.NewPassword);
+                if (!passwordValidation.IsValid)
+                    return ApiResponse<bool>.ErrorResponse(passwordValidation.Message);
+
+                // Try User
+                var users = await _userRepository.FindAsync(
+                    u => u.Email == dto.Email &&
+                         u.PasswordResetToken == dto.ResetToken &&
+                         u.PasswordResetTokenExpiry > DateTime.UtcNow &&
+                         !u.IsDeleted);
+                var user = users.FirstOrDefault();
+
+                if (user != null)
+                {
+                    user.PasswordHash = HashPassword(dto.NewPassword);
+                    user.PasswordResetToken = null;
+                    user.PasswordResetTokenExpiry = null;
+                    user.UpdatedAt = DateTime.UtcNow;
+                    await _userRepository.UpdateAsync(user);
+                    return ApiResponse<bool>.SuccessResponse(true, "Password reset successfully");
+                }
+
+                // Try Student
+                var students = await _studentRepository.FindAsync(
+                    s => s.Email == dto.Email &&
+                         s.PasswordResetToken == dto.ResetToken &&
+                         s.PasswordResetTokenExpiry > DateTime.UtcNow &&
+                         !s.IsDeleted);
+                var student = students.FirstOrDefault();
+
+                if (student != null)
+                {
+                    student.PasswordHash = HashPassword(dto.NewPassword);
+                    student.PasswordResetToken = null;
+                    student.PasswordResetTokenExpiry = null;
+                    student.UpdatedAt = DateTime.UtcNow;
+                    await _studentRepository.UpdateAsync(student);
+                    return ApiResponse<bool>.SuccessResponse(true, "Password reset successfully");
+                }
+
+                return ApiResponse<bool>.ErrorResponse("Invalid or expired reset token");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resetting password with OTP");
+                return ApiResponse<bool>.ErrorResponse($"Failed to reset password: {ex.Message}");
+            }
+        }
+
+        #endregion
+
         #region Private Helper Methods
 
         private string GenerateJwtToken(Guid userId, string username, string userType, string? role)
@@ -635,6 +813,15 @@ namespace HelpEmpowermentApi.Services
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber).Replace("+", "").Replace("/", "").Replace("=", "");
+        }
+
+        private static string GenerateOtp()
+        {
+            using var rng = RandomNumberGenerator.Create();
+            var bytes = new byte[4];
+            rng.GetBytes(bytes);
+            var value = BitConverter.ToUInt32(bytes, 0) % 1_000_000;
+            return value.ToString("D6");
         }
 
         private static string HashPassword(string password)

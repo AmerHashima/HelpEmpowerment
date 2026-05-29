@@ -24,5 +24,10 @@ namespace HelpEmpowermentApi.IServices
         
         // Validation
         Task<ApiResponse<LoginResponseDto>> ValidateTokenAsync(string token);
+
+        // OTP Password Reset
+        Task<ApiResponse<bool>> SendOtpAsync(ForgotPasswordOtpDto dto);
+        Task<ApiResponse<VerifyOtpResponseDto>> VerifyOtpAsync(VerifyOtpDto dto);
+        Task<ApiResponse<bool>> ResetPasswordWithOtpAsync(ResetPasswordWithOtpDto dto);
     }
 }

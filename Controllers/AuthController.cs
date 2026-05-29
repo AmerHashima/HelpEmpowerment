@@ -144,5 +144,39 @@ namespace HelpEmpowermentApi.Controllers
             var response = await _authService.ValidateTokenAsync(token);
             return response.Success ? Ok(response) : Unauthorized(response);
         }
+
+        // ============================================
+        // OTP PASSWORD RESET
+        // ============================================
+
+        /// <summary>
+        /// Step 1 — Send OTP to email (valid 10 minutes)
+        /// </summary>
+        [HttpPost("otp/send")]
+        public async Task<ActionResult<ApiResponse<bool>>> SendOtp([FromBody] ForgotPasswordOtpDto dto)
+        {
+            var response = await _authService.SendOtpAsync(dto);
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Step 2 — Verify OTP, returns a short-lived reset token (valid 15 minutes)
+        /// </summary>
+        [HttpPost("otp/verify")]
+        public async Task<ActionResult<ApiResponse<VerifyOtpResponseDto>>> VerifyOtp([FromBody] VerifyOtpDto dto)
+        {
+            var response = await _authService.VerifyOtpAsync(dto);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
+        /// <summary>
+        /// Step 3 — Reset password using the reset token received after OTP verification
+        /// </summary>
+        [HttpPost("otp/reset-password")]
+        public async Task<ActionResult<ApiResponse<bool>>> ResetPasswordWithOtp([FromBody] ResetPasswordWithOtpDto dto)
+        {
+            var response = await _authService.ResetPasswordWithOtpAsync(dto);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
     }
 }

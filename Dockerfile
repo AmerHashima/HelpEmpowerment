@@ -28,6 +28,6 @@ FROM base AS final
 WORKDIR /app   
 
 # Copy published files
-COPY --from=publish /app/publish .
+COPY --from=publish /app/publish .   
 
 ENTRYPOINT ["dotnet", "HelpEmpowermentApi.dll"]
