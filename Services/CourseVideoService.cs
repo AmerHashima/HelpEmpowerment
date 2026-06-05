@@ -205,7 +205,12 @@ namespace HelpEmpowermentApi.Services
                 await using (var stream = new FileStream(filePath, FileMode.Create))
                     await video.CopyToAsync(stream);
 
-                entity.VideoUrl = filePath;
+                var normalizedPath = filePath.Replace("\\", "/");
+                const string prefixToRemove = "/app/course-videos/";
+                if (normalizedPath.StartsWith(prefixToRemove, StringComparison.OrdinalIgnoreCase))
+                    normalizedPath = normalizedPath.Substring(prefixToRemove.Length);
+
+                entity.VideoUrl = normalizedPath;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 var updated = await _courseVideoRepository.UpdateAsync(entity);

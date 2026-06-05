@@ -150,11 +150,16 @@ namespace HelpEmpowermentApi.Services
                 await using (var stream = new FileStream(fullPath, FileMode.Create))
                     await file.CopyToAsync(stream);
 
+                var normalizedPath = fullPath.Replace("\\", "/");
+                const string prefixToRemove = "/app/course-videos/";
+                if (normalizedPath.StartsWith(prefixToRemove, StringComparison.OrdinalIgnoreCase))
+                    normalizedPath = normalizedPath.Substring(prefixToRemove.Length);
+
                 var attachment = new CourseVideoAttachment
                 {
                     CourseVideoOid = courseVideoOid,
                     FileName = file.FileName,
-                    FileUrl = fullPath,
+                    FileUrl = normalizedPath,
                     FileTypeLookupId = fileTypeLookupId,
                     CreatedAt = DateTime.UtcNow
                 };
