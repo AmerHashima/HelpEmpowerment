@@ -170,6 +170,7 @@ namespace HelpEmpowermentApi
             services.AddScoped<IStudentCourseReservationRepository, StudentCourseReservationRepository>();
             services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
             services.AddScoped<IStudentDeviceRepository, StudentDeviceRepository>();
+            services.AddScoped<ICourseServiceRepository, CourseServiceRepository>();
         }
 
         private static void RegisterServices(IServiceCollection services)
