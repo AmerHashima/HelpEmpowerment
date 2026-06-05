@@ -63,6 +63,20 @@ namespace HelpEmpowermentApi.Controllers
             return File(stream, "video/mp4", enableRangeProcessing: true);
         }
 
+        [HttpPost("upload")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ApiResponse<CourseVideoDto>>> UploadVideo([FromForm] Guid courseVideoId, IFormFile video, [FromForm] string savePath)
+        {
+            if (video == null || video.Length == 0)
+                return BadRequest(ApiResponse<CourseVideoDto>.ErrorResponse("No video file provided"));
+
+            if (string.IsNullOrWhiteSpace(savePath))
+                return BadRequest(ApiResponse<CourseVideoDto>.ErrorResponse("savePath is required"));
+
+            var response = await _courseVideoService.UploadVideoAsync(courseVideoId, video, savePath);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
         [HttpGet("{id}/with-attachments")]
         public async Task<ActionResult<ApiResponse<CourseVideoDto>>> GetWithAttachments(Guid id)
         {

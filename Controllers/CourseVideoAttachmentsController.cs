@@ -84,6 +84,24 @@ namespace HelpEmpowermentApi.Controllers
             return File(stream, contentType, fileName);
         }
 
+        [HttpPost("upload")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ApiResponse<CourseVideoAttachmentDto>>> Upload(
+            [FromForm] Guid courseVideoOid,
+            IFormFile file,
+            [FromForm] string savePath,
+            [FromForm] Guid? fileTypeLookupId)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(ApiResponse<CourseVideoAttachmentDto>.ErrorResponse("No file provided"));
+
+            if (string.IsNullOrWhiteSpace(savePath))
+                return BadRequest(ApiResponse<CourseVideoAttachmentDto>.ErrorResponse("savePath is required"));
+
+            var response = await _attachmentService.UploadAsync(courseVideoOid, file, savePath, fileTypeLookupId);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
         [HttpPost]
         public async Task<ActionResult<ApiResponse<CourseVideoAttachmentDto>>> Create([FromBody] CreateCourseVideoAttachmentDto dto)
         {

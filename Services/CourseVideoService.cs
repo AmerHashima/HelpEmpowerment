@@ -3,6 +3,7 @@ using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace HelpEmpowermentApi.Services
 {
@@ -179,6 +180,40 @@ namespace HelpEmpowermentApi.Services
             catch (Exception ex)
             {
                 return ApiResponse<CourseVideoDto>.ErrorResponse($"Error updating course video: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<CourseVideoDto>> UploadVideoAsync(Guid courseVideoId, IFormFile video, string savePath)
+        {
+            try
+            {
+                var entity = await _courseVideoRepository.GetByIdAsync(courseVideoId);
+                if (entity == null)
+                    return ApiResponse<CourseVideoDto>.ErrorResponse("Course video not found");
+
+                var ext = Path.GetExtension(video.FileName).ToLowerInvariant();
+                var allowedExtensions = new[] { ".mp4", ".mov", ".avi", ".mkv", ".webm" };
+                if (!allowedExtensions.Contains(ext))
+                    return ApiResponse<CourseVideoDto>.ErrorResponse($"Invalid video type. Allowed: {string.Join(", ", allowedExtensions)}");
+
+                var fullSavePath = Path.GetFullPath(savePath);
+                Directory.CreateDirectory(fullSavePath);
+
+                var fileName = $"{Guid.NewGuid()}{ext}";
+                var filePath = Path.Combine(fullSavePath, fileName);
+
+                await using (var stream = new FileStream(filePath, FileMode.Create))
+                    await video.CopyToAsync(stream);
+
+                entity.VideoUrl = filePath;
+                entity.UpdatedAt = DateTime.UtcNow;
+
+                var updated = await _courseVideoRepository.UpdateAsync(entity);
+                return ApiResponse<CourseVideoDto>.SuccessResponse(MapToDto(updated), "Video uploaded and saved successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<CourseVideoDto>.ErrorResponse($"Error uploading video: {ex.Message}");
             }
         }
 

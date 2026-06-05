@@ -1,5 +1,6 @@
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
+using Microsoft.AspNetCore.Http;
 
 namespace HelpEmpowermentApi.IServices
 {
@@ -11,6 +12,7 @@ namespace HelpEmpowermentApi.IServices
         Task<ApiResponse<CourseVideoDto>> GetWithAttachmentsAsync(Guid id);
         Task<ApiResponse<CourseVideoDto>> CreateAsync(CreateCourseVideoDto dto);
         Task<ApiResponse<CourseVideoDto>> UpdateAsync(UpdateCourseVideoDto dto);
+        Task<ApiResponse<CourseVideoDto>> UploadVideoAsync(Guid courseVideoId, IFormFile video, string savePath);
         Task<ApiResponse<bool>> DeleteAsync(Guid id);
     }
 }

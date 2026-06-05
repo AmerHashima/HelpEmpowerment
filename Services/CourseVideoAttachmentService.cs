@@ -3,6 +3,7 @@ using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace HelpEmpowermentApi.Services
 {
@@ -112,6 +113,58 @@ namespace HelpEmpowermentApi.Services
             catch (Exception ex)
             {
                 return ApiResponse<CourseVideoAttachmentDto>.ErrorResponse($"Error creating video attachment: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<CourseVideoAttachmentDto>> UploadAsync(Guid courseVideoOid, IFormFile file, string savePath, Guid? fileTypeLookupId)
+        {
+            try
+            {
+                var videoExists = await _courseVideoRepository.ExistsAsync(v => v.Oid == courseVideoOid && !v.IsDeleted);
+                if (!videoExists)
+                    return ApiResponse<CourseVideoAttachmentDto>.ErrorResponse("Invalid Course Video. Please select a valid video.");
+
+                if (fileTypeLookupId.HasValue)
+                {
+                    var fileTypeExists = await _lookupDetailRepository.ExistsAsync(
+                        d => d.Oid == fileTypeLookupId.Value && !d.IsDeleted && d.IsActive);
+                    if (!fileTypeExists)
+                        return ApiResponse<CourseVideoAttachmentDto>.ErrorResponse("Invalid File Type. Please select a valid type.");
+                }
+
+                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+                var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".zip", ".rar", ".jpg", ".jpeg", ".png" };
+                if (!allowedExtensions.Contains(ext))
+                    return ApiResponse<CourseVideoAttachmentDto>.ErrorResponse($"Invalid file type. Allowed: {string.Join(", ", allowedExtensions)}");
+
+                var basePath = Path.GetFullPath(savePath);
+                Directory.CreateDirectory(basePath);
+
+                var fileName = $"{Guid.NewGuid()}{ext}";
+                var fullPath = Path.Combine(basePath, fileName);
+
+                // Path traversal guard
+                if (!Path.GetFullPath(fullPath).StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+                    return ApiResponse<CourseVideoAttachmentDto>.ErrorResponse("Invalid file path");
+
+                await using (var stream = new FileStream(fullPath, FileMode.Create))
+                    await file.CopyToAsync(stream);
+
+                var attachment = new CourseVideoAttachment
+                {
+                    CourseVideoOid = courseVideoOid,
+                    FileName = file.FileName,
+                    FileUrl = fullPath,
+                    FileTypeLookupId = fileTypeLookupId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var createdAttachment = await _attachmentRepository.AddAsync(attachment);
+                return ApiResponse<CourseVideoAttachmentDto>.SuccessResponse(MapToDto(createdAttachment), "Video attachment uploaded successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<CourseVideoAttachmentDto>.ErrorResponse($"Error uploading video attachment: {ex.Message}");
             }
         }
 
