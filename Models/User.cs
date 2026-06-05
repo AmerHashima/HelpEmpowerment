@@ -42,5 +42,6 @@ namespace HelpEmpowermentApi.Models
         public virtual AppLookupDetail? StatusLookup { get; set; }
 
         public virtual ICollection<Course> InstructorCourses { get; set; } = new List<Course>();
+        public virtual ICollection<UserDevice> UserDevices { get; set; } = new List<UserDevice>();
     }
 }

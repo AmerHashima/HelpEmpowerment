@@ -293,7 +293,25 @@ namespace HelpEmpowermentApi.Services
                 TotalLessons = entity.TotalLessons,
                 IsCertificateIssued = entity.IsCertificateIssued,
                 CertificateIssuedDate = entity.CertificateIssuedDate,
-                CertificateNumber = entity.CertificateNumber
+                CertificateNumber = entity.CertificateNumber,
+                Reservations = entity.Reservations
+                    .Select(r => new StudentCourseReservationDto
+                    {
+                        Oid = r.Oid,
+                        StudentCourseId = r.StudentCourseId,
+                        CourseServiceId = r.CourseServiceId,
+                        CourseName = r.CourseService?.Course?.CourseName,
+                        ServiceName = r.CourseService?.ServiceLookup?.LookupNameEn,
+                        Price = r.CourseService?.Price ?? 0,
+                        ActiveTime = r.CourseService?.ActiveTime,
+                        ReservationDate = r.ReservationDate,
+                        IsReserved = r.IsReserved,
+                        Notes = r.Notes,
+                        CreatedAt = r.CreatedAt,
+                        CreatedBy = r.CreatedBy,
+                        UpdatedAt = r.UpdatedAt,
+                        UpdatedBy = r.UpdatedBy
+                    }).ToList()
             };
         }
     }

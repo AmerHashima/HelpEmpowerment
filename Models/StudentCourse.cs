@@ -54,9 +54,9 @@ namespace HelpEmpowermentApi.Models
         public bool ExamSimulationReserv { get; set; } = false;
         public bool RecordedCourseReserv { get; set; } = false;
         public bool LiveCourseReserv { get; set; } = false;
-        
+
         public DateTime? CertificateIssuedDate { get; set; }
-        
+
         [MaxLength(100)]
         public string? CertificateNumber { get; set; }
 
@@ -78,5 +78,7 @@ namespace HelpEmpowermentApi.Models
 
         [ForeignKey(nameof(EnrollmentStatusLookupId))]
         public virtual AppLookupDetail? EnrollmentStatus { get; set; }
+
+        public virtual ICollection<StudentCourseReservation> Reservations { get; set; } = new List<StudentCourseReservation>();
     }
 }

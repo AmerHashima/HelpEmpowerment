@@ -13,19 +13,27 @@ namespace HelpEmpowermentApi.Services
 {
     public class AuthService : IAuthService
     {
+        private const int MaxDevicesPerUser = 2;
+
         private readonly IUserRepository _userRepository;
         private readonly IStudentRepository _studentRepository;
+        private readonly IUserDeviceRepository _userDeviceRepository;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(
             IUserRepository userRepository,
             IStudentRepository studentRepository,
+            IUserDeviceRepository userDeviceRepository,
+            IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration,
             ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _studentRepository = studentRepository;
+            _userDeviceRepository = userDeviceRepository;
+            _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
             _logger = logger;
         }
@@ -49,6 +57,47 @@ namespace HelpEmpowermentApi.Services
                 if (!VerifyPassword(dto.Password, user.PasswordHash))
                     return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid username or password");
 
+                // Device tracking & max-device enforcement
+                if (!string.IsNullOrWhiteSpace(dto.DeviceId))
+                {
+                    var ipAddress = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+
+                    var existingDevice = await _userDeviceRepository.GetByUserAndDeviceIdAsync(user.Oid, dto.DeviceId);
+                    if (existingDevice != null)
+                    {
+                        // Known device — refresh last login info
+                        existingDevice.LastLoginDate = DateTime.UtcNow;
+                        existingDevice.IpAddress = ipAddress;
+                        existingDevice.IsActive = true;
+                        existingDevice.UpdatedAt = DateTime.UtcNow;
+                        await _userDeviceRepository.UpdateAsync(existingDevice);
+                    }
+                    else
+                    {
+                        // New device — enforce the limit
+                        var activeDeviceCount = await _userDeviceRepository.GetActiveDeviceCountAsync(user.Oid);
+                        if (activeDeviceCount >= MaxDevicesPerUser)
+                            return ApiResponse<LoginResponseDto>.ErrorResponse(
+                                $"Maximum number of allowed devices ({MaxDevicesPerUser}) reached. " +
+                                "Please remove an existing device before logging in from a new one.");
+
+                        var newDevice = new UserDevice
+                        {
+                            UserId = user.Oid,
+                            DeviceId = dto.DeviceId,
+                            DeviceName = dto.DeviceName,
+                            Browser = dto.Browser,
+                            OperatingSystem = dto.OperatingSystem,
+                            IpAddress = ipAddress,
+                            IsActive = true,
+                            FirstLoginDate = DateTime.UtcNow,
+                            LastLoginDate = DateTime.UtcNow,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        await _userDeviceRepository.AddAsync(newDevice);
+                    }
+                }
+
                 // Generate tokens
                 var token = GenerateJwtToken(user.Oid, user.Username, "User", user.RoleLookup?.LookupNameEn);
                 var refreshToken = GenerateRefreshToken();
@@ -64,7 +113,7 @@ namespace HelpEmpowermentApi.Services
                     UserId = user.Oid,
                     Username = user.Username,
                     Email = user.Email,
-           
+
                     Token = token,
                     RefreshToken = refreshToken,
                     TokenExpires = DateTime.UtcNow.AddMinutes(GetAccessTokenExpiration()),

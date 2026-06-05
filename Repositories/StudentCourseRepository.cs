@@ -45,6 +45,12 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(sc => sc.Course)
                 .Include(sc => sc.PaymentStatus)
                 .Include(sc => sc.EnrollmentStatus)
+                .Include(sc => sc.Reservations.Where(r => !r.IsDeleted))
+                    .ThenInclude(r => r.CourseService)
+                        .ThenInclude(cs => cs.Course)
+                .Include(sc => sc.Reservations.Where(r => !r.IsDeleted))
+                    .ThenInclude(r => r.CourseService)
+                        .ThenInclude(cs => cs.ServiceLookup)
                 .Where(sc => sc.StudentId == studentId && !sc.IsDeleted)
                 .OrderByDescending(sc => sc.EnrollmentDate)
                 .ToListAsync();
@@ -78,6 +84,12 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(sc => sc.Course)
                 .Include(sc => sc.PaymentStatus)
                 .Include(sc => sc.EnrollmentStatus)
+                .Include(sc => sc.Reservations.Where(r => !r.IsDeleted))
+                    .ThenInclude(r => r.CourseService)
+                        .ThenInclude(cs => cs.Course)
+                .Include(sc => sc.Reservations.Where(r => !r.IsDeleted))
+                    .ThenInclude(r => r.CourseService)
+                        .ThenInclude(cs => cs.ServiceLookup)
                 .FirstOrDefaultAsync(sc => sc.Oid == id && !sc.IsDeleted);
         }
 

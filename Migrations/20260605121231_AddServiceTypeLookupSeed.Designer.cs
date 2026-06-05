@@ -4,6 +4,7 @@ using HelpEmpowermentApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HelpEmpowermentApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260605121231_AddServiceTypeLookupSeed")]
+    partial class AddServiceTypeLookupSeed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1679,59 +1682,6 @@ namespace HelpEmpowermentApi.Migrations
                     b.ToTable("course_questions");
                 });
 
-            modelBuilder.Entity("HelpEmpowermentApi.Models.CourseService", b =>
-                {
-                    b.Property<Guid>("Oid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("ActiveTime")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid>("ServiceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Oid");
-
-                    b.HasIndex("CourseId");
-
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("ServiceId");
-
-                    b.HasIndex("CourseId", "ServiceId")
-                        .IsUnique();
-
-                    b.ToTable("course_services");
-                });
-
             modelBuilder.Entity("HelpEmpowermentApi.Models.CourseTargetAudience", b =>
                 {
                     b.Property<Guid>("Oid")
@@ -2544,9 +2494,6 @@ namespace HelpEmpowermentApi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CourseServiceId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -2569,6 +2516,9 @@ namespace HelpEmpowermentApi.Migrations
                     b.Property<DateTime?>("ReservationDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("StudentCourseId")
                         .HasColumnType("uniqueidentifier");
 
@@ -2580,13 +2530,13 @@ namespace HelpEmpowermentApi.Migrations
 
                     b.HasKey("Oid");
 
-                    b.HasIndex("CourseServiceId");
-
                     b.HasIndex("IsReserved");
+
+                    b.HasIndex("ServiceId");
 
                     b.HasIndex("StudentCourseId");
 
-                    b.HasIndex("StudentCourseId", "CourseServiceId");
+                    b.HasIndex("StudentCourseId", "ServiceId");
 
                     b.ToTable("student_course_reservations");
                 });
@@ -3076,25 +3026,6 @@ namespace HelpEmpowermentApi.Migrations
                     b.Navigation("QuestionTypeLookup");
                 });
 
-            modelBuilder.Entity("HelpEmpowermentApi.Models.CourseService", b =>
-                {
-                    b.HasOne("HelpEmpowermentApi.Models.Course", "Course")
-                        .WithMany("CourseServices")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("HelpEmpowermentApi.Models.AppLookupDetail", "ServiceLookup")
-                        .WithMany()
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-
-                    b.Navigation("ServiceLookup");
-                });
-
             modelBuilder.Entity("HelpEmpowermentApi.Models.CourseTargetAudience", b =>
                 {
                     b.HasOne("HelpEmpowermentApi.Models.Course", "Course")
@@ -3283,9 +3214,9 @@ namespace HelpEmpowermentApi.Migrations
 
             modelBuilder.Entity("HelpEmpowermentApi.Models.StudentCourseReservation", b =>
                 {
-                    b.HasOne("HelpEmpowermentApi.Models.CourseService", "CourseService")
-                        .WithMany("Reservations")
-                        .HasForeignKey("CourseServiceId")
+                    b.HasOne("HelpEmpowermentApi.Models.AppLookupDetail", "ServiceLookup")
+                        .WithMany()
+                        .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -3295,7 +3226,7 @@ namespace HelpEmpowermentApi.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("CourseService");
+                    b.Navigation("ServiceLookup");
 
                     b.Navigation("StudentCourse");
                 });
@@ -3421,8 +3352,6 @@ namespace HelpEmpowermentApi.Migrations
                 {
                     b.Navigation("BasketItems");
 
-                    b.Navigation("CourseServices");
-
                     b.Navigation("Features");
 
                     b.Navigation("Instructors");
@@ -3453,11 +3382,6 @@ namespace HelpEmpowermentApi.Migrations
             modelBuilder.Entity("HelpEmpowermentApi.Models.CourseQuestion", b =>
                 {
                     b.Navigation("Answers");
-                });
-
-            modelBuilder.Entity("HelpEmpowermentApi.Models.CourseService", b =>
-                {
-                    b.Navigation("Reservations");
                 });
 
             modelBuilder.Entity("HelpEmpowermentApi.Models.CourseVideo", b =>

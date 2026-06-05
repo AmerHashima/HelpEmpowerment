@@ -77,5 +77,6 @@ namespace HelpEmpowermentApi.Models
         // ✅ ADD: Navigation properties for new tables
         public virtual ICollection<StudentCourse> StudentEnrollments { get; set; } = new List<StudentCourse>();
         public virtual ICollection<StudentBasket> BasketItems { get; set; } = new List<StudentBasket>();
+        public virtual ICollection<CourseService> CourseServices { get; set; } = new List<CourseService>();
     }
 }

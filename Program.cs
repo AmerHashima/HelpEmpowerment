@@ -64,6 +64,7 @@ namespace HelpEmpowermentApi
 
             builder.Services.AddAuthorization();
             builder.Services.AddHttpClient();
+            builder.Services.AddHttpContextAccessor();
             builder.Services.AddControllers();
             //builder.Services.AddOpenApi();
 
@@ -166,6 +167,8 @@ namespace HelpEmpowermentApi
             services.AddScoped<IServiceContactUsRepository, ServiceContactUsRepository>();
             services.AddScoped<ILiveCourseRepository, LiveCourseRepository>();
             services.AddScoped<ILiveWebinarRepository, LiveWebinarRepository>();
+            services.AddScoped<IStudentCourseReservationRepository, StudentCourseReservationRepository>();
+            services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
         }
 
         private static void RegisterServices(IServiceCollection services)
@@ -199,6 +202,8 @@ namespace HelpEmpowermentApi
             services.AddScoped<IServiceContactUsService, ServiceContactUsService>();
             services.AddScoped<ILiveCourseService, LiveCourseService>();
             services.AddScoped<ILiveWebinarService, LiveWebinarService>();
+            services.AddScoped<IStudentCourseReservationService, StudentCourseReservationService>();
+            services.AddScoped<IUserDeviceService, UserDeviceService>();
         }
 
 

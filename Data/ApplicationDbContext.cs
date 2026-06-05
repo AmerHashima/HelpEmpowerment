@@ -21,6 +21,7 @@ namespace HelpEmpowermentApi.Data
         // NEW DbSets - AUTH & USERS
         public DbSet<User> Users { get; set; }
         public DbSet<Student> Students { get; set; }
+        public DbSet<UserDevice> UserDevices { get; set; }
 
         // NEW DbSets - COURSE FEATURES & CONTENT
         public DbSet<CourseFeature> CourseFeatures { get; set; }
@@ -46,6 +47,8 @@ namespace HelpEmpowermentApi.Data
         public DbSet<StudentCourse> StudentCourses { get; set; }
         public DbSet<StudentBasket> StudentBaskets { get; set; }
         public DbSet<ServiceContactUs> ServiceContactUs { get; set; }
+        public DbSet<CourseService> CourseServices { get; set; }
+        public DbSet<StudentCourseReservation> StudentCourseReservations { get; set; }
 
         // Live Events
         public DbSet<LiveCourse> LiveCourses { get; set; }
@@ -200,6 +203,20 @@ namespace HelpEmpowermentApi.Data
                     .HasForeignKey(u => u.StatusLookupId)
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired(false);
+            });
+
+            // Configure UserDevice
+            modelBuilder.Entity<UserDevice>(entity =>
+            {
+                entity.HasOne(d => d.User)
+                    .WithMany(u => u.UserDevices)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => new { e.UserId, e.DeviceId }).IsUnique();
+                entity.HasIndex(e => new { e.UserId, e.IsActive, e.IsDeleted });
             });
 
             // Configure Student
@@ -483,6 +500,42 @@ namespace HelpEmpowermentApi.Data
                 entity.HasIndex(e => e.StatusLookupId);
                 entity.HasIndex(e => e.ContactTypeLookupId);
             });
+
+            // Configure StudentCourseReservation
+            modelBuilder.Entity<StudentCourseReservation>(entity =>
+            {
+                entity.HasOne(r => r.StudentCourse)
+                    .WithMany(sc => sc.Reservations)
+                    .HasForeignKey(r => r.StudentCourseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(r => r.CourseService)
+                    .WithMany(cs => cs.Reservations)
+                    .HasForeignKey(r => r.CourseServiceId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.StudentCourseId);
+                entity.HasIndex(e => new { e.StudentCourseId, e.CourseServiceId });
+                entity.HasIndex(e => e.IsReserved);
+            });
+
+            // Configure CourseService
+            modelBuilder.Entity<CourseService>(entity =>
+            {
+                entity.HasOne(cs => cs.Course)
+                    .WithMany(c => c.CourseServices)
+                    .HasForeignKey(cs => cs.CourseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(cs => cs.ServiceLookup)
+                    .WithMany()
+                    .HasForeignKey(cs => cs.ServiceId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.CourseId);
+                entity.HasIndex(e => new { e.CourseId, e.ServiceId }).IsUnique();
+                entity.HasIndex(e => e.IsActive);
+            });
         }
 
         private void SeedLookupData(ModelBuilder modelBuilder)
@@ -506,6 +559,7 @@ namespace HelpEmpowermentApi.Data
             var contactTypeHeaderId = Guid.Parse("EEEEEEEE-EEEE-EEEE-EEEE-EEEEEEEEEEEE");
             var contactStatusHeaderId = Guid.Parse("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF");
             var examModeHeaderId = Guid.Parse("12121212-1212-1212-1212-121212121212");
+            var serviceTypeHeaderId = Guid.Parse("13131313-1313-1313-1313-131313131313");
 
             // ============================================
             // SEED LOOKUP HEADERS
@@ -667,6 +721,16 @@ namespace HelpEmpowermentApi.Data
                      LookupCode = "EXAM_MODE",
                      LookupNameAr = "وضع الامتحان",
                      LookupNameEn = "Exam Mode",
+                     IsActive = true,
+                     CreatedAt = seedDate,
+                     CreatedBy = null
+                 },
+                 new AppLookupHeader
+                 {
+                     Oid = serviceTypeHeaderId,
+                     LookupCode = "SERVICE_TYPE",
+                     LookupNameAr = "نوع الخدمة",
+                     LookupNameEn = "Service Type",
                      IsActive = true,
                      CreatedAt = seedDate,
                      CreatedBy = null
@@ -1570,7 +1634,49 @@ namespace HelpEmpowermentApi.Data
                     CreatedAt = seedDate,
                     CreatedBy = null
                 }
-              
+
+            );
+
+            // ============================================
+            // SEED LOOKUP DETAILS - SERVICE TYPE
+            // ============================================
+            modelBuilder.Entity<AppLookupDetail>().HasData(
+                new AppLookupDetail
+                {
+                    Oid = Guid.Parse("13131313-1313-1313-1313-131313131301"),
+                    LookupHeaderId = serviceTypeHeaderId,
+                    LookupValue = "EXAM_SIMULATION",
+                    LookupNameAr = "محاكاة الاختبار",
+                    LookupNameEn = "Exam Simulation",
+                    OrderNo = 1,
+                    IsActive = true,
+                    CreatedAt = seedDate,
+                    CreatedBy = null
+                },
+                new AppLookupDetail
+                {
+                    Oid = Guid.Parse("13131313-1313-1313-1313-131313131302"),
+                    LookupHeaderId = serviceTypeHeaderId,
+                    LookupValue = "RECORDED_COURSE",
+                    LookupNameAr = "دورة مسجلة",
+                    LookupNameEn = "Recorded Course",
+                    OrderNo = 2,
+                    IsActive = true,
+                    CreatedAt = seedDate,
+                    CreatedBy = null
+                },
+                new AppLookupDetail
+                {
+                    Oid = Guid.Parse("13131313-1313-1313-1313-131313131303"),
+                    LookupHeaderId = serviceTypeHeaderId,
+                    LookupValue = "LIVE_COURSE",
+                    LookupNameAr = "دورة مباشرة",
+                    LookupNameEn = "Live Course",
+                    OrderNo = 3,
+                    IsActive = true,
+                    CreatedAt = seedDate,
+                    CreatedBy = null
+                }
             );
 
 

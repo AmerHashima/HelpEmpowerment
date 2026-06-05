@@ -29,6 +29,7 @@ namespace HelpEmpowermentApi.DTOs
         public bool IsCertificateIssued { get; set; }
         public DateTime? CertificateIssuedDate { get; set; }
         public string? CertificateNumber { get; set; }
+        public List<StudentCourseReservationDto> Reservations { get; set; } = new();
     }
 
     public class CreateStudentCourseDto
