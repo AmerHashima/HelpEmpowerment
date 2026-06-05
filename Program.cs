@@ -205,6 +205,7 @@ namespace HelpEmpowermentApi
             services.AddScoped<ILiveWebinarService, LiveWebinarService>();
             services.AddScoped<IStudentCourseReservationService, StudentCourseReservationService>();
             services.AddScoped<IUserDeviceService, UserDeviceService>();
+            services.AddScoped<ICourseServiceDetailService, CourseServiceDetailService>();
         }
 
 
