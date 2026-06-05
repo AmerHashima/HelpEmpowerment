@@ -177,7 +177,8 @@ namespace HelpEmpowermentApi
         {
             // ✅ ADD AUTH SERVICE
             services.AddScoped<IAuthService, AuthService>();
-            
+            services.AddScoped<IEmailService, EmailService>();
+
             services.AddScoped<ICourseService, CourseService>();
             services.AddScoped<ICoursesMasterExamService, CoursesMasterExamService>();
             services.AddScoped<ICourseQuestionService, CourseQuestionService>();

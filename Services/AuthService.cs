@@ -20,6 +20,7 @@ namespace HelpEmpowermentApi.Services
         private readonly IStudentRepository _studentRepository;
         private readonly IUserDeviceRepository _userDeviceRepository;
         private readonly IStudentDeviceRepository _studentDeviceRepository;
+        private readonly IEmailService _emailService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
@@ -29,6 +30,7 @@ namespace HelpEmpowermentApi.Services
             IStudentRepository studentRepository,
             IUserDeviceRepository userDeviceRepository,
             IStudentDeviceRepository studentDeviceRepository,
+            IEmailService emailService,
             IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration,
             ILogger<AuthService> logger)
@@ -37,6 +39,7 @@ namespace HelpEmpowermentApi.Services
             _studentRepository = studentRepository;
             _userDeviceRepository = userDeviceRepository;
             _studentDeviceRepository = studentDeviceRepository;
+            _emailService = emailService;
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
             _logger = logger;
@@ -697,6 +700,9 @@ namespace HelpEmpowermentApi.Services
                     user.OtpCode = HashPassword(otp);
                     user.OtpExpiry = expiry;
                     await _userRepository.UpdateAsync(user);
+
+                    // Send OTP via email
+                    await _emailService.SendOtpEmailAsync(user.Email, otp, user.Username);
                 }
                 else
                 {
@@ -710,10 +716,12 @@ namespace HelpEmpowermentApi.Services
                     student.OtpCode = HashPassword(otp);
                     student.OtpExpiry = expiry;
                     await _studentRepository.UpdateAsync(student);
+
+                    // Send OTP via email
+                    await _emailService.SendOtpEmailAsync(student.Email, otp, student.NameEn ?? student.Username);
                 }
 
-                // TODO: Send OTP via email/SMS
-                _logger.LogInformation("OTP for {Email} ({UserType}): {Otp}", dto.Email, dto.UserType, otp);
+                _logger.LogInformation("OTP sent successfully to {Email} ({UserType})", dto.Email, dto.UserType);
 
                 return ApiResponse<bool>.SuccessResponse(true, "OTP sent successfully");
             }

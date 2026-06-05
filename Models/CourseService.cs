@@ -5,6 +5,7 @@ using HelpEmpowermentApi.Common;
 namespace HelpEmpowermentApi.Models
 {
     [Table("course_services")]
+    [Index(nameof(CourseId), nameof(ServiceId), IsUnique = true)]
     public class CourseService : BaseEntity
     {
         [Required]
