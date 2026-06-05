@@ -4,11 +4,11 @@ using HelpEmpowermentApi.Common;
 
 namespace HelpEmpowermentApi.Models
 {
-    [Table("user_devices")]
-    public class UserDevice : BaseEntity
+    [Table("student_devices")]
+    public class StudentDevice : BaseEntity
     {
         [Required]
-        public Guid UserId { get; set; }
+        public Guid StudentId { get; set; }
 
         [Required]
         [MaxLength(200)]
@@ -24,7 +24,7 @@ namespace HelpEmpowermentApi.Models
         public DateTime LastLoginDate { get; set; } = DateTime.UtcNow;
 
         // Navigation properties
-        [ForeignKey(nameof(UserId))]
-        public virtual User User { get; set; } = null!;
+        [ForeignKey(nameof(StudentId))]
+        public virtual Student Student { get; set; } = null!;
     }
 }

@@ -8,11 +8,8 @@ namespace HelpEmpowermentApi.DTOs
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
 
-        // Optional device tracking fields (required for User login device enforcement)
+        // Optional device tracking field (DeviceId is required for Student login)
         public string? DeviceId { get; set; }
-        public string? DeviceName { get; set; }
-        public string? Browser { get; set; }
-        public string? OperatingSystem { get; set; }
     }
 
     public class LoginResponseDto

@@ -14,10 +14,12 @@ namespace HelpEmpowermentApi.Services
     public class AuthService : IAuthService
     {
         private const int MaxDevicesPerUser = 2;
+        private const int MaxDevicesPerStudent = 2;
 
         private readonly IUserRepository _userRepository;
         private readonly IStudentRepository _studentRepository;
         private readonly IUserDeviceRepository _userDeviceRepository;
+        private readonly IStudentDeviceRepository _studentDeviceRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
@@ -26,6 +28,7 @@ namespace HelpEmpowermentApi.Services
             IUserRepository userRepository,
             IStudentRepository studentRepository,
             IUserDeviceRepository userDeviceRepository,
+            IStudentDeviceRepository studentDeviceRepository,
             IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration,
             ILogger<AuthService> logger)
@@ -33,6 +36,7 @@ namespace HelpEmpowermentApi.Services
             _userRepository = userRepository;
             _studentRepository = studentRepository;
             _userDeviceRepository = userDeviceRepository;
+            _studentDeviceRepository = studentDeviceRepository;
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
             _logger = logger;
@@ -85,9 +89,6 @@ namespace HelpEmpowermentApi.Services
                         {
                             UserId = user.Oid,
                             DeviceId = dto.DeviceId,
-                            DeviceName = dto.DeviceName,
-                            Browser = dto.Browser,
-                            OperatingSystem = dto.OperatingSystem,
                             IpAddress = ipAddress,
                             IsActive = true,
                             FirstLoginDate = DateTime.UtcNow,
@@ -222,6 +223,42 @@ namespace HelpEmpowermentApi.Services
 
                 if (!VerifyPassword(dto.Password, student.PasswordHash))
                     return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid username or password");
+
+                // Device tracking for student login
+                string? deviceId = dto.DeviceId;
+                if (string.IsNullOrWhiteSpace(deviceId))
+                    return ApiResponse<LoginResponseDto>.ErrorResponse("DeviceId is required for login");
+
+                // Check if this device is already registered
+                var existingDevice = await _studentDeviceRepository.GetByStudentAndDeviceIdAsync(student.Oid, deviceId);
+
+                if (existingDevice != null)
+                {
+                    // Update existing device's last login time
+                    existingDevice.LastLoginDate = DateTime.UtcNow;
+                    await _studentDeviceRepository.UpdateAsync(existingDevice);
+                }
+                else
+                {
+                    // Check if student has max devices reached
+                    int activeDeviceCount = await _studentDeviceRepository.GetActiveDeviceCountAsync(student.Oid);
+                    if (activeDeviceCount >= MaxDevicesPerStudent)
+                    {
+                        return ApiResponse<LoginResponseDto>.ErrorResponse(
+                            $"Maximum number of devices ({MaxDevicesPerStudent}) reached. Please logout from another device.");
+                    }
+
+                    // Register new device
+                    var newDevice = new StudentDevice
+                    {
+                        StudentId = student.Oid,
+                        DeviceId = deviceId,
+                        IsActive = true,
+                        FirstLoginDate = DateTime.UtcNow,
+                        LastLoginDate = DateTime.UtcNow
+                    };
+                    await _studentDeviceRepository.AddAsync(newDevice);
+                }
 
                 // Generate tokens
                 var token = GenerateJwtToken(student.Oid, student.Username, "Student", null);

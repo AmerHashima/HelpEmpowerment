@@ -22,6 +22,7 @@ namespace HelpEmpowermentApi.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Student> Students { get; set; }
         public DbSet<UserDevice> UserDevices { get; set; }
+        public DbSet<StudentDevice> StudentDevices { get; set; }
 
         // NEW DbSets - COURSE FEATURES & CONTENT
         public DbSet<CourseFeature> CourseFeatures { get; set; }
@@ -226,6 +227,20 @@ namespace HelpEmpowermentApi.Data
                 entity.HasIndex(e => e.Email).IsUnique();
                 entity.HasIndex(e => e.IsDeleted);
                 entity.HasIndex(e => new { e.IsDeleted, e.IsActive });
+            });
+
+            // Configure StudentDevice
+            modelBuilder.Entity<StudentDevice>(entity =>
+            {
+                entity.HasOne(d => d.Student)
+                    .WithMany(s => s.StudentDevices)
+                    .HasForeignKey(d => d.StudentId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(true);
+
+                entity.HasIndex(e => e.StudentId);
+                entity.HasIndex(e => new { e.StudentId, e.DeviceId }).IsUnique();
+                entity.HasIndex(e => new { e.StudentId, e.IsActive, e.IsDeleted });
             });
 
             // Configure CourseFeature

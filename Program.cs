@@ -169,6 +169,7 @@ namespace HelpEmpowermentApi
             services.AddScoped<ILiveWebinarRepository, LiveWebinarRepository>();
             services.AddScoped<IStudentCourseReservationRepository, StudentCourseReservationRepository>();
             services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
+            services.AddScoped<IStudentDeviceRepository, StudentDeviceRepository>();
         }
 
         private static void RegisterServices(IServiceCollection services)
