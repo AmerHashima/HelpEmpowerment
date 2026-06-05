@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using HelpEmpowermentApi.Common;
+using Microsoft.EntityFrameworkCore;
 
 namespace HelpEmpowermentApi.Models
 {
