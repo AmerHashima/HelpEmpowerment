@@ -7,7 +7,8 @@ namespace HelpEmpowermentApi.DTOs
         public Guid CourseServiceId { get; set; }
         public string? CourseName { get; set; }      // from CourseService.Course
         public string? ServiceName { get; set; }     // from CourseService.ServiceLookup
-        public decimal Price { get; set; }          // from CourseService
+        public DateTime? ReservationExpiryDate { get; set; }
+        public decimal? ServicePrice { get; set; }
         public int? ActiveTime { get; set; }        // from CourseService
         public DateTime? ReservationDate { get; set; }
         public bool IsReserved { get; set; }
@@ -23,6 +24,8 @@ namespace HelpEmpowermentApi.DTOs
         public Guid StudentCourseId { get; set; }
         public Guid CourseServiceId { get; set; }
         public DateTime? ReservationDate { get; set; }
+        public decimal? ServicePrice { get; set; }
+
         public bool IsReserved { get; set; } = false;
         public string? Notes { get; set; }
         public Guid? CreatedBy { get; set; }

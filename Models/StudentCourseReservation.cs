@@ -14,6 +14,8 @@ namespace HelpEmpowermentApi.Models
         public Guid CourseServiceId { get; set; }    // FK → CourseService (replaces ServiceId)
 
         public DateTime? ReservationDate { get; set; }
+        public DateTime? ReservationExpiryDate { get; set; }
+        public decimal? ServicePrice { get; set; }
 
         public bool IsReserved { get; set; } = false;
 

@@ -3,6 +3,7 @@ using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Models;
+using HelpEmpowermentApi.Repositories;
 
 namespace HelpEmpowermentApi.Services
 {
@@ -10,13 +11,16 @@ namespace HelpEmpowermentApi.Services
     {
         private readonly IStudentCourseReservationRepository _repository;
         private readonly IStudentCourseRepository _studentCourseRepository;
+        private readonly ICourseServiceRepository _courseServiceRepository;
 
         public StudentCourseReservationService(
             IStudentCourseReservationRepository repository,
-            IStudentCourseRepository studentCourseRepository)
+            IStudentCourseRepository studentCourseRepository,
+            ICourseServiceRepository courseServiceRepository)
         {
             _repository = repository;
             _studentCourseRepository = studentCourseRepository;
+            _courseServiceRepository = courseServiceRepository;
         }
 
         public async Task<PagedResponse<StudentCourseReservationDto>> GetPagedAsync(DataRequest request)
@@ -75,12 +79,16 @@ namespace HelpEmpowermentApi.Services
                 var enrollment = await _studentCourseRepository.GetByIdAsync(dto.StudentCourseId);
                 if (enrollment == null)
                     return ApiResponse<StudentCourseReservationDto>.ErrorResponse("Student enrollment not found");
-
+                var courseService = await _courseServiceRepository.GetByIdAsync(dto.CourseServiceId);
+                if (courseService == null)
+                    return ApiResponse<StudentCourseReservationDto>.ErrorResponse("Course service not found");
                 var entity = new StudentCourseReservation
                 {
                     StudentCourseId = dto.StudentCourseId,
                     CourseServiceId = dto.CourseServiceId,
                     ReservationDate = dto.ReservationDate,
+                    ReservationExpiryDate = dto.ReservationDate?.AddDays(courseService?.ActiveTime ?? 0), // Example: set expiry date based on CourseService active time
+                    ServicePrice = dto.ServicePrice,
                     IsReserved = dto.IsReserved,
                     Notes = dto.Notes,
                     CreatedBy = dto.CreatedBy,
@@ -145,9 +153,10 @@ namespace HelpEmpowermentApi.Services
             CourseServiceId = entity.CourseServiceId,
             CourseName = entity.CourseService?.Course?.CourseName,
             ServiceName = entity.CourseService?.ServiceLookup?.LookupNameEn,
-            Price = entity.CourseService?.Price ?? 0,
+            ServicePrice = entity.ServicePrice,
             ActiveTime = entity.CourseService?.ActiveTime,
             ReservationDate = entity.ReservationDate,
+            ReservationExpiryDate = entity.ReservationExpiryDate,
             IsReserved = entity.IsReserved,
             Notes = entity.Notes,
             CreatedAt = entity.CreatedAt,
