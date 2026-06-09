@@ -302,7 +302,7 @@ namespace HelpEmpowermentApi.Services
                         CourseServiceId = r.CourseServiceId,
                         CourseName = r.CourseService?.Course?.CourseName,
                         ServiceName = r.CourseService?.ServiceLookup?.LookupNameEn,
-                        Price = r.CourseService?.Price ?? 0,
+                        ServicePrice = r.CourseService?.Price ?? 0,
                         ActiveTime = r.CourseService?.ActiveTime,
                         ReservationDate = r.ReservationDate,
                         IsReserved = r.IsReserved,
