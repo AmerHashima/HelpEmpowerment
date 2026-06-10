@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using HelpEmpowermentApi.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace HelpEmpowermentApi.Data
 {
@@ -54,7 +54,9 @@ namespace HelpEmpowermentApi.Data
         // Live Events
         public DbSet<LiveCourse> LiveCourses { get; set; }
         public DbSet<LiveWebinar> LiveWebinars { get; set; }
-
+        public DbSet<Link> Links { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<RoleLink> RoleLinks { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

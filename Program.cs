@@ -159,6 +159,9 @@ namespace HelpEmpowermentApi
             services.AddScoped<ICourseLiveSessionStudentRepository, CourseLiveSessionStudentRepository>();
             services.AddScoped<ICourseInstructorRepository, CourseInstructorRepository>();
             services.AddScoped<ICourseTargetAudienceRepository, CourseTargetAudienceRepository>();
+            services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<ILinkRepository, LinkRepository>();
+            services.AddScoped<IRoleLinkRepository, RoleLinkRepository>();
             // ========================================
             // ✅ NEW REPOSITORIES
             // ========================================
@@ -171,6 +174,10 @@ namespace HelpEmpowermentApi
             services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
             services.AddScoped<IStudentDeviceRepository, StudentDeviceRepository>();
             services.AddScoped<ICourseServiceRepository, CourseServiceRepository>();
+            services.AddScoped<IRoleService, RoleService>();
+            services.AddScoped<ILinkService, LinkService>();
+            services.AddScoped<IRoleLinkService, RoleLinkService>();
+
         }
 
         private static void RegisterServices(IServiceCollection services)
