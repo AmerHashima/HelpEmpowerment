@@ -233,6 +233,8 @@ namespace HelpEmpowermentApi.Services
                         NameEn = student.NameEn,
                         NameAr = student.NameAr,
                         Email = student.Email,
+                        PromoCode = student.PromoCode,
+                        PromoDiscount = student.PromoDiscount,
                         Mobile = student.Mobile,
                         Username = student.Username,
                         IsActive = student.IsActive,

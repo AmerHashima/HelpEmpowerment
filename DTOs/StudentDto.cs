@@ -24,6 +24,8 @@
     public class StudentWithCoursesDto
     {
         public Guid Oid { get; set; }
+        public string? PromoCode { get; set; }
+        public float? PromoDiscount { get; set; }
         public string? NameEn { get; set; }
         public string? NameAr { get; set; }
         public string? Email { get; set; }
