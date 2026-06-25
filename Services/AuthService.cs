@@ -589,36 +589,59 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> RevokeTokenAsync(Guid userId, string userType)
+        public async Task<ApiResponse<bool>> RevokeUserTokenAsync(Guid userId)
         {
             try
             {
-                if (userType.Equals("User", StringComparison.OrdinalIgnoreCase))
-                {
-                    var user = await _userRepository.GetByIdAsync(userId);
-                    if (user != null)
-                    {
-                        user.RefreshToken = null;
-                        user.RefreshTokenExpiry = null;
-                        await _userRepository.UpdateAsync(user);
-                    }
-                }
-                else
-                {
-                    var student = await _studentRepository.GetByIdAsync(userId);
-                    if (student != null)
-                    {
-                        student.RefreshToken = null;
-                        student.RefreshTokenExpiry = null;
-                        await _studentRepository.UpdateAsync(student);
-                    }
-                }
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                    return ApiResponse<bool>.ErrorResponse("User not found");
+
+                user.RefreshToken = null;
+                user.RefreshTokenExpiry = null;
+                await _userRepository.UpdateAsync(user);
 
                 return ApiResponse<bool>.SuccessResponse(true, "Token revoked successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during token revocation");
+                _logger.LogError(ex, "Error during user token revocation");
+                return ApiResponse<bool>.ErrorResponse($"Failed to revoke token: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<bool>> RevokeStudentTokenAsync(Guid studentId, string deviceId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(deviceId))
+                    return ApiResponse<bool>.ErrorResponse("DeviceId is required");
+
+                var student = await _studentRepository.GetByIdAsync(studentId);
+                if (student == null)
+                    return ApiResponse<bool>.ErrorResponse("Student not found");
+
+                var studentDevice = await _studentDeviceRepository.GetByStudentAndDeviceIdAsync(studentId, deviceId);
+                if (studentDevice == null)
+                {
+                    return ApiResponse<bool>.ErrorResponse("Student device not found");
+                }
+
+                student.RefreshToken = null;
+                student.RefreshTokenExpiry = null;
+                await _studentRepository.UpdateAsync(student);
+
+                var deleted = await _studentDeviceRepository.DeleteAsync(studentDevice.Oid);
+                if (!deleted)
+                {
+                    return ApiResponse<bool>.ErrorResponse("Failed to delete student device");
+                }
+
+                return ApiResponse<bool>.SuccessResponse(true, "Logged out successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during student token revocation");
                 return ApiResponse<bool>.ErrorResponse($"Failed to revoke token: {ex.Message}");
             }
         }

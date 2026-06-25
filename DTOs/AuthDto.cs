@@ -86,6 +86,11 @@ namespace HelpEmpowermentApi.DTOs
         public DateTime TokenExpires { get; set; }
     }
 
+    public class StudentLogoutDto
+    {
+        public string DeviceId { get; set; } = string.Empty;
+    }
+
     // ============================================
     // OTP DTOs
     // ============================================

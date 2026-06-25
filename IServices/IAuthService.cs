@@ -20,7 +20,8 @@ namespace HelpEmpowermentApi.IServices
         
         // Token Management
         Task<ApiResponse<TokenResponseDto>> RefreshTokenAsync(RefreshTokenDto dto);
-        Task<ApiResponse<bool>> RevokeTokenAsync(Guid userId, string userType);
+        Task<ApiResponse<bool>> RevokeUserTokenAsync(Guid userId);
+        Task<ApiResponse<bool>> RevokeStudentTokenAsync(Guid studentId, string deviceId);
         
         // Validation
         Task<ApiResponse<LoginResponseDto>> ValidateTokenAsync(string token);

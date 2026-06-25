@@ -115,22 +115,46 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         /// <summary>
-        /// Logout and revoke refresh token
+        /// Logout user and revoke refresh token
         /// </summary>
-       // [Authorize]
-        [HttpPost("logout")]
-        public async Task<ActionResult<ApiResponse<bool>>> Logout()
+        [Authorize]
+        [HttpPost("user/logout")]
+        public async Task<ActionResult<ApiResponse<bool>>> LogoutUser()
         {
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var userType = User.FindFirst("UserType")?.Value ?? "Student";
+            var userType = User.FindFirst("UserType")?.Value;
 
-            if (Guid.TryParse(userId, out var id))
-            {
-                var response = await _authService.RevokeTokenAsync(id, userType);
-                return Ok(response);
-            }
+            if (!Guid.TryParse(userId, out var id))
+                return BadRequest(ApiResponse<bool>.ErrorResponse("Invalid user"));
 
-            return BadRequest(ApiResponse<bool>.ErrorResponse("Invalid user"));
+            if (!string.Equals(userType, "User", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(ApiResponse<bool>.ErrorResponse("Invalid user type for this endpoint"));
+
+            var response = await _authService.RevokeUserTokenAsync(id);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
+        /// <summary>
+        /// Logout student from a device, revoke refresh token, and hard delete the student device
+        /// </summary>
+        [Authorize]
+        [HttpPost("student/logout")]
+        public async Task<ActionResult<ApiResponse<bool>>> LogoutStudent([FromBody] StudentLogoutDto? dto)
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userType = User.FindFirst("UserType")?.Value;
+
+            if (!Guid.TryParse(userId, out var id))
+                return BadRequest(ApiResponse<bool>.ErrorResponse("Invalid student"));
+
+            if (!string.Equals(userType, "Student", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(ApiResponse<bool>.ErrorResponse("Invalid user type for this endpoint"));
+
+            if (dto == null)
+                return BadRequest(ApiResponse<bool>.ErrorResponse("DeviceId is required"));
+
+            var response = await _authService.RevokeStudentTokenAsync(id, dto.DeviceId);
+            return response.Success ? Ok(response) : BadRequest(response);
         }
 
         /// <summary>
