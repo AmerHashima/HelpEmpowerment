@@ -65,6 +65,8 @@ namespace HelpEmpowermentApi.Controllers
 
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
+        [RequestSizeLimit(UploadLimits.MaxVideoUploadSizeBytes)]
+        [RequestFormLimits(MultipartBodyLengthLimit = UploadLimits.MaxVideoUploadSizeBytes)]
         public async Task<ActionResult<ApiResponse<CourseVideoDto>>> UploadVideo([FromForm] Guid courseVideoId, IFormFile video, [FromForm] string savePath)
         {
             if (video == null || video.Length == 0)

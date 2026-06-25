@@ -2,10 +2,12 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using HelpEmpowermentApi.Data;
+using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Repositories;
 using HelpEmpowermentApi.Services;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.OpenApi;
@@ -18,6 +20,11 @@ namespace HelpEmpowermentApi
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                options.Limits.MaxRequestBodySize = UploadLimits.MaxVideoUploadSizeBytes;
+            });
 
             // Register DbContext
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -65,6 +72,12 @@ namespace HelpEmpowermentApi
             builder.Services.AddAuthorization();
             builder.Services.AddHttpClient();
             builder.Services.AddHttpContextAccessor();
+            builder.Services.Configure<FormOptions>(options =>
+            {
+                options.MultipartBodyLengthLimit = UploadLimits.MaxVideoUploadSizeBytes;
+                options.ValueLengthLimit = int.MaxValue;
+                options.MultipartHeadersLengthLimit = int.MaxValue;
+            });
             builder.Services.AddControllers();
             //builder.Services.AddOpenApi();
 
