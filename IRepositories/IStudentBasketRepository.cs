@@ -10,5 +10,6 @@ namespace HelpEmpowermentApi.IRepositories
         Task<int> GetBasketItemCountAsync(Guid studentId);
         Task<decimal> GetBasketTotalAsync(Guid studentId);
         Task ClearBasketAsync(Guid studentId);
+        Task HardClearBasketAsync(Guid studentId);
     }
 }

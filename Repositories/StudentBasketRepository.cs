@@ -67,5 +67,15 @@ namespace HelpEmpowermentApi.Repositories
 
             await _context.SaveChangesAsync();
         }
+
+        public async Task HardClearBasketAsync(Guid studentId)
+        {
+            var items = await _dbSet
+                .Where(sb => sb.StudentId == studentId && !sb.IsDeleted)
+                .ToListAsync();
+
+            _dbSet.RemoveRange(items);
+            await _context.SaveChangesAsync();
+        }
     }
 }

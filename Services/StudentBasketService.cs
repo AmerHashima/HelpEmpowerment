@@ -12,17 +12,23 @@ namespace HelpEmpowermentApi.Services
         private readonly IStudentCourseRepository _studentCourseRepository;
         private readonly ICourseRepository _courseRepository;
         private readonly IStudentRepository _studentRepository;
+        private readonly IStudentCourseReservationRepository _studentCourseReservationRepository;
+        private readonly ICourseServiceRepository _courseServiceRepository;
 
         public StudentBasketService(
             IStudentBasketRepository repository,
             IStudentCourseRepository studentCourseRepository,
             ICourseRepository courseRepository,
-            IStudentRepository studentRepository)
+            IStudentRepository studentRepository,
+            IStudentCourseReservationRepository studentCourseReservationRepository,
+            ICourseServiceRepository courseServiceRepository)
         {
             _repository = repository;
             _studentCourseRepository = studentCourseRepository;
             _courseRepository = courseRepository;
             _studentRepository = studentRepository;
+            _studentCourseReservationRepository = studentCourseReservationRepository;
+            _courseServiceRepository = courseServiceRepository;
         }
 
         public async Task<ApiResponse<StudentBasketDto>> AddToBasketAsync(AddToBasketDto dto)
@@ -289,6 +295,22 @@ namespace HelpEmpowermentApi.Services
                     discountPercent = (decimal)(promoOwner.PromoDiscount ?? 0);
                 }
 
+                var courseServicesByCourseId = new Dictionary<Guid, List<Models.CourseService>>();
+                foreach (var courseId in basketItems.Select(item => item.CourseId).Distinct())
+                {
+                    courseServicesByCourseId[courseId] = await _courseServiceRepository.GetByCourseIdAsync(courseId);
+                }
+
+                foreach (var item in basketItems)
+                {
+                    var missingServices = GetMissingRequestedServiceValues(item, courseServicesByCourseId[item.CourseId]);
+                    if (missingServices.Any())
+                    {
+                        return ApiResponse<List<StudentCourseDto>>.ErrorResponse(
+                            $"Course service not configured for selected reservation(s): {string.Join(", ", missingServices)}");
+                    }
+                }
+
                 var enrollments = new List<StudentCourseDto>();
 
                 foreach (var item in basketItems)
@@ -319,11 +341,18 @@ namespace HelpEmpowermentApi.Services
                         PaymentMethod = paymentMethod,
                         PaymentDate = DateTime.UtcNow,
                         EnrollmentDate = DateTime.UtcNow,
+                        RecordedCourseReserv = item.RecordedCourseReserv,
+                        LiveCourseReserv = item.LiveCourseReserv,
+                        ExamSimulationReserv = item.ExamSimulationReserv,
                         CreatedBy = studentId,
                         CreatedAt = DateTime.UtcNow
                     };
 
                     var created = await _studentCourseRepository.AddAsync(enrollment);
+                    var createdReservations = await CreateReservationsFromBasketItemAsync(
+                        created.Oid,
+                        item,
+                        courseServicesByCourseId[item.CourseId]);
 
                     enrollments.Add(new StudentCourseDto
                     {
@@ -331,14 +360,20 @@ namespace HelpEmpowermentApi.Services
                         StudentId = created.StudentId,
                         CourseId = created.CourseId,
                         Price = created.Price,
+                        DiscountAmount = created.DiscountAmount,
                         PaidAmount = created.PaidAmount,
                         PaymentMethod = created.PaymentMethod,
-                        EnrollmentDate = created.EnrollmentDate
+                        PaymentDate = created.PaymentDate,
+                        EnrollmentDate = created.EnrollmentDate,
+                        RecordedCourseReserv = created.RecordedCourseReserv,
+                        LiveCourseReserv = created.LiveCourseReserv,
+                        ExamSimulationReserv = created.ExamSimulationReserv,
+                        Reservations = createdReservations
                     });
                 }
 
-                // Clear basket after checkout
-                await _repository.ClearBasketAsync(studentId);
+                // Hard-delete basket rows after successful checkout.
+                await _repository.HardClearBasketAsync(studentId);
 
                 return ApiResponse<List<StudentCourseDto>>.SuccessResponse(enrollments, "Checkout successful");
             }
@@ -346,6 +381,85 @@ namespace HelpEmpowermentApi.Services
             {
                 return ApiResponse<List<StudentCourseDto>>.ErrorResponse($"Error: {ex.Message}");
             }
+        }
+
+        private async Task<List<StudentCourseReservationDto>> CreateReservationsFromBasketItemAsync(
+            Guid studentCourseId,
+            StudentBasket item,
+            List<Models.CourseService> courseServices)
+        {
+            var requestedServiceValues = GetRequestedServiceValues(item).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (!requestedServiceValues.Any())
+                return new List<StudentCourseReservationDto>();
+
+            var selectedServices = courseServices
+                .Where(cs =>
+                    cs.IsActive &&
+                    cs.ServiceLookup?.LookupValue != null &&
+                    requestedServiceValues.Contains(cs.ServiceLookup.LookupValue))
+                .ToList();
+
+            var reservations = new List<StudentCourseReservationDto>();
+
+            foreach (var courseService in selectedServices)
+            {
+                var reservation = new StudentCourseReservation
+                {
+                    StudentCourseId = studentCourseId,
+                    CourseServiceId = courseService.Oid,
+                    ServicePrice = courseService.Price,
+                    IsReserved = false,
+                    CreatedBy = item.StudentId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var created = await _studentCourseReservationRepository.AddAsync(reservation);
+
+                reservations.Add(new StudentCourseReservationDto
+                {
+                    Oid = created.Oid,
+                    StudentCourseId = created.StudentCourseId,
+                    CourseServiceId = created.CourseServiceId,
+                    CourseName = item.Course?.CourseName,
+                    ServiceName = courseService.ServiceLookup?.LookupNameEn,
+                    ServicePrice = created.ServicePrice,
+                    ActiveTime = courseService.ActiveTime,
+                    ReservationDate = created.ReservationDate,
+                    ReservationExpiryDate = created.ReservationExpiryDate,
+                    IsReserved = created.IsReserved,
+                    Notes = created.Notes,
+                    CreatedAt = created.CreatedAt,
+                    CreatedBy = created.CreatedBy,
+                    UpdatedAt = created.UpdatedAt,
+                    UpdatedBy = created.UpdatedBy
+                });
+            }
+
+            return reservations;
+        }
+
+        private static List<string> GetMissingRequestedServiceValues(StudentBasket item, List<Models.CourseService> courseServices)
+        {
+            var activeServiceValues = courseServices
+                .Where(cs => cs.IsActive && cs.ServiceLookup?.LookupValue != null)
+                .Select(cs => cs.ServiceLookup!.LookupValue)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            return GetRequestedServiceValues(item)
+                .Where(serviceValue => !activeServiceValues.Contains(serviceValue))
+                .ToList();
+        }
+
+        private static IEnumerable<string> GetRequestedServiceValues(StudentBasket item)
+        {
+            if (item.ExamSimulationReserv)
+                yield return "EXAM_SIMULATION";
+
+            if (item.RecordedCourseReserv)
+                yield return "RECORDED_COURSE";
+
+            if (item.LiveCourseReserv)
+                yield return "LIVE_COURSE";
         }
 
         private static StudentBasketDto MapToDto(StudentBasket entity)
