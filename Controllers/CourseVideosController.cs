@@ -11,6 +11,8 @@ namespace HelpEmpowermentApi.Controllers
     {
         private readonly ICourseVideoService _courseVideoService;
         private readonly string videoPath = "/var/www/videos";
+        private const string UploadPathPrefix = "/app/course-videos";
+        private const string StreamRoutePrefix = "/api/CourseVideos/streamVideo/";
 
         public CourseVideosController(ICourseVideoService courseVideoService)
         {
@@ -49,6 +51,7 @@ namespace HelpEmpowermentApi.Controllers
                     requestedFileName = fileName,
                     decodedFileName = pathResult.DecodedFileName,
                     checkedPath = pathResult.FullPath,
+                    checkedPaths = pathResult.CheckedPaths,
                     videoBasePath = Path.GetFullPath(videoPath)
                 });
             }
@@ -61,8 +64,55 @@ namespace HelpEmpowermentApi.Controllers
                     requestedFileName = fileName,
                     decodedFileName = pathResult.DecodedFileName,
                     checkedPath = pathResult.FullPath,
+                    checkedPaths = pathResult.CheckedPaths,
                     videoBasePath = Path.GetFullPath(videoPath),
-                    hint = "The URL contained %0D%0A, which is a newline. It is trimmed now, but the remaining file name/path must match a real file under the video folder."
+                    uploadBasePath = Path.GetFullPath(UploadPathPrefix),
+                    hint = "Use the VideoUrl returned from upload. The stream endpoint now checks the normal video folder and the upload folder prefix."
+                });
+            }
+
+            var stream = new FileStream(pathResult.FullPath!, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return File(stream, "video/mp4", enableRangeProcessing: true);
+        }
+
+        [HttpGet("{id}/stream")]
+        public async Task<IActionResult> StreamById(Guid id)
+        {
+            var response = await _courseVideoService.GetByIdAsync(id);
+            if (!response.Success || response.Data == null)
+                return NotFound(response);
+
+            if (string.IsNullOrWhiteSpace(response.Data.VideoUrl))
+                return NotFound(new { message = "No video path saved for this course video", id });
+
+            var pathResult = ResolveVideoPath(response.Data.VideoUrl, allowStoredAbsolutePath: true);
+            if (!pathResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = pathResult.Error,
+                    id,
+                    videoUrl = response.Data.VideoUrl,
+                    decodedFileName = pathResult.DecodedFileName,
+                    checkedPath = pathResult.FullPath,
+                    checkedPaths = pathResult.CheckedPaths,
+                    videoBasePath = Path.GetFullPath(videoPath),
+                    uploadBasePath = Path.GetFullPath(UploadPathPrefix)
+                });
+            }
+
+            if (!System.IO.File.Exists(pathResult.FullPath))
+            {
+                return NotFound(new
+                {
+                    message = "Video file not found on server",
+                    id,
+                    videoUrl = response.Data.VideoUrl,
+                    decodedFileName = pathResult.DecodedFileName,
+                    checkedPath = pathResult.FullPath,
+                    checkedPaths = pathResult.CheckedPaths,
+                    videoBasePath = Path.GetFullPath(videoPath),
+                    uploadBasePath = Path.GetFullPath(UploadPathPrefix)
                 });
             }
 
@@ -82,6 +132,7 @@ namespace HelpEmpowermentApi.Controllers
                     requestedFileName = fileName,
                     decodedFileName = pathResult.DecodedFileName,
                     checkedPath = pathResult.FullPath,
+                    checkedPaths = pathResult.CheckedPaths,
                     videoBasePath = Path.GetFullPath(videoPath)
                 });
             }
@@ -94,7 +145,9 @@ namespace HelpEmpowermentApi.Controllers
                     requestedFileName = fileName,
                     decodedFileName = pathResult.DecodedFileName,
                     checkedPath = pathResult.FullPath,
-                    videoBasePath = Path.GetFullPath(videoPath)
+                    checkedPaths = pathResult.CheckedPaths,
+                    videoBasePath = Path.GetFullPath(videoPath),
+                    uploadBasePath = Path.GetFullPath(UploadPathPrefix)
                 });
             }
 
@@ -102,30 +155,79 @@ namespace HelpEmpowermentApi.Controllers
             return File(stream, "video/mp4", enableRangeProcessing: true);
         }
 
-        private VideoPathResult ResolveVideoPath(string? fileName)
+        private VideoPathResult ResolveVideoPath(string? fileName, bool allowStoredAbsolutePath = false)
         {
             if (string.IsNullOrWhiteSpace(fileName))
-                return new VideoPathResult(false, null, null, "File name is required");
+                return new VideoPathResult(false, null, null, Array.Empty<string>(), "File name is required");
 
             var decodedFileName = Uri.UnescapeDataString(fileName).Trim();
+            decodedFileName = ExtractPathFromUrl(decodedFileName);
+            decodedFileName = RemoveStreamRoutePrefix(decodedFileName);
             decodedFileName = decodedFileName.Replace('\\', Path.DirectorySeparatorChar)
                                              .Replace('/', Path.DirectorySeparatorChar);
 
             var basePath = Path.GetFullPath(videoPath);
-            var fullPath = Path.IsPathRooted(decodedFileName)
-                ? Path.GetFullPath(decodedFileName)
-                : Path.GetFullPath(Path.Combine(basePath, decodedFileName));
+            var uploadBasePath = Path.GetFullPath(UploadPathPrefix);
+            var candidatePaths = new List<string>();
 
-            var isInsideVideoFolder = fullPath.Equals(basePath, StringComparison.OrdinalIgnoreCase)
-                || fullPath.StartsWith(basePath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+            if (Path.IsPathRooted(decodedFileName))
+            {
+                var rootedPath = Path.GetFullPath(decodedFileName);
+                if (allowStoredAbsolutePath)
+                    AddCandidate(candidatePaths, rootedPath);
+                else
+                    AddCandidate(candidatePaths, rootedPath, basePath, uploadBasePath);
+            }
+            else
+            {
+                AddCandidate(candidatePaths, Path.GetFullPath(Path.Combine(basePath, decodedFileName)), basePath, uploadBasePath);
+                AddCandidate(candidatePaths, Path.GetFullPath(Path.Combine(uploadBasePath, decodedFileName)), basePath, uploadBasePath);
+            }
 
-            if (!isInsideVideoFolder)
-                return new VideoPathResult(false, decodedFileName, fullPath, "Invalid video path");
+            if (candidatePaths.Count == 0)
+                return new VideoPathResult(false, decodedFileName, null, Array.Empty<string>(), "Invalid video path");
 
-            return new VideoPathResult(true, decodedFileName, fullPath, null);
+            var existingPath = candidatePaths.FirstOrDefault(System.IO.File.Exists);
+            return new VideoPathResult(true, decodedFileName, existingPath ?? candidatePaths[0], candidatePaths, null);
         }
 
-        private sealed record VideoPathResult(bool IsValid, string? DecodedFileName, string? FullPath, string? Error);
+        private static string ExtractPathFromUrl(string value)
+        {
+            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+                return value;
+
+            return Uri.UnescapeDataString(uri.AbsolutePath);
+        }
+
+        private static string RemoveStreamRoutePrefix(string value)
+        {
+            if (value.StartsWith(StreamRoutePrefix, StringComparison.OrdinalIgnoreCase))
+                return value.Substring(StreamRoutePrefix.Length);
+
+            return value;
+        }
+
+        private static void AddCandidate(List<string> candidatePaths, string fullPath, params string[] allowedRoots)
+        {
+            if (allowedRoots.Length > 0 && !allowedRoots.Any(root => IsInsideRoot(fullPath, root)))
+                return;
+
+            if (!candidatePaths.Contains(fullPath, StringComparer.OrdinalIgnoreCase))
+                candidatePaths.Add(fullPath);
+        }
+
+        private static bool IsInsideRoot(string fullPath, string rootPath)
+        {
+            return fullPath.Equals(rootPath, StringComparison.OrdinalIgnoreCase)
+                || fullPath.StartsWith(rootPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private sealed record VideoPathResult(
+            bool IsValid,
+            string? DecodedFileName,
+            string? FullPath,
+            IReadOnlyList<string> CheckedPaths,
+            string? Error);
 
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
