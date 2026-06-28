@@ -13,6 +13,7 @@ namespace HelpEmpowermentApi.Controllers
         private readonly ICourseVideoAttachmentService _attachmentService;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
+        private const string UploadPathPrefix = "/app/course-videos";
         private string AttachmentsPath => _configuration["FileStorage:AttachmentsPath"] ?? "/var/www/attachments";
 
         public CourseVideoAttachmentsController(
@@ -69,20 +70,92 @@ namespace HelpEmpowermentApi.Controllers
                 return File(fileBytes, contentType, fileName);
             }
 
-            // Local file path → serve from disk
-            var basePath = Path.GetFullPath(AttachmentsPath);
-            var fullPath = Path.GetFullPath(Path.Combine(basePath, fileUrl));
+            // Local file path -> serve from disk
+            var pathResult = ResolveAttachmentPath(fileUrl);
+            if (!pathResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = pathResult.Error,
+                    fileUrl,
+                    decodedFileName = pathResult.DecodedFileName,
+                    checkedPath = pathResult.FullPath,
+                    checkedPaths = pathResult.CheckedPaths,
+                    attachmentsBasePath = Path.GetFullPath(AttachmentsPath),
+                    uploadBasePath = Path.GetFullPath(UploadPathPrefix)
+                });
+            }
 
-            if (!fullPath.StartsWith(basePath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
-                && !fullPath.Equals(basePath, StringComparison.OrdinalIgnoreCase))
-                return BadRequest("Invalid file path");
+            if (!System.IO.File.Exists(pathResult.FullPath))
+            {
+                return NotFound(new
+                {
+                    message = "File not found on server",
+                    fileUrl,
+                    decodedFileName = pathResult.DecodedFileName,
+                    checkedPath = pathResult.FullPath,
+                    checkedPaths = pathResult.CheckedPaths,
+                    attachmentsBasePath = Path.GetFullPath(AttachmentsPath),
+                    uploadBasePath = Path.GetFullPath(UploadPathPrefix),
+                    hint = "Use the FileUrl returned from upload. The download endpoint now checks the normal attachments folder and the upload folder prefix."
+                });
+            }
 
-            if (!System.IO.File.Exists(fullPath))
-                return NotFound($"File not found on server: {fullPath}");
-
-            var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var stream = new FileStream(pathResult.FullPath!, FileMode.Open, FileAccess.Read, FileShare.Read);
             return File(stream, contentType, fileName);
         }
+
+        private AttachmentPathResult ResolveAttachmentPath(string? fileUrl)
+        {
+            if (string.IsNullOrWhiteSpace(fileUrl))
+                return new AttachmentPathResult(false, null, null, Array.Empty<string>(), "File URL is required");
+
+            var decodedFileName = Uri.UnescapeDataString(fileUrl).Trim()
+                .Replace('\\', Path.DirectorySeparatorChar)
+                .Replace('/', Path.DirectorySeparatorChar);
+
+            var basePath = Path.GetFullPath(AttachmentsPath);
+            var uploadBasePath = Path.GetFullPath(UploadPathPrefix);
+            var candidatePaths = new List<string>();
+
+            if (Path.IsPathRooted(decodedFileName))
+            {
+                AddCandidate(candidatePaths, Path.GetFullPath(decodedFileName), basePath, uploadBasePath);
+            }
+            else
+            {
+                AddCandidate(candidatePaths, Path.GetFullPath(Path.Combine(basePath, decodedFileName)), basePath, uploadBasePath);
+                AddCandidate(candidatePaths, Path.GetFullPath(Path.Combine(uploadBasePath, decodedFileName)), basePath, uploadBasePath);
+            }
+
+            if (candidatePaths.Count == 0)
+                return new AttachmentPathResult(false, decodedFileName, null, Array.Empty<string>(), "Invalid file path");
+
+            var existingPath = candidatePaths.FirstOrDefault(System.IO.File.Exists);
+            return new AttachmentPathResult(true, decodedFileName, existingPath ?? candidatePaths[0], candidatePaths, null);
+        }
+
+        private static void AddCandidate(List<string> candidatePaths, string fullPath, params string[] allowedRoots)
+        {
+            if (allowedRoots.Length > 0 && !allowedRoots.Any(root => IsInsideRoot(fullPath, root)))
+                return;
+
+            if (!candidatePaths.Contains(fullPath, StringComparer.OrdinalIgnoreCase))
+                candidatePaths.Add(fullPath);
+        }
+
+        private static bool IsInsideRoot(string fullPath, string rootPath)
+        {
+            return fullPath.Equals(rootPath, StringComparison.OrdinalIgnoreCase)
+                || fullPath.StartsWith(rootPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private sealed record AttachmentPathResult(
+            bool IsValid,
+            string? DecodedFileName,
+            string? FullPath,
+            IReadOnlyList<string> CheckedPaths,
+            string? Error);
 
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
