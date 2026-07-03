@@ -12,15 +12,18 @@ namespace HelpEmpowermentApi.Services
         private readonly ICourseVideoRepository _courseVideoRepository;
         private readonly ICourseRepository _courseRepository;
         private readonly IAppLookupDetailRepository _lookupDetailRepository;
+        private readonly IConfiguration _configuration;
 
         public CourseVideoService(
             ICourseVideoRepository courseVideoRepository,
             ICourseRepository courseRepository,
-            IAppLookupDetailRepository lookupDetailRepository)
+            IAppLookupDetailRepository lookupDetailRepository,
+            IConfiguration configuration)
         {
             _courseVideoRepository = courseVideoRepository;
             _courseRepository = courseRepository;
             _lookupDetailRepository = lookupDetailRepository;
+            _configuration = configuration;
         }
 
         public async Task<PagedResponse<CourseVideoDto>> GetPagedAsync(DataRequest request)
@@ -183,7 +186,7 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
-        public async Task<ApiResponse<CourseVideoDto>> UploadVideoAsync(Guid courseVideoId, IFormFile video, string savePath)
+        public async Task<ApiResponse<CourseVideoDto>> UploadVideoAsync(Guid courseVideoId, IFormFile video, string? savePath)
         {
             try
             {
@@ -196,19 +199,20 @@ namespace HelpEmpowermentApi.Services
                 if (!allowedExtensions.Contains(ext))
                     return ApiResponse<CourseVideoDto>.ErrorResponse($"Invalid video type. Allowed: {string.Join(", ", allowedExtensions)}");
 
-                var fullSavePath = Path.GetFullPath(savePath);
+                var fullSavePath = GetVideoStoragePath(savePath);
                 Directory.CreateDirectory(fullSavePath);
 
                 var fileName = $"{Guid.NewGuid()}{ext}";
                 var filePath = Path.Combine(fullSavePath, fileName);
 
+                if (!IsInsideRoot(Path.GetFullPath(filePath), fullSavePath))
+                    return ApiResponse<CourseVideoDto>.ErrorResponse("Invalid video path");
+
                 await using (var stream = new FileStream(filePath, FileMode.Create))
                     await video.CopyToAsync(stream);
 
-                var normalizedPath = filePath.Replace("\\", "/");
-                const string prefixToRemove = "/app/course-videos/";
-                if (normalizedPath.StartsWith(prefixToRemove, StringComparison.OrdinalIgnoreCase))
-                    normalizedPath = normalizedPath.Substring(prefixToRemove.Length);
+                var normalizedPath = Path.GetRelativePath(fullSavePath, filePath)
+                    .Replace("\\", "/");
 
                 entity.VideoUrl = normalizedPath;
                 entity.UpdatedAt = DateTime.UtcNow;
@@ -258,6 +262,24 @@ namespace HelpEmpowermentApi.Services
                 IsActive = video.IsActive,
                 CreatedAt = video.CreatedAt
             };
+        }
+
+        private string GetVideoStoragePath(string? savePath)
+        {
+            var configuredPath = _configuration["FileStorage:VideosPath"];
+            var storagePath = !string.IsNullOrWhiteSpace(configuredPath)
+                ? configuredPath
+                : !string.IsNullOrWhiteSpace(savePath)
+                    ? savePath
+                    : "/var/www/videos";
+
+            return Path.GetFullPath(storagePath);
+        }
+
+        private static bool IsInsideRoot(string fullPath, string rootPath)
+        {
+            return fullPath.Equals(rootPath, StringComparison.OrdinalIgnoreCase)
+                || fullPath.StartsWith(rootPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
         }
 
         private CourseVideoDto MapToDtoWithAttachments(CourseVideo video)

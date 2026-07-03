@@ -8,6 +8,7 @@ using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Repositories;
 using HelpEmpowermentApi.Services;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.OpenApi;
@@ -123,9 +124,23 @@ namespace HelpEmpowermentApi
                 });
             });
 
+            builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor |
+                    ForwardedHeaders.XForwardedProto |
+                    ForwardedHeaders.XForwardedHost;
+
+                // Required for dynamic reverse proxies such as ngrok where the proxy IP is not stable.
+                options.KnownIPNetworks.Clear();
+                options.KnownProxies.Clear();
+            });
+
             var app = builder.Build();
 
             // Auto-migrate database
+
+            app.UseForwardedHeaders();
 
             //app.MapOpenApi();
             app.UseSwagger();

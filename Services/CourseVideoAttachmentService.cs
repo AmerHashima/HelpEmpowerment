@@ -12,15 +12,18 @@ namespace HelpEmpowermentApi.Services
         private readonly ICourseVideoAttachmentRepository _attachmentRepository;
         private readonly ICourseVideoRepository _courseVideoRepository;
         private readonly IAppLookupDetailRepository _lookupDetailRepository;
+        private readonly IConfiguration _configuration;
 
         public CourseVideoAttachmentService(
             ICourseVideoAttachmentRepository attachmentRepository,
             ICourseVideoRepository courseVideoRepository,
-            IAppLookupDetailRepository lookupDetailRepository)
+            IAppLookupDetailRepository lookupDetailRepository,
+            IConfiguration configuration)
         {
             _attachmentRepository = attachmentRepository;
             _courseVideoRepository = courseVideoRepository;
             _lookupDetailRepository = lookupDetailRepository;
+            _configuration = configuration;
         }
 
         public async Task<PagedResponse<CourseVideoAttachmentDto>> GetPagedAsync(DataRequest request)
@@ -116,7 +119,7 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
-        public async Task<ApiResponse<CourseVideoAttachmentDto>> UploadAsync(Guid courseVideoOid, IFormFile file, string savePath, Guid? fileTypeLookupId)
+        public async Task<ApiResponse<CourseVideoAttachmentDto>> UploadAsync(Guid courseVideoOid, IFormFile file, string? savePath, Guid? fileTypeLookupId)
         {
             try
             {
@@ -137,23 +140,20 @@ namespace HelpEmpowermentApi.Services
                 if (!allowedExtensions.Contains(ext))
                     return ApiResponse<CourseVideoAttachmentDto>.ErrorResponse($"Invalid file type. Allowed: {string.Join(", ", allowedExtensions)}");
 
-                var basePath = Path.GetFullPath(savePath);
+                var basePath = GetAttachmentStoragePath(savePath);
                 Directory.CreateDirectory(basePath);
 
                 var fileName = $"{Guid.NewGuid()}{ext}";
                 var fullPath = Path.Combine(basePath, fileName);
 
-                // Path traversal guard
-                if (!Path.GetFullPath(fullPath).StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+                if (!IsInsideRoot(Path.GetFullPath(fullPath), basePath))
                     return ApiResponse<CourseVideoAttachmentDto>.ErrorResponse("Invalid file path");
 
                 await using (var stream = new FileStream(fullPath, FileMode.Create))
                     await file.CopyToAsync(stream);
 
-                var normalizedPath = fullPath.Replace("\\", "/");
-                const string prefixToRemove = "/app/course-videos/";
-                if (normalizedPath.StartsWith(prefixToRemove, StringComparison.OrdinalIgnoreCase))
-                    normalizedPath = normalizedPath.Substring(prefixToRemove.Length);
+                var normalizedPath = Path.GetRelativePath(basePath, fullPath)
+                    .Replace("\\", "/");
 
                 var attachment = new CourseVideoAttachment
                 {
@@ -239,6 +239,24 @@ namespace HelpEmpowermentApi.Services
                 FileTypeName = attachment.FileTypeLookup?.LookupNameEn,
                 CreatedAt = attachment.CreatedAt
             };
+        }
+
+        private string GetAttachmentStoragePath(string? savePath)
+        {
+            var configuredPath = _configuration["FileStorage:AttachmentsPath"];
+            var storagePath = !string.IsNullOrWhiteSpace(configuredPath)
+                ? configuredPath
+                : !string.IsNullOrWhiteSpace(savePath)
+                    ? savePath
+                    : "/var/www/attachments";
+
+            return Path.GetFullPath(storagePath);
+        }
+
+        private static bool IsInsideRoot(string fullPath, string rootPath)
+        {
+            return fullPath.Equals(rootPath, StringComparison.OrdinalIgnoreCase)
+                || fullPath.StartsWith(rootPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

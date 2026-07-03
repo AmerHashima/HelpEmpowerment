@@ -10,13 +10,16 @@ namespace HelpEmpowermentApi.Controllers
     public class CourseVideosController : ControllerBase
     {
         private readonly ICourseVideoService _courseVideoService;
-        private readonly string videoPath = "/var/www/videos";
-        private const string UploadPathPrefix = "/app/course-videos";
+        private readonly IConfiguration _configuration;
+        private const string LegacyUploadPathPrefix = "/app/course-videos";
         private const string StreamRoutePrefix = "/api/CourseVideos/streamVideo/";
+        private string VideoPath => _configuration["FileStorage:VideosPath"] ?? "/var/www/videos";
+        private string UploadPathPrefix => _configuration["FileStorage:CourseVideosUploadPath"] ?? LegacyUploadPathPrefix;
 
-        public CourseVideosController(ICourseVideoService courseVideoService)
+        public CourseVideosController(ICourseVideoService courseVideoService, IConfiguration configuration)
         {
             _courseVideoService = courseVideoService;
+            _configuration = configuration;
         }
 
         [HttpPost("search")]
@@ -52,7 +55,7 @@ namespace HelpEmpowermentApi.Controllers
                     decodedFileName = pathResult.DecodedFileName,
                     checkedPath = pathResult.FullPath,
                     checkedPaths = pathResult.CheckedPaths,
-                    videoBasePath = Path.GetFullPath(videoPath)
+                    videoBasePath = Path.GetFullPath(VideoPath)
                 });
             }
 
@@ -65,7 +68,7 @@ namespace HelpEmpowermentApi.Controllers
                     decodedFileName = pathResult.DecodedFileName,
                     checkedPath = pathResult.FullPath,
                     checkedPaths = pathResult.CheckedPaths,
-                    videoBasePath = Path.GetFullPath(videoPath),
+                    videoBasePath = Path.GetFullPath(VideoPath),
                     uploadBasePath = Path.GetFullPath(UploadPathPrefix),
                     hint = "Use the VideoUrl returned from upload. The stream endpoint now checks the normal video folder and the upload folder prefix."
                 });
@@ -96,7 +99,7 @@ namespace HelpEmpowermentApi.Controllers
                     decodedFileName = pathResult.DecodedFileName,
                     checkedPath = pathResult.FullPath,
                     checkedPaths = pathResult.CheckedPaths,
-                    videoBasePath = Path.GetFullPath(videoPath),
+                    videoBasePath = Path.GetFullPath(VideoPath),
                     uploadBasePath = Path.GetFullPath(UploadPathPrefix)
                 });
             }
@@ -111,7 +114,7 @@ namespace HelpEmpowermentApi.Controllers
                     decodedFileName = pathResult.DecodedFileName,
                     checkedPath = pathResult.FullPath,
                     checkedPaths = pathResult.CheckedPaths,
-                    videoBasePath = Path.GetFullPath(videoPath),
+                    videoBasePath = Path.GetFullPath(VideoPath),
                     uploadBasePath = Path.GetFullPath(UploadPathPrefix)
                 });
             }
@@ -133,7 +136,7 @@ namespace HelpEmpowermentApi.Controllers
                     decodedFileName = pathResult.DecodedFileName,
                     checkedPath = pathResult.FullPath,
                     checkedPaths = pathResult.CheckedPaths,
-                    videoBasePath = Path.GetFullPath(videoPath)
+                    videoBasePath = Path.GetFullPath(VideoPath)
                 });
             }
 
@@ -146,7 +149,7 @@ namespace HelpEmpowermentApi.Controllers
                     decodedFileName = pathResult.DecodedFileName,
                     checkedPath = pathResult.FullPath,
                     checkedPaths = pathResult.CheckedPaths,
-                    videoBasePath = Path.GetFullPath(videoPath),
+                    videoBasePath = Path.GetFullPath(VideoPath),
                     uploadBasePath = Path.GetFullPath(UploadPathPrefix)
                 });
             }
@@ -166,7 +169,7 @@ namespace HelpEmpowermentApi.Controllers
             decodedFileName = decodedFileName.Replace('\\', Path.DirectorySeparatorChar)
                                              .Replace('/', Path.DirectorySeparatorChar);
 
-            var basePath = Path.GetFullPath(videoPath);
+            var basePath = Path.GetFullPath(VideoPath);
             var uploadBasePath = Path.GetFullPath(UploadPathPrefix);
             var candidatePaths = new List<string>();
 
@@ -187,7 +190,12 @@ namespace HelpEmpowermentApi.Controllers
             if (candidatePaths.Count == 0)
                 return new VideoPathResult(false, decodedFileName, null, Array.Empty<string>(), "Invalid video path");
 
-            var existingPath = candidatePaths.FirstOrDefault(System.IO.File.Exists);
+            var existingPath = candidatePaths.FirstOrDefault(System.IO.File.Exists)
+                ?? FindExistingFileByName(decodedFileName, basePath, uploadBasePath);
+
+            if (existingPath != null)
+                AddCandidate(candidatePaths, existingPath, basePath, uploadBasePath);
+
             return new VideoPathResult(true, decodedFileName, existingPath ?? candidatePaths[0], candidatePaths, null);
         }
 
@@ -222,6 +230,36 @@ namespace HelpEmpowermentApi.Controllers
                 || fullPath.StartsWith(rootPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
         }
 
+        private static string? FindExistingFileByName(string decodedFileName, params string[] roots)
+        {
+            var fileName = Path.GetFileName(decodedFileName);
+            if (string.IsNullOrWhiteSpace(fileName))
+                return null;
+
+            foreach (var root in roots.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (!Directory.Exists(root))
+                    continue;
+
+                try
+                {
+                    var match = Directory.EnumerateFiles(root, fileName, SearchOption.AllDirectories)
+                        .FirstOrDefault(path => IsInsideRoot(Path.GetFullPath(path), root));
+
+                    if (match != null)
+                        return Path.GetFullPath(match);
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+
+            return null;
+        }
+
         private sealed record VideoPathResult(
             bool IsValid,
             string? DecodedFileName,
@@ -233,13 +271,10 @@ namespace HelpEmpowermentApi.Controllers
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(UploadLimits.MaxVideoUploadSizeBytes)]
         [RequestFormLimits(MultipartBodyLengthLimit = UploadLimits.MaxVideoUploadSizeBytes)]
-        public async Task<ActionResult<ApiResponse<CourseVideoDto>>> UploadVideo([FromForm] Guid courseVideoId, IFormFile video, [FromForm] string savePath)
+        public async Task<ActionResult<ApiResponse<CourseVideoDto>>> UploadVideo([FromForm] Guid courseVideoId, IFormFile video, [FromForm] string? savePath = null)
         {
             if (video == null || video.Length == 0)
                 return BadRequest(ApiResponse<CourseVideoDto>.ErrorResponse("No video file provided"));
-
-            if (string.IsNullOrWhiteSpace(savePath))
-                return BadRequest(ApiResponse<CourseVideoDto>.ErrorResponse("savePath is required"));
 
             var response = await _courseVideoService.UploadVideoAsync(courseVideoId, video, savePath);
             return response.Success ? Ok(response) : BadRequest(response);
