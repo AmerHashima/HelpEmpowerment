@@ -1,5 +1,6 @@
 using HelpEmpowermentApi.Models;
 using Microsoft.EntityFrameworkCore;
+using HelpEmpowermentApi.Payments.Domain;
 
 namespace HelpEmpowermentApi.Data
 {
@@ -57,9 +58,35 @@ namespace HelpEmpowermentApi.Data
         public DbSet<Link> Links { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<RoleLink> RoleLinks { get; set; }
+        public DbSet<Invoice> Invoices => Set<Invoice>();
+        public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
+        public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
+        public DbSet<PaymentReceipt> PaymentReceipts => Set<PaymentReceipt>();
+        public DbSet<PaymentJournalEntry> PaymentJournalEntries => Set<PaymentJournalEntry>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Invoice>(entity =>
+            {
+                entity.ToTable("Invoices"); entity.HasKey(x => x.Id); entity.HasIndex(x => x.InvoiceNumber).IsUnique();
+                entity.Property(x => x.TotalAmount).HasPrecision(18, 2); entity.Property(x => x.Currency).HasMaxLength(3); entity.Property(x => x.InvoiceNumber).HasMaxLength(50).IsRequired();
+                entity.HasMany(x => x.PaymentTransactions).WithOne(x => x.Invoice).HasForeignKey(x => x.InvoiceId).OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<PaymentTransaction>(entity =>
+            {
+                entity.ToTable("PaymentTransactions"); entity.HasKey(x => x.Id); entity.HasIndex(x => x.CartId).IsUnique(); entity.HasIndex(x => x.InvoiceId); entity.HasIndex(x => x.TelrOrderReference);
+                entity.HasIndex(x => x.TelrTransactionReference).IsUnique().HasFilter("[TelrTransactionReference] IS NOT NULL");
+                entity.Property(x => x.Amount).HasPrecision(18, 2); entity.Property(x => x.Currency).HasMaxLength(3); entity.Property(x => x.Provider).HasMaxLength(50); entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(30); entity.Property(x => x.RowVersion).IsRowVersion();
+            });
+            modelBuilder.Entity<InvoiceItem>(entity =>
+            {
+                entity.ToTable("InvoiceItems"); entity.HasKey(x => x.Id); entity.HasIndex(x => x.InvoiceId); entity.HasIndex(x => x.CourseId);
+                entity.Property(x => x.UnitPrice).HasPrecision(18, 2); entity.Property(x => x.DiscountAmount).HasPrecision(18, 2); entity.Property(x => x.LineTotal).HasPrecision(18, 2);
+                entity.HasOne(x => x.Invoice).WithMany(x => x.Items).HasForeignKey(x => x.InvoiceId).OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<PaymentReceipt>(entity => { entity.ToTable("PaymentReceipts"); entity.HasKey(x => x.Id); entity.HasIndex(x => x.PaymentTransactionId).IsUnique(); entity.Property(x => x.Amount).HasPrecision(18, 2); entity.Property(x => x.Currency).HasMaxLength(3); entity.HasOne(x => x.PaymentTransaction).WithOne(x => x.Receipt).HasForeignKey<PaymentReceipt>(x => x.PaymentTransactionId).OnDelete(DeleteBehavior.Restrict); });
+            modelBuilder.Entity<PaymentJournalEntry>(entity => { entity.ToTable("PaymentJournalEntries"); entity.HasKey(x => x.Id); entity.HasIndex(x => x.PaymentTransactionId).IsUnique(); entity.Property(x => x.Amount).HasPrecision(18, 2); entity.Property(x => x.Currency).HasMaxLength(3); entity.HasOne(x => x.PaymentTransaction).WithOne(x => x.JournalEntry).HasForeignKey<PaymentJournalEntry>(x => x.PaymentTransactionId).OnDelete(DeleteBehavior.Restrict); });
 
             // Configure Course
             modelBuilder.Entity<Course>(entity =>
