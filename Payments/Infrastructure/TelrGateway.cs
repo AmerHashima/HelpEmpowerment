@@ -23,7 +23,11 @@ public sealed class TelrPaymentService(HttpClient client, IOptions<TelrOptions> 
         // Forwarded-header middleware supplies the public scheme and host when TLS is
         // terminated by a reverse proxy. Do not force HTTPS for a host that only serves HTTP.
         var apiBaseUrl = $"{httpRequest.Scheme}://{httpRequest.Host.ToUriComponent()}{httpRequest.PathBase}".TrimEnd('/');
-        var returnUrls = new TelrReturnUrls($"{apiBaseUrl}/api/payments/telr/authorised", $"{apiBaseUrl}/api/payments/telr/declined", $"{apiBaseUrl}/api/payments/telr/cancelled");
+        var encodedCartId = Uri.EscapeDataString(cartId);
+        var returnUrls = new TelrReturnUrls(
+            $"{apiBaseUrl}/api/payments/telr/authorised?cartId={encodedCartId}",
+            $"{apiBaseUrl}/api/payments/telr/declined?cartId={encodedCartId}",
+            $"{apiBaseUrl}/api/payments/telr/cancelled?cartId={encodedCartId}");
         var request = new TelrCreateOrderRequest { Store = _options.StoreId, AuthKey = _options.AuthKey, Order = new(cartId, _options.IsTest ? "1" : "0", amount.ToString("0.00", CultureInfo.InvariantCulture), currency, description), Return = returnUrls, Panels = _options.EnabledPanels };
         var safeRequest = JsonSerializer.Serialize(WithAuthKey("***"), JsonOptions);
         try
