@@ -47,12 +47,12 @@ public sealed class PaymentTransactionService(ApplicationDbContext db, ITelrPaym
     }
 
     public Task<PaymentTransaction?> FindAsync(string? orderReference, string? cartId, string? transactionReference, CancellationToken ct) =>
-        db.PaymentTransactions.FirstOrDefaultAsync(p => (orderReference != null && p.TelrOrderReference == orderReference) || (cartId != null && p.CartId == cartId) || (transactionReference != null && p.TelrTransactionReference == transactionReference), ct);
+        db.PaymentTransactions.AsTracking().FirstOrDefaultAsync(p => (orderReference != null && p.TelrOrderReference == orderReference) || (cartId != null && p.CartId == cartId) || (transactionReference != null && p.TelrTransactionReference == transactionReference), ct);
 
     public async Task ApplyCheckedStatusAsync(Guid paymentId, TelrCheckResult check, CancellationToken ct)
     {
         if (check.IsAuthorised) { await processor.ProcessAsync(paymentId, check, ct); return; }
-        var p = await db.PaymentTransactions.SingleOrDefaultAsync(x => x.Id == paymentId, ct);
+        var p = await db.PaymentTransactions.AsTracking().SingleOrDefaultAsync(x => x.Id == paymentId, ct);
         if (p is null || p.Status == PaymentStatus.Authorised) return;
         p.CheckRequest = check.RawRequest; p.CheckResponse = check.RawResponse; p.UpdatedAt = clock.UtcNow;
         p.Status = check.IsOnHold ? PaymentStatus.OnHold : check.IsDeclined ? PaymentStatus.Declined : PaymentStatus.Pending;
@@ -64,27 +64,30 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
 {
     public async Task<ServiceResult<bool>> ProcessAsync(Guid paymentId, TelrCheckResult result, CancellationToken ct)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         try
         {
-            var payment = await db.PaymentTransactions.Include(x => x.Invoice).Include(x => x.Receipt).Include(x => x.JournalEntry).SingleOrDefaultAsync(x => x.Id == paymentId, ct);
-            if (payment is null) return ServiceResult<bool>.Failure("PAYMENT_NOT_FOUND", "Payment was not found.");
-            if (payment.Status == PaymentStatus.Authorised && payment.Invoice.IsPaid) { await transaction.CommitAsync(ct); return ServiceResult<bool>.Success(false); }
-            if (!result.IsAuthorised) return ServiceResult<bool>.Failure("NOT_AUTHORISED", "Telr has not authorised this transaction.");
-            if (payment.Amount != result.Amount) return ServiceResult<bool>.Failure("AMOUNT_MISMATCH", "Confirmed amount does not match the payment.");
-            if (!string.Equals(payment.Currency, result.Currency, StringComparison.OrdinalIgnoreCase)) return ServiceResult<bool>.Failure("CURRENCY_MISMATCH", "Confirmed currency does not match the payment.");
-            if (!string.Equals(payment.CartId, result.CartId, StringComparison.Ordinal)) return ServiceResult<bool>.Failure("CART_ID_MISMATCH", "Confirmed CartId does not match the payment.");
-            if (!string.Equals(payment.TelrOrderReference, result.OrderReference, StringComparison.Ordinal)) return ServiceResult<bool>.Failure("ORDER_REFERENCE_MISMATCH", "Confirmed order reference does not match the payment.");
-            if (string.IsNullOrWhiteSpace(result.TransactionReference)) return ServiceResult<bool>.Failure("TRANSACTION_REFERENCE_MISSING", "Telr did not return a transaction reference.");
-            if (payment.TelrTransactionReference is not null && payment.TelrTransactionReference != result.TransactionReference) return ServiceResult<bool>.Failure("TRANSACTION_REFERENCE_MISMATCH", "Confirmed transaction reference does not match the payment.");
-            var now = clock.UtcNow;
-            payment.Status = PaymentStatus.Authorised; payment.TelrTransactionReference = result.TransactionReference; payment.AuthCode = result.AuthCode; payment.AuthMessage = result.AuthMessage; payment.CheckRequest = result.RawRequest; payment.CheckResponse = result.RawResponse; payment.PaidAt = now; payment.UpdatedAt = now;
-            payment.Invoice.IsPaid = true; payment.Invoice.PaidAt = now; payment.Invoice.PaymentMethod = "Telr";
-            if (payment.Receipt is null) db.PaymentReceipts.Add(new() { Id = Guid.NewGuid(), PaymentTransactionId = payment.Id, ReceiptNumber = $"R-{payment.Id:N}", Amount = payment.Amount, Currency = payment.Currency, CreatedAt = now });
-            if (payment.JournalEntry is null) db.PaymentJournalEntries.Add(new() { Id = Guid.NewGuid(), PaymentTransactionId = payment.Id, EntryNumber = $"J-{payment.Id:N}", Amount = payment.Amount, Currency = payment.Currency, CreatedAt = now });
-            await db.SaveChangesAsync(ct); await transaction.CommitAsync(ct); return ServiceResult<bool>.Success(true);
+            var strategy = db.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+                var payment = await db.PaymentTransactions.AsTracking().Include(x => x.Invoice).Include(x => x.Receipt).Include(x => x.JournalEntry).SingleOrDefaultAsync(x => x.Id == paymentId, ct);
+                if (payment is null) return ServiceResult<bool>.Failure("PAYMENT_NOT_FOUND", "Payment was not found.");
+                if (payment.Status == PaymentStatus.Authorised && payment.Invoice.IsPaid) { await transaction.CommitAsync(ct); return ServiceResult<bool>.Success(false); }
+                if (!result.IsAuthorised) return ServiceResult<bool>.Failure("NOT_AUTHORISED", "Telr has not authorised this transaction.");
+                if (payment.Amount != result.Amount) return ServiceResult<bool>.Failure("AMOUNT_MISMATCH", "Confirmed amount does not match the payment.");
+                if (!string.Equals(payment.Currency, result.Currency, StringComparison.OrdinalIgnoreCase)) return ServiceResult<bool>.Failure("CURRENCY_MISMATCH", "Confirmed currency does not match the payment.");
+                if (!string.Equals(payment.CartId, result.CartId, StringComparison.Ordinal)) return ServiceResult<bool>.Failure("CART_ID_MISMATCH", "Confirmed CartId does not match the payment.");
+                if (!string.Equals(payment.TelrOrderReference, result.OrderReference, StringComparison.Ordinal)) return ServiceResult<bool>.Failure("ORDER_REFERENCE_MISMATCH", "Confirmed order reference does not match the payment.");
+                if (string.IsNullOrWhiteSpace(result.TransactionReference)) return ServiceResult<bool>.Failure("TRANSACTION_REFERENCE_MISSING", "Telr did not return a transaction reference.");
+                if (payment.TelrTransactionReference is not null && payment.TelrTransactionReference != result.TransactionReference) return ServiceResult<bool>.Failure("TRANSACTION_REFERENCE_MISMATCH", "Confirmed transaction reference does not match the payment.");
+                var now = clock.UtcNow;
+                payment.Status = PaymentStatus.Authorised; payment.TelrTransactionReference = result.TransactionReference; payment.AuthCode = result.AuthCode; payment.AuthMessage = result.AuthMessage; payment.CheckRequest = result.RawRequest; payment.CheckResponse = result.RawResponse; payment.PaidAt = now; payment.UpdatedAt = now;
+                payment.Invoice.IsPaid = true; payment.Invoice.PaidAt = now; payment.Invoice.PaymentMethod = "Telr";
+                if (payment.Receipt is null) db.PaymentReceipts.Add(new() { Id = Guid.NewGuid(), PaymentTransactionId = payment.Id, ReceiptNumber = $"R-{payment.Id:N}", Amount = payment.Amount, Currency = payment.Currency, CreatedAt = now });
+                if (payment.JournalEntry is null) db.PaymentJournalEntries.Add(new() { Id = Guid.NewGuid(), PaymentTransactionId = payment.Id, EntryNumber = $"J-{payment.Id:N}", Amount = payment.Amount, Currency = payment.Currency, CreatedAt = now });
+                await db.SaveChangesAsync(ct); await transaction.CommitAsync(ct); return ServiceResult<bool>.Success(true);
+            });
         }
-        catch (DbUpdateConcurrencyException ex) { await transaction.RollbackAsync(ct); logger.LogInformation(ex, "Concurrent completion for payment {PaymentId}", paymentId); return ServiceResult<bool>.Failure("CONCURRENT_PROCESSING", "Payment is already being processed."); }
-        catch { await transaction.RollbackAsync(ct); throw; }
+        catch (DbUpdateConcurrencyException ex) { logger.LogInformation(ex, "Concurrent completion for payment {PaymentId}", paymentId); return ServiceResult<bool>.Failure("CONCURRENT_PROCESSING", "Payment is already being processed."); }
     }
 }
