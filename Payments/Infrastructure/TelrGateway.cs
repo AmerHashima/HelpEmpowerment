@@ -9,14 +9,20 @@ using Microsoft.Extensions.Options;
 
 namespace HelpEmpowermentApi.Payments.Infrastructure;
 
-public sealed class TelrPaymentService(HttpClient client, IOptions<TelrOptions> options, ILogger<TelrPaymentService> logger) : ITelrPaymentService
+public sealed class TelrPaymentService(HttpClient client, IOptions<TelrOptions> options, IHttpContextAccessor httpContextAccessor, ILogger<TelrPaymentService> logger) : ITelrPaymentService
 {
     private readonly TelrOptions _options = options.Value;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public async Task<ServiceResult<TelrCreateResult>> CreatePaymentAsync(string cartId, decimal amount, string currency, string description, CancellationToken ct)
     {
-        var request = new TelrCreateOrderRequest { Store = _options.StoreId, AuthKey = _options.AuthKey, Order = new(cartId, _options.IsTest ? "1" : "0", amount.ToString("0.00", CultureInfo.InvariantCulture), currency, description), Return = new(_options.AuthorisedReturnUrl.ToString(), _options.DeclinedReturnUrl.ToString(), _options.CancelledReturnUrl.ToString()), Panels = _options.EnabledPanels };
+        var httpRequest = httpContextAccessor.HttpContext?.Request;
+        if (httpRequest is null || !httpRequest.IsHttps || !httpRequest.Host.HasValue)
+            return ServiceResult<TelrCreateResult>.Failure("PUBLIC_HTTPS_URL_REQUIRED", "The deployed public HTTPS request URL could not be determined.");
+
+        var apiBaseUrl = $"{httpRequest.Scheme}://{httpRequest.Host.ToUriComponent()}{httpRequest.PathBase}".TrimEnd('/');
+        var returnUrls = new TelrReturnUrls($"{apiBaseUrl}/api/payments/telr/authorised", $"{apiBaseUrl}/api/payments/telr/declined", $"{apiBaseUrl}/api/payments/telr/cancelled");
+        var request = new TelrCreateOrderRequest { Store = _options.StoreId, AuthKey = _options.AuthKey, Order = new(cartId, _options.IsTest ? "1" : "0", amount.ToString("0.00", CultureInfo.InvariantCulture), currency, description), Return = returnUrls, Panels = _options.EnabledPanels };
         var safeRequest = JsonSerializer.Serialize(WithAuthKey("***"), JsonOptions);
         try
         {

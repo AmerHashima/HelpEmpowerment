@@ -12,7 +12,12 @@ public sealed class PaymentReconciliationService(IServiceScopeFactory scopes, IO
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(Math.Max(1, _options.IntervalMinutes)));
-        do { await ReconcileAsync(stoppingToken); } while (await timer.WaitForNextTickAsync(stoppingToken));
+        do
+        {
+            try { await ReconcileAsync(stoppingToken); }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
+            catch (Exception ex) { logger.LogError(ex, "Payment reconciliation cycle failed; it will be retried on the next interval"); }
+        } while (await timer.WaitForNextTickAsync(stoppingToken));
     }
     private async Task ReconcileAsync(CancellationToken ct)
     {
@@ -22,8 +27,9 @@ public sealed class PaymentReconciliationService(IServiceScopeFactory scopes, IO
         var service = scope.ServiceProvider.GetRequiredService<IPaymentTransactionService>();
         var clock = scope.ServiceProvider.GetRequiredService<IClock>();
         var now = clock.UtcNow;
-        // READPAST/UPDLOCK avoids duplicate selection across SQL Server application instances.
-        var candidates = await db.PaymentTransactions.FromSqlInterpolated($@"SELECT TOP ({_options.BatchSize}) * FROM PaymentTransactions WITH (UPDLOCK, READPAST, ROWLOCK) WHERE Status IN ('Created','Pending','Redirected','OnHold') AND CreatedAt <= {now.AddMinutes(-_options.GracePeriodMinutes)} AND RetryCount < {_options.MaxRetryCount} ORDER BY CreatedAt").ToListAsync(ct);
+        // READCOMMITTEDLOCK makes READPAST valid when READ_COMMITTED_SNAPSHOT is enabled.
+        // UPDLOCK/READPAST prevents multiple application instances from selecting the same rows.
+        var candidates = await db.PaymentTransactions.FromSqlInterpolated($@"SELECT TOP ({_options.BatchSize}) * FROM PaymentTransactions WITH (UPDLOCK, READPAST, ROWLOCK, READCOMMITTEDLOCK) WHERE Status IN ('Created','Pending','Redirected','OnHold') AND CreatedAt <= {now.AddMinutes(-_options.GracePeriodMinutes)} AND RetryCount < {_options.MaxRetryCount} ORDER BY CreatedAt").ToListAsync(ct);
         foreach (var payment in candidates)
         {
             try
