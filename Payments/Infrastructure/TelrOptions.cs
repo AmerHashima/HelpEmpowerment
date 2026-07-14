@@ -3,6 +3,7 @@ namespace HelpEmpowermentApi.Payments.Infrastructure;
 public sealed class TelrOptions
 {
     public const string SectionName = "Telr";
+    public bool Enabled { get; set; }
     public string StoreId { get; set; } = string.Empty;
     public string AuthKey { get; set; } = string.Empty;
     public string WebhookSecret { get; set; } = string.Empty;

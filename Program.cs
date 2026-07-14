@@ -78,14 +78,15 @@ namespace HelpEmpowermentApi
 
             builder.Services.AddAuthorization();
             builder.Services.AddHttpClient();
-            builder.Services.AddOptions<TelrOptions>().Bind(builder.Configuration.GetSection(TelrOptions.SectionName)).Validate(o => !string.IsNullOrWhiteSpace(o.StoreId), "Telr StoreId is required").Validate(o => !string.IsNullOrWhiteSpace(o.AuthKey), "Telr AuthKey must come from a secret source").Validate(o => !string.IsNullOrWhiteSpace(o.WebhookSecret), "Telr WebhookSecret must come from a secret source").Validate(o => Uri.CheckHostName(o.AuthorisedReturnUrl?.Host ?? "") != UriHostNameType.Unknown && o.AuthorisedReturnUrl.Scheme == Uri.UriSchemeHttps && o.DeclinedReturnUrl.Scheme == Uri.UriSchemeHttps && o.CancelledReturnUrl.Scheme == Uri.UriSchemeHttps && o.FrontendResultUrl.Scheme == Uri.UriSchemeHttps, "Valid HTTPS Telr and frontend URLs are required").ValidateOnStart();
+            var telrEnabled = builder.Configuration.GetValue<bool>($"{TelrOptions.SectionName}:Enabled");
+            builder.Services.AddOptions<TelrOptions>().Bind(builder.Configuration.GetSection(TelrOptions.SectionName)).Validate(o => !o.Enabled || !string.IsNullOrWhiteSpace(o.StoreId), "Telr StoreId is required").Validate(o => !o.Enabled || !string.IsNullOrWhiteSpace(o.AuthKey), "Telr AuthKey must come from a secret source").Validate(o => !o.Enabled || !string.IsNullOrWhiteSpace(o.WebhookSecret), "Telr WebhookSecret must come from a secret source").Validate(o => !o.Enabled || (o.AuthorisedReturnUrl is not null && o.DeclinedReturnUrl is not null && o.CancelledReturnUrl is not null && o.FrontendResultUrl is not null && Uri.CheckHostName(o.AuthorisedReturnUrl.Host) != UriHostNameType.Unknown && o.AuthorisedReturnUrl.Scheme == Uri.UriSchemeHttps && o.DeclinedReturnUrl.Scheme == Uri.UriSchemeHttps && o.CancelledReturnUrl.Scheme == Uri.UriSchemeHttps && o.FrontendResultUrl.Scheme == Uri.UriSchemeHttps), "Valid HTTPS Telr and frontend URLs are required").ValidateOnStart();
             builder.Services.Configure<PaymentReconciliationOptions>(builder.Configuration.GetSection("PaymentReconciliation"));
             builder.Services.AddHttpClient<ITelrPaymentService, TelrPaymentService>(c => c.Timeout = TimeSpan.FromSeconds(20));
             builder.Services.AddSingleton<IClock, SystemClock>();
             builder.Services.AddSingleton<ITelrWebhookValidator, TelrWebhookValidator>();
             builder.Services.AddScoped<IPaymentTransactionService, PaymentTransactionService>();
             builder.Services.AddScoped<IInvoicePaymentProcessor, InvoicePaymentProcessor>();
-            builder.Services.AddHostedService<PaymentReconciliationService>();
+            if (telrEnabled) builder.Services.AddHostedService<PaymentReconciliationService>();
             builder.Services.AddRateLimiter(o => { o.AddFixedWindowLimiter("payments-create", x => { x.PermitLimit = 5; x.Window = TimeSpan.FromMinutes(1); x.QueueLimit = 0; }); o.AddFixedWindowLimiter("payments-status", x => { x.PermitLimit = 30; x.Window = TimeSpan.FromMinutes(1); x.QueueLimit = 0; }); });
             builder.Services.AddHttpContextAccessor();
             builder.Services.Configure<FormOptions>(options =>
