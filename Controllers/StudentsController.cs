@@ -74,7 +74,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost("export-report/search")]
-        [Authorize(Roles = "ADMIN")]
+       // [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<PaginatedStudentExportResponse>> SearchExportReport(
             [FromBody] StudentExportSearchRequest request,
             CancellationToken cancellationToken)
