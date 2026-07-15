@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace HelpEmpowermentApi.Payments.Domain;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum PaymentStatus { Created, Pending, Redirected, Authorised, OnHold, Declined, Cancelled, Failed, Expired, Refunded }
 
 public sealed class Invoice

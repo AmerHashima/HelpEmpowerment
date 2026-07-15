@@ -76,7 +76,8 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                 if (!result.IsAuthorised) return ServiceResult<bool>.Failure("NOT_AUTHORISED", "Telr has not authorised this transaction.");
                 if (payment.Amount != result.Amount) return ServiceResult<bool>.Failure("AMOUNT_MISMATCH", "Confirmed amount does not match the payment.");
                 if (!string.Equals(payment.Currency, result.Currency, StringComparison.OrdinalIgnoreCase)) return ServiceResult<bool>.Failure("CURRENCY_MISMATCH", "Confirmed currency does not match the payment.");
-                if (!string.Equals(payment.CartId, result.CartId, StringComparison.Ordinal)) return ServiceResult<bool>.Failure("CART_ID_MISMATCH", "Confirmed CartId does not match the payment.");
+                // Current Telr check responses omit cartid. Validate it when the gateway supplies it.
+                if (!string.IsNullOrWhiteSpace(result.CartId) && !string.Equals(payment.CartId, result.CartId, StringComparison.Ordinal)) return ServiceResult<bool>.Failure("CART_ID_MISMATCH", "Confirmed CartId does not match the payment.");
                 if (!string.Equals(payment.TelrOrderReference, result.OrderReference, StringComparison.Ordinal)) return ServiceResult<bool>.Failure("ORDER_REFERENCE_MISMATCH", "Confirmed order reference does not match the payment.");
                 if (string.IsNullOrWhiteSpace(result.TransactionReference)) return ServiceResult<bool>.Failure("TRANSACTION_REFERENCE_MISSING", "Telr did not return a transaction reference.");
                 if (payment.TelrTransactionReference is not null && payment.TelrTransactionReference != result.TransactionReference) return ServiceResult<bool>.Failure("TRANSACTION_REFERENCE_MISMATCH", "Confirmed transaction reference does not match the payment.");
