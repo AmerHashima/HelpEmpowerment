@@ -70,7 +70,7 @@ namespace HelpEmpowermentApi.Data
             modelBuilder.Entity<Invoice>(entity =>
             {
                 entity.ToTable("Invoices"); entity.HasKey(x => x.Id); entity.HasIndex(x => x.InvoiceNumber).IsUnique();
-                entity.Property(x => x.TotalAmount).HasPrecision(18, 2); entity.Property(x => x.Currency).HasMaxLength(3); entity.Property(x => x.InvoiceNumber).HasMaxLength(50).IsRequired();
+                entity.Property(x => x.TotalAmount).HasPrecision(18, 2); entity.Property(x => x.Currency).HasMaxLength(3); entity.Property(x => x.InvoiceNumber).HasMaxLength(50).IsRequired(); entity.Property(x => x.PromoCode).HasMaxLength(50); entity.HasIndex(x => x.PromoCode);
                 entity.HasMany(x => x.PaymentTransactions).WithOne(x => x.Invoice).HasForeignKey(x => x.InvoiceId).OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<PaymentTransaction>(entity =>

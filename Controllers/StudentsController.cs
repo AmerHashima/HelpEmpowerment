@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HelpEmpowermentApi.Controllers
 {
@@ -69,6 +70,16 @@ namespace HelpEmpowermentApi.Controllers
         public async Task<ActionResult<PagedResponse<StudentWithCoursesDto>>> StudentsWithCourses([FromBody] DataRequest request)
         {
             var response = await _studentService.GetStudentsWithCoursesAsync(request);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
+        [HttpPost("export-report/search")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<PaginatedStudentExportResponse>> SearchExportReport(
+            [FromBody] StudentExportSearchRequest request,
+            CancellationToken cancellationToken)
+        {
+            var response = await _studentService.SearchExportReportAsync(request, cancellationToken);
             return response.Success ? Ok(response) : BadRequest(response);
         }
     }

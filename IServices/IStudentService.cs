@@ -13,5 +13,6 @@ namespace HelpEmpowermentApi.IServices
         Task<ApiResponse<bool>> DeleteAsync(Guid id);
         Task<ApiResponse<StudentDto>> AuthenticateAsync(string username, string password);
         Task<PagedResponse<StudentWithCoursesDto>> GetStudentsWithCoursesAsync(DataRequest request);
+        Task<PaginatedStudentExportResponse> SearchExportReportAsync(StudentExportSearchRequest request, CancellationToken cancellationToken);
     }
 }

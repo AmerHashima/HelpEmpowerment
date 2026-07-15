@@ -16,6 +16,7 @@ public sealed class Invoice
     public bool IsPaid { get; set; }
     public DateTime? PaidAt { get; set; }
     [MaxLength(50)] public string? PaymentMethod { get; set; }
+    [MaxLength(50)] public string? PromoCode { get; set; }
     public DateTime CreatedAt { get; set; }
     public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = [];
     public ICollection<InvoiceItem> Items { get; set; } = [];

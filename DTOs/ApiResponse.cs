@@ -32,6 +32,7 @@ namespace HelpEmpowermentApi.DTOs
     {
         public bool Success { get; set; }
         public string? Message { get; set; }
+        public List<string> Errors { get; set; } = new();
         public List<T> Data { get; set; } = new();
         public int TotalCount { get; set; }
         public int PageNumber { get; set; }

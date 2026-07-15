@@ -38,7 +38,7 @@ public sealed class TelrPaymentsController(IPaymentTransactionService payments, 
             if (discountPercent is < 0 or > 100) return ProblemResult(422, "INVALID_COUPON", "The coupon discount is invalid.");
         }
 
-        var invoice = new Invoice { Id = Guid.NewGuid(), OwnerId = studentId, InvoiceNumber = $"INV-{DateTime.UtcNow:yyyyMMddHHmmss}-{Convert.ToHexString(Guid.NewGuid().ToByteArray())[..6]}", Currency = _options.DefaultCurrency.ToUpperInvariant(), CreatedAt = DateTime.UtcNow };
+        var invoice = new Invoice { Id = Guid.NewGuid(), OwnerId = studentId, InvoiceNumber = $"INV-{DateTime.UtcNow:yyyyMMddHHmmss}-{Convert.ToHexString(Guid.NewGuid().ToByteArray())[..6]}", Currency = _options.DefaultCurrency.ToUpperInvariant(), PromoCode = string.IsNullOrWhiteSpace(request.CouponCode) ? null : request.CouponCode.Trim(), CreatedAt = DateTime.UtcNow };
         foreach (var basketItem in basket)
         {
             if (basketItem.Quantity <= 0 || basketItem.Course is null) return ProblemResult(422, "INVALID_BASKET", "The basket contains an invalid item.");
