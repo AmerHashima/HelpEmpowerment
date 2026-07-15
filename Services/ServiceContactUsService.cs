@@ -353,6 +353,7 @@ namespace HelpEmpowermentApi.Services
                 RespondedAt = entity.RespondedAt,
                 TicketNumber = entity.TicketNumber,
                 IsRead = entity.IsRead,
+                ReadAt = entity.ReadAt,
                 AttachmentFileName = entity.Attachments,
                 CreatedAt = entity.CreatedAt
             };
