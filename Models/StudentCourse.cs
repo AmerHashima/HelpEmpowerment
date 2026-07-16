@@ -7,6 +7,8 @@ namespace HelpEmpowermentApi.Models
     [Table("student_courses")]
     public class StudentCourse : BaseEntity
     {
+        public Guid? InvoiceItemId { get; set; }
+
         [Required]
         public Guid StudentId { get; set; }
 

@@ -6,6 +6,7 @@ using HelpEmpowermentApi.Payments.Application;
 using HelpEmpowermentApi.Payments.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Models = HelpEmpowermentApi.Models;
 
 namespace HelpEmpowermentApi.Payments.Infrastructure;
 
@@ -70,7 +71,11 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
             return await strategy.ExecuteAsync(async () =>
             {
                 await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-                var payment = await db.PaymentTransactions.AsTracking().Include(x => x.Invoice).Include(x => x.Receipt).Include(x => x.JournalEntry).SingleOrDefaultAsync(x => x.Id == paymentId, ct);
+                var payment = await db.PaymentTransactions.AsTracking()
+                    .Include(x => x.Invoice).ThenInclude(invoice => invoice.Items)
+                    .Include(x => x.Receipt)
+                    .Include(x => x.JournalEntry)
+                    .SingleOrDefaultAsync(x => x.Id == paymentId, ct);
                 if (payment is null) return ServiceResult<bool>.Failure("PAYMENT_NOT_FOUND", "Payment was not found.");
                 if (payment.Status == PaymentStatus.Authorised && payment.Invoice.IsPaid) { await transaction.CommitAsync(ct); return ServiceResult<bool>.Success(false); }
                 if (!result.IsAuthorised) return ServiceResult<bool>.Failure("NOT_AUTHORISED", "Telr has not authorised this transaction.");
@@ -84,6 +89,102 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                 var now = clock.UtcNow;
                 payment.Status = PaymentStatus.Authorised; payment.TelrTransactionReference = result.TransactionReference; payment.AuthCode = result.AuthCode; payment.AuthMessage = result.AuthMessage; payment.CheckRequest = result.RawRequest; payment.CheckResponse = result.RawResponse; payment.PaidAt = now; payment.UpdatedAt = now;
                 payment.Invoice.IsPaid = true; payment.Invoice.PaidAt = now; payment.Invoice.PaymentMethod = "Telr";
+                if (!payment.Invoice.OwnerId.HasValue)
+                    return ServiceResult<bool>.Failure("INVOICE_OWNER_MISSING", "The paid invoice has no student owner.");
+
+                var studentId = payment.Invoice.OwnerId.Value;
+                var paidStatusId = Guid.Parse("88888888-8888-8888-8888-888888888802");
+                var activeStatusId = Guid.Parse("99999999-9999-9999-9999-999999999901");
+                var invoiceItemIds = payment.Invoice.Items.Select(item => item.Id).ToList();
+                var fulfilledItemIds = await db.StudentCourses
+                    .Where(course => course.InvoiceItemId.HasValue && invoiceItemIds.Contains(course.InvoiceItemId.Value))
+                    .Select(course => course.InvoiceItemId!.Value)
+                    .ToListAsync(ct);
+
+                foreach (var item in payment.Invoice.Items.Where(item => !fulfilledItemIds.Contains(item.Id)))
+                {
+                    var enrollment = await db.StudentCourses.AsTracking()
+                        .Include(course => course.Reservations)
+                        .SingleOrDefaultAsync(course => course.StudentId == studentId
+                            && course.CourseId == item.CourseId
+                            && !course.IsDeleted, ct);
+
+                    if (enrollment is null)
+                    {
+                        enrollment = new Models.StudentCourse
+                        {
+                            Oid = Guid.NewGuid(),
+                            InvoiceItemId = item.Id,
+                            StudentId = studentId,
+                            CourseId = item.CourseId,
+                            PaymentStatusLookupId = paidStatusId,
+                            EnrollmentStatusLookupId = activeStatusId,
+                            Price = item.UnitPrice * item.Quantity,
+                            DiscountAmount = item.DiscountAmount,
+                            PaidAmount = item.LineTotal,
+                            PaymentMethod = "Telr",
+                            TransactionId = result.TransactionReference,
+                            PaymentDate = now,
+                            EnrollmentDate = now,
+                            ExamSimulationReserv = item.ExamSimulationReserv,
+                            RecordedCourseReserv = item.RecordedCourseReserv,
+                            LiveCourseReserv = item.LiveCourseReserv,
+                            CreatedBy = studentId,
+                            CreatedAt = now
+                        };
+                        db.StudentCourses.Add(enrollment);
+                    }
+
+                    var requestedServiceValues = new List<string>();
+                    if (item.ExamSimulationReserv) requestedServiceValues.Add("EXAM_SIMULATION");
+                    if (item.RecordedCourseReserv) requestedServiceValues.Add("RECORDED_COURSE");
+                    if (item.LiveCourseReserv) requestedServiceValues.Add("LIVE_COURSE");
+
+                    if (requestedServiceValues.Count > 0)
+                    {
+                        var courseServices = await db.CourseServices.AsNoTracking()
+                            .Where(service => service.CourseId == item.CourseId
+                                && service.IsActive
+                                && !service.IsDeleted
+                                && requestedServiceValues.Contains(service.ServiceLookup.LookupValue))
+                            .Select(service => new { service.Oid, service.Price })
+                            .ToListAsync(ct);
+                        if (courseServices.Count != requestedServiceValues.Distinct(StringComparer.OrdinalIgnoreCase).Count())
+                            return ServiceResult<bool>.Failure(
+                                "COURSE_SERVICE_CONFIGURATION_MISSING",
+                                $"One or more paid services are not configured for course {item.CourseId}.");
+                        var existingServiceIds = enrollment.Reservations
+                            .Where(reservation => !reservation.IsDeleted)
+                            .Select(reservation => reservation.CourseServiceId)
+                            .ToHashSet();
+
+                        foreach (var service in courseServices.Where(service => !existingServiceIds.Contains(service.Oid)))
+                        {
+                            db.StudentCourseReservations.Add(new Models.StudentCourseReservation
+                            {
+                                Oid = Guid.NewGuid(),
+                                StudentCourseId = enrollment.Oid,
+                                CourseServiceId = service.Oid,
+                                ServicePrice = service.Price,
+                                IsReserved = false,
+                                CreatedBy = studentId,
+                                CreatedAt = now
+                            });
+                        }
+                    }
+                }
+
+                var basketItemIds = payment.Invoice.Items
+                    .Where(item => item.BasketItemId.HasValue)
+                    .Select(item => item.BasketItemId!.Value)
+                    .ToList();
+                if (basketItemIds.Count > 0)
+                {
+                    var purchasedBasketItems = await db.StudentBaskets.AsTracking()
+                        .Where(item => item.StudentId == studentId && basketItemIds.Contains(item.Oid))
+                        .ToListAsync(ct);
+                    db.StudentBaskets.RemoveRange(purchasedBasketItems);
+                }
                 if (payment.Receipt is null) db.PaymentReceipts.Add(new() { Id = Guid.NewGuid(), PaymentTransactionId = payment.Id, ReceiptNumber = $"R-{payment.Id:N}", Amount = payment.Amount, Currency = payment.Currency, CreatedAt = now });
                 if (payment.JournalEntry is null) db.PaymentJournalEntries.Add(new() { Id = Guid.NewGuid(), PaymentTransactionId = payment.Id, EntryNumber = $"J-{payment.Id:N}", Amount = payment.Amount, Currency = payment.Currency, CreatedAt = now });
                 await db.SaveChangesAsync(ct); await transaction.CommitAsync(ct); return ServiceResult<bool>.Success(true);

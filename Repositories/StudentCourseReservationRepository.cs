@@ -64,5 +64,24 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(r => r.StudentCourse)
                 .FirstOrDefaultAsync();
         }
+
+        public async Task<List<string>> GetExistingServiceValuesAsync(
+            Guid studentId,
+            Guid courseId,
+            IEnumerable<string> serviceValues)
+        {
+            var values = serviceValues.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (values.Count == 0) return [];
+
+            return await _dbSet.AsNoTracking()
+                .Where(reservation => !reservation.IsDeleted
+                    && !reservation.StudentCourse.IsDeleted
+                    && reservation.StudentCourse.StudentId == studentId
+                    && reservation.StudentCourse.CourseId == courseId
+                    && values.Contains(reservation.CourseService.ServiceLookup.LookupValue))
+                .Select(reservation => reservation.CourseService.ServiceLookup.LookupValue)
+                .Distinct()
+                .ToListAsync();
+        }
     }
 }

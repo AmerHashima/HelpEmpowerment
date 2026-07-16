@@ -27,6 +27,7 @@ public sealed class InvoiceItem
     public Guid Id { get; set; }
     public Guid InvoiceId { get; set; }
     public Invoice Invoice { get; set; } = null!;
+    public Guid? BasketItemId { get; set; }
     public Guid CourseId { get; set; }
     [MaxLength(200)] public string Description { get; set; } = string.Empty;
     public int Quantity { get; set; }

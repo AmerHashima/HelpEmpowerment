@@ -8,5 +8,6 @@ namespace HelpEmpowermentApi.IRepositories
         Task<PagedResult<StudentCourseReservation>> GetPagedAsync(DataRequest request);
         Task<List<StudentCourseReservation>> GetByStudentCourseIdAsync(Guid studentCourseId);
         Task<StudentCourseReservation?> GetWithDetailsAsync(Guid id);
+        Task<List<string>> GetExistingServiceValuesAsync(Guid studentId, Guid courseId, IEnumerable<string> serviceValues);
     }
 }

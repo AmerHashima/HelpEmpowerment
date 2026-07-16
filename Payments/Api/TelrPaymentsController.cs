@@ -50,7 +50,7 @@ public sealed class TelrPaymentsController(IPaymentTransactionService payments, 
             var unitPrice = basePrice + servicesPrice;
             var gross = unitPrice * basketItem.Quantity;
             var discount = decimal.Round(gross * discountPercent / 100m, 2, MidpointRounding.AwayFromZero);
-            invoice.Items.Add(new InvoiceItem { Id = Guid.NewGuid(), CourseId = basketItem.CourseId, Description = basketItem.Course.CourseName ?? $"Course {basketItem.CourseId}", Quantity = basketItem.Quantity, UnitPrice = unitPrice, DiscountAmount = discount, LineTotal = gross - discount, ExamSimulationReserv = basketItem.ExamSimulationReserv, RecordedCourseReserv = basketItem.RecordedCourseReserv, LiveCourseReserv = basketItem.LiveCourseReserv });
+            invoice.Items.Add(new InvoiceItem { Id = Guid.NewGuid(), BasketItemId = basketItem.Oid, CourseId = basketItem.CourseId, Description = basketItem.Course.CourseName ?? $"Course {basketItem.CourseId}", Quantity = basketItem.Quantity, UnitPrice = unitPrice, DiscountAmount = discount, LineTotal = gross - discount, ExamSimulationReserv = basketItem.ExamSimulationReserv, RecordedCourseReserv = basketItem.RecordedCourseReserv, LiveCourseReserv = basketItem.LiveCourseReserv });
         }
         invoice.TotalAmount = invoice.Items.Sum(x => x.LineTotal);
         if (invoice.TotalAmount <= 0) return ProblemResult(422, "INVALID_CHECKOUT_TOTAL", "The checkout total must be greater than zero.");

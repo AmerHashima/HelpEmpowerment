@@ -45,6 +45,19 @@ namespace HelpEmpowermentApi.Services
                 if (course == null)
                     return ApiResponse<StudentBasketDto>.ErrorResponse("Course not found");
 
+                var existingServices = await GetAlreadyPurchasedServicesAsync(
+                    dto.StudentId, dto.CourseId,
+                    dto.ExamSimulationReserv, dto.RecordedCourseReserv, dto.LiveCourseReserv);
+                if (existingServices.Count > 0)
+                    return ApiResponse<StudentBasketDto>.ErrorResponse(
+                        $"The following course service(s) are already reserved: {string.Join(", ", existingServices)}");
+
+                var missingServices = await GetUnavailableServicesAsync(
+                    dto.CourseId, dto.ExamSimulationReserv, dto.RecordedCourseReserv, dto.LiveCourseReserv);
+                if (missingServices.Count > 0)
+                    return ApiResponse<StudentBasketDto>.ErrorResponse(
+                        $"The following course service(s) are not configured or inactive: {string.Join(", ", missingServices)}");
+
                 // Check if already enrolled
                 var isEnrolled = await _studentCourseRepository.IsStudentEnrolledAsync(dto.StudentId, dto.CourseId);
                 if (isEnrolled)
@@ -127,6 +140,19 @@ namespace HelpEmpowermentApi.Services
                 var course = await _courseRepository.GetByIdAsync(entity.CourseId);
                 if (course == null)
                     return ApiResponse<StudentBasketDto>.ErrorResponse("Course not found");
+
+                var existingServices = await GetAlreadyPurchasedServicesAsync(
+                    entity.StudentId, entity.CourseId,
+                    dto.ExamSimulationReserv, dto.RecordedCourseReserv, dto.LiveCourseReserv);
+                if (existingServices.Count > 0)
+                    return ApiResponse<StudentBasketDto>.ErrorResponse(
+                        $"The following course service(s) are already reserved: {string.Join(", ", existingServices)}");
+
+                var missingServices = await GetUnavailableServicesAsync(
+                    entity.CourseId, dto.ExamSimulationReserv, dto.RecordedCourseReserv, dto.LiveCourseReserv);
+                if (missingServices.Count > 0)
+                    return ApiResponse<StudentBasketDto>.ErrorResponse(
+                        $"The following course service(s) are not configured or inactive: {string.Join(", ", missingServices)}");
 
                 decimal basePrice = 0;
                 if (!string.IsNullOrEmpty(course.Price) && decimal.TryParse(course.Price, out var parsedPrice))
@@ -460,6 +486,41 @@ namespace HelpEmpowermentApi.Services
 
             if (item.LiveCourseReserv)
                 yield return "LIVE_COURSE";
+        }
+
+        private async Task<List<string>> GetAlreadyPurchasedServicesAsync(
+            Guid studentId,
+            Guid courseId,
+            bool examSimulation,
+            bool recordedCourse,
+            bool liveCourse)
+        {
+            var requested = new List<string>();
+            if (examSimulation) requested.Add("EXAM_SIMULATION");
+            if (recordedCourse) requested.Add("RECORDED_COURSE");
+            if (liveCourse) requested.Add("LIVE_COURSE");
+
+            return await _studentCourseReservationRepository
+                .GetExistingServiceValuesAsync(studentId, courseId, requested);
+        }
+
+        private async Task<List<string>> GetUnavailableServicesAsync(
+            Guid courseId,
+            bool examSimulation,
+            bool recordedCourse,
+            bool liveCourse)
+        {
+            var requested = new List<string>();
+            if (examSimulation) requested.Add("EXAM_SIMULATION");
+            if (recordedCourse) requested.Add("RECORDED_COURSE");
+            if (liveCourse) requested.Add("LIVE_COURSE");
+            if (requested.Count == 0) return [];
+
+            var configured = (await _courseServiceRepository.GetByCourseIdAsync(courseId))
+                .Where(service => service.IsActive && !service.IsDeleted && service.ServiceLookup != null)
+                .Select(service => service.ServiceLookup!.LookupValue)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return requested.Where(value => !configured.Contains(value)).ToList();
         }
 
         private static StudentBasketDto MapToDto(StudentBasket entity)
