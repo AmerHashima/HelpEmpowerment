@@ -134,6 +134,20 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                         };
                         db.StudentCourses.Add(enrollment);
                     }
+                    else
+                    {
+                        enrollment.PaymentStatusLookupId = paidStatusId;
+                        enrollment.EnrollmentStatusLookupId = activeStatusId;
+                        enrollment.PaymentMethod = "Telr";
+                        enrollment.TransactionId = result.TransactionReference;
+                        enrollment.PaymentDate = now;
+                        enrollment.UpdatedBy = studentId;
+                        enrollment.UpdatedAt = now;
+                    }
+
+                    enrollment.ExamSimulationReserv = enrollment.ExamSimulationReserv || item.ExamSimulationReserv;
+                    enrollment.RecordedCourseReserv = enrollment.RecordedCourseReserv || item.RecordedCourseReserv;
+                    enrollment.LiveCourseReserv = enrollment.LiveCourseReserv || item.LiveCourseReserv;
 
                     var requestedServiceValues = new List<string>();
                     if (item.ExamSimulationReserv) requestedServiceValues.Add("EXAM_SIMULATION");
