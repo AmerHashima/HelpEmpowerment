@@ -61,14 +61,14 @@ public sealed class PaymentTransactionService(ApplicationDbContext db, ITelrPaym
     }
 }
 
-public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock clock, ILogger<InvoicePaymentProcessor> logger) : IInvoicePaymentProcessor
+public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock clock, HelpEmpowermentApi.IServices.IEmailService emailService, ILogger<InvoicePaymentProcessor> logger) : IInvoicePaymentProcessor
 {
     public async Task<ServiceResult<bool>> ProcessAsync(Guid paymentId, TelrCheckResult result, CancellationToken ct)
     {
         try
         {
             var strategy = db.Database.CreateExecutionStrategy();
-            return await strategy.ExecuteAsync(async () =>
+            var completion = await strategy.ExecuteAsync(async () =>
             {
                 await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
                 var payment = await db.PaymentTransactions.AsTracking()
@@ -149,10 +149,17 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                                 && requestedServiceValues.Contains(service.ServiceLookup.LookupValue))
                             .Select(service => new { service.Oid, service.Price })
                             .ToListAsync(ct);
-                        if (courseServices.Count != requestedServiceValues.Distinct(StringComparer.OrdinalIgnoreCase).Count())
-                            return ServiceResult<bool>.Failure(
-                                "COURSE_SERVICE_CONFIGURATION_MISSING",
-                                $"One or more paid services are not configured for course {item.CourseId}.");
+                        var requestedDistinctCount = requestedServiceValues.Distinct(StringComparer.OrdinalIgnoreCase).Count();
+                        if (courseServices.Count != requestedDistinctCount)
+                        {
+                            logger.LogWarning(
+                                "Missing one or more course service configurations for paid invoice item. CourseId: {CourseId}, RequestedCount: {RequestedCount}, ConfiguredCount: {ConfiguredCount}, InvoiceItemId: {InvoiceItemId}",
+                                item.CourseId,
+                                requestedDistinctCount,
+                                courseServices.Count,
+                                item.Id);
+                        }
+
                         var existingServiceIds = enrollment.Reservations
                             .Where(reservation => !reservation.IsDeleted)
                             .Select(reservation => reservation.CourseServiceId)
@@ -185,11 +192,121 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                         .ToListAsync(ct);
                     db.StudentBaskets.RemoveRange(purchasedBasketItems);
                 }
+
                 if (payment.Receipt is null) db.PaymentReceipts.Add(new() { Id = Guid.NewGuid(), PaymentTransactionId = payment.Id, ReceiptNumber = $"R-{payment.Id:N}", Amount = payment.Amount, Currency = payment.Currency, CreatedAt = now });
                 if (payment.JournalEntry is null) db.PaymentJournalEntries.Add(new() { Id = Guid.NewGuid(), PaymentTransactionId = payment.Id, EntryNumber = $"J-{payment.Id:N}", Amount = payment.Amount, Currency = payment.Currency, CreatedAt = now });
-                await db.SaveChangesAsync(ct); await transaction.CommitAsync(ct); return ServiceResult<bool>.Success(true);
+                await db.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+
+                return ServiceResult<bool>.Success(true);
             });
+
+            if (completion.IsSuccess && completion.Value)
+                await SendInvoiceEmailAsync(paymentId, ct);
+
+            return completion;
         }
-        catch (DbUpdateConcurrencyException ex) { logger.LogInformation(ex, "Concurrent completion for payment {PaymentId}", paymentId); return ServiceResult<bool>.Failure("CONCURRENT_PROCESSING", "Payment is already being processed."); }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            logger.LogInformation(ex, "Concurrent completion for payment {PaymentId}", paymentId);
+            return ServiceResult<bool>.Failure("CONCURRENT_PROCESSING", "Payment is already being processed.");
+        }
+    }
+
+    private async Task SendInvoiceEmailAsync(Guid paymentId, CancellationToken ct)
+    {
+        var invoiceData = await db.PaymentTransactions.AsNoTracking()
+            .Where(x => x.Id == paymentId)
+            .Select(x => new
+            {
+                x.Invoice.InvoiceNumber,
+                x.Invoice.Currency,
+                x.Invoice.TotalAmount,
+                x.Invoice.PaidAt,
+                x.TelrTransactionReference,
+                StudentName = x.Invoice.OwnerId.HasValue ? db.Students.Where(s => s.Oid == x.Invoice.OwnerId.Value).Select(s => s.NameEn ?? s.Username).FirstOrDefault() : null,
+                StudentEmail = x.Invoice.OwnerId.HasValue ? db.Students.Where(s => s.Oid == x.Invoice.OwnerId.Value).Select(s => s.Email).FirstOrDefault() : null,
+                Items = x.Invoice.Items.Select(i => new InvoiceEmailItem
+                {
+                    Description = i.Description,
+                    Quantity = i.Quantity,
+                    LineTotal = i.LineTotal,
+                    ExamSimulationReserv = i.ExamSimulationReserv,
+                    RecordedCourseReserv = i.RecordedCourseReserv,
+                    LiveCourseReserv = i.LiveCourseReserv
+                }).ToList()
+            })
+            .SingleOrDefaultAsync(ct);
+
+        if (invoiceData is null || string.IsNullOrWhiteSpace(invoiceData.StudentEmail))
+            return;
+
+        var subject = $"Payment Invoice {invoiceData.InvoiceNumber}";
+        var body = BuildInvoiceEmailBody(invoiceData.StudentName, invoiceData.InvoiceNumber, invoiceData.Currency, invoiceData.TotalAmount, invoiceData.PaidAt, invoiceData.TelrTransactionReference, invoiceData.Items);
+        var sent = await emailService.SendEmailAsync(invoiceData.StudentEmail, subject, body, true);
+        if (!sent)
+            logger.LogWarning("Failed to send payment invoice email for payment {PaymentId}", paymentId);
+    }
+
+    private static string BuildInvoiceEmailBody(string? studentName, string invoiceNumber, string currency, decimal totalAmount, DateTime? paidAt, string? transactionReference, IReadOnlyCollection<InvoiceEmailItem> items)
+    {
+        var safeName = string.IsNullOrWhiteSpace(studentName) ? "Student" : studentName;
+        var paidDate = paidAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A";
+        var lineItems = string.Join(string.Empty, items.Select(item =>
+        {
+            var services = BuildServiceNames(item);
+            var serviceText = services.Count > 0 ? $"<div style='color:#555;font-size:12px;margin-top:4px;'>Services: {string.Join(", ", services)}</div>" : string.Empty;
+            return $"<tr><td style='padding:8px;border:1px solid #ddd;'>{item.Description}{serviceText}</td><td style='padding:8px;border:1px solid #ddd;text-align:center;'>{item.Quantity}</td><td style='padding:8px;border:1px solid #ddd;text-align:right;'>{item.LineTotal:F2} {currency}</td></tr>";
+        }));
+
+        return $@"<html>
+<body style='font-family: Arial, sans-serif;'>
+    <div style='max-width: 720px; margin: 0 auto; padding: 16px;'>
+        <h2 style='margin-bottom: 8px;'>Payment Invoice</h2>
+        <p>Hello {safeName},</p>
+        <p>Your payment was completed successfully.</p>
+        <p><strong>Invoice Number:</strong> {invoiceNumber}<br/>
+           <strong>Paid At (UTC):</strong> {paidDate}<br/>
+           <strong>Transaction Ref:</strong> {(string.IsNullOrWhiteSpace(transactionReference) ? "N/A" : transactionReference)}</p>
+        <table style='width:100%; border-collapse: collapse; margin-top: 12px;'>
+            <thead>
+                <tr style='background-color:#f5f5f5;'>
+                    <th style='padding:8px;border:1px solid #ddd;text-align:left;'>Item</th>
+                    <th style='padding:8px;border:1px solid #ddd;text-align:center;'>Qty</th>
+                    <th style='padding:8px;border:1px solid #ddd;text-align:right;'>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {lineItems}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan='2' style='padding:8px;border:1px solid #ddd;text-align:right;'><strong>Total</strong></td>
+                    <td style='padding:8px;border:1px solid #ddd;text-align:right;'><strong>{totalAmount:F2} {currency}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</body>
+</html>";
+    }
+
+    private static List<string> BuildServiceNames(InvoiceEmailItem item)
+    {
+        var services = new List<string>();
+        if (item.ExamSimulationReserv) services.Add("Exam Simulation");
+        if (item.RecordedCourseReserv) services.Add("Recorded Course");
+        if (item.LiveCourseReserv) services.Add("Live Course");
+        return services;
+    }
+
+    private sealed class InvoiceEmailItem
+    {
+        public string Description { get; set; } = string.Empty;
+        public int Quantity { get; set; }
+        public decimal LineTotal { get; set; }
+        public bool ExamSimulationReserv { get; set; }
+        public bool RecordedCourseReserv { get; set; }
+        public bool LiveCourseReserv { get; set; }
     }
 }

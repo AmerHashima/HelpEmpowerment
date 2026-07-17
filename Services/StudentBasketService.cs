@@ -45,45 +45,46 @@ namespace HelpEmpowermentApi.Services
                 if (course == null)
                     return ApiResponse<StudentBasketDto>.ErrorResponse("Course not found");
 
+                var requestedAnyService = dto.ExamSimulationReserv || dto.RecordedCourseReserv || dto.LiveCourseReserv;
+
+                // Check if already enrolled (allow buying additional services only)
+                var isEnrolled = await _studentCourseRepository.IsStudentEnrolledAsync(dto.StudentId, dto.CourseId);
+                if (isEnrolled && !requestedAnyService)
+                    return ApiResponse<StudentBasketDto>.ErrorResponse("You are already enrolled in this course");
+
+                var existingItem = await _repository.GetByStudentAndCourseAsync(dto.StudentId, dto.CourseId);
+
+                var mergedExamSimulation = existingItem?.ExamSimulationReserv == true || dto.ExamSimulationReserv;
+                var mergedRecordedCourse = existingItem?.RecordedCourseReserv == true || dto.RecordedCourseReserv;
+                var mergedLiveCourse = existingItem?.LiveCourseReserv == true || dto.LiveCourseReserv;
+
                 var existingServices = await GetAlreadyPurchasedServicesAsync(
                     dto.StudentId, dto.CourseId,
-                    dto.ExamSimulationReserv, dto.RecordedCourseReserv, dto.LiveCourseReserv);
+                    mergedExamSimulation, mergedRecordedCourse, mergedLiveCourse);
                 if (existingServices.Count > 0)
                     return ApiResponse<StudentBasketDto>.ErrorResponse(
                         $"The following course service(s) are already reserved: {string.Join(", ", existingServices)}");
 
                 var missingServices = await GetUnavailableServicesAsync(
-                    dto.CourseId, dto.ExamSimulationReserv, dto.RecordedCourseReserv, dto.LiveCourseReserv);
+                    dto.CourseId, mergedExamSimulation, mergedRecordedCourse, mergedLiveCourse);
                 if (missingServices.Count > 0)
                     return ApiResponse<StudentBasketDto>.ErrorResponse(
                         $"The following course service(s) are not configured or inactive: {string.Join(", ", missingServices)}");
 
-                // Check if already enrolled
-                var isEnrolled = await _studentCourseRepository.IsStudentEnrolledAsync(dto.StudentId, dto.CourseId);
-                if (isEnrolled)
-                    return ApiResponse<StudentBasketDto>.ErrorResponse("You are already enrolled in this course");
-
-                // Check if already in basket
-                var existingItem = await _repository.GetByStudentAndCourseAsync(dto.StudentId, dto.CourseId);
-                if (existingItem != null)
-                    return ApiResponse<StudentBasketDto>.ErrorResponse("Course is already in your basket");
-
-                decimal? coursePrice = null;
-                if (!string.IsNullOrEmpty(course.Price) && decimal.TryParse(course.Price, out var parsedPrice))
+                decimal basePrice = 0;
+                if (!isEnrolled && !string.IsNullOrEmpty(course.Price) && decimal.TryParse(course.Price, out var parsedPrice))
                 {
-                    coursePrice = parsedPrice;
+                    basePrice = parsedPrice;
                 }
 
-                var price = coursePrice ?? 0;
-
                 decimal reservPrice = 0;
-                if (dto.RecordedCourseReserv) reservPrice += course.RecordedCourseReservPrice ?? 0;
-                if (dto.ExamSimulationReserv) reservPrice += course.ExamSimulationReservPrice ?? 0;
-                if (dto.LiveCourseReserv) reservPrice += course.LiveCourseReservPrice ?? 0;
+                if (mergedRecordedCourse) reservPrice += course.RecordedCourseReservPrice ?? 0;
+                if (mergedExamSimulation) reservPrice += course.ExamSimulationReservPrice ?? 0;
+                if (mergedLiveCourse) reservPrice += course.LiveCourseReservPrice ?? 0;
 
-                var totalPrice = price + reservPrice;
+                var totalPrice = basePrice + reservPrice;
                 decimal discountAmount = 0;
-                string? appliedCoupon = null;
+                string? appliedCoupon = existingItem?.CouponCode;
 
                 // Apply coupon if provided
                 if (!string.IsNullOrEmpty(dto.CouponCode))
@@ -101,6 +102,30 @@ namespace HelpEmpowermentApi.Services
                     appliedCoupon = dto.CouponCode;
                 }
 
+                if (existingItem != null)
+                {
+                    var hasNewService =
+                        (mergedExamSimulation != existingItem.ExamSimulationReserv)
+                        || (mergedRecordedCourse != existingItem.RecordedCourseReserv)
+                        || (mergedLiveCourse != existingItem.LiveCourseReserv);
+
+                    if (!hasNewService)
+                        return ApiResponse<StudentBasketDto>.ErrorResponse("Course is already in your basket");
+
+                    existingItem.ExamSimulationReserv = mergedExamSimulation;
+                    existingItem.RecordedCourseReserv = mergedRecordedCourse;
+                    existingItem.LiveCourseReserv = mergedLiveCourse;
+                    existingItem.OriginalPrice = totalPrice;
+                    existingItem.DiscountAmount = discountAmount;
+                    existingItem.FinalPrice = totalPrice - discountAmount;
+                    existingItem.CouponCode = appliedCoupon;
+                    existingItem.UpdatedAt = DateTime.UtcNow;
+
+                    await _repository.UpdateAsync(existingItem);
+                    var updated = await _repository.GetWithDetailsAsync(existingItem.Oid);
+                    return ApiResponse<StudentBasketDto>.SuccessResponse(MapToDto(updated!), "Course basket updated with selected service(s)");
+                }
+
                 var entity = new StudentBasket
                 {
                     StudentId = dto.StudentId,
@@ -110,9 +135,9 @@ namespace HelpEmpowermentApi.Services
                     FinalPrice = totalPrice - discountAmount,
                     CouponCode = appliedCoupon,
                     Quantity = 1,
-                    RecordedCourseReserv = dto.RecordedCourseReserv,
-                    LiveCourseReserv = dto.LiveCourseReserv,
-                    ExamSimulationReserv = dto.ExamSimulationReserv,
+                    RecordedCourseReserv = mergedRecordedCourse,
+                    LiveCourseReserv = mergedLiveCourse,
+                    ExamSimulationReserv = mergedExamSimulation,
                     AddedAt = DateTime.UtcNow,
                     CreatedBy = dto.StudentId,
                     CreatedAt = DateTime.UtcNow

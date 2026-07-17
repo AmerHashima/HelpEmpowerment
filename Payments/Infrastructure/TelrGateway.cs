@@ -70,10 +70,26 @@ public sealed class TelrPaymentService(HttpClient client, IOptions<TelrOptions> 
                 return ServiceResult<TelrCheckResult>.Failure("TELR_INVALID_RESPONSE", "Required check-status fields were missing or invalid.");
             var txStatus = o.Transaction?.Status?.Trim().ToUpperInvariant() ?? string.Empty;
             var orderText = o.Status?.Text?.Trim() ?? string.Empty;
-            var authorised = txStatus == "A" && string.Equals(orderText, "Paid", StringComparison.OrdinalIgnoreCase);
-            var onHold = txStatus == "H" || orderText.Contains("hold", StringComparison.OrdinalIgnoreCase);
-            var declined = txStatus == "D" || orderText.Contains("declin", StringComparison.OrdinalIgnoreCase);
-            return ServiceResult<TelrCheckResult>.Success(new(authorised, onHold, declined, txStatus.Length > 0 ? txStatus : orderText, amount, o.Currency.ToUpperInvariant(), o.CartId ?? string.Empty, orderReference, o.Transaction?.Reference, o.Transaction?.Code, o.Transaction?.Message, safeRequest, Sanitize(raw)));
+            var orderCode = o.Status?.Code;
+            var orderRef = string.IsNullOrWhiteSpace(o.Reference) ? orderReference : o.Reference;
+
+            // Telr paid/authorised can arrive as code=3/text=Paid and/or tx status=A.
+            var authorised = orderCode == 3
+                || string.Equals(orderText, "Paid", StringComparison.OrdinalIgnoreCase)
+                || txStatus == "A";
+
+            var onHold = !authorised && (
+                txStatus == "H"
+                || orderText.Contains("hold", StringComparison.OrdinalIgnoreCase)
+                || orderText.Contains("pend", StringComparison.OrdinalIgnoreCase));
+
+            var declined = !authorised && !onHold && (
+                txStatus is "D" or "E" or "C"
+                || orderText.Contains("declin", StringComparison.OrdinalIgnoreCase)
+                || orderText.Contains("cancel", StringComparison.OrdinalIgnoreCase)
+                || orderText.Contains("fail", StringComparison.OrdinalIgnoreCase));
+
+            return ServiceResult<TelrCheckResult>.Success(new(authorised, onHold, declined, txStatus.Length > 0 ? txStatus : orderText, amount, o.Currency.ToUpperInvariant(), o.CartId ?? string.Empty, orderRef, o.Transaction?.Reference, o.Transaction?.Code, o.Transaction?.Message, safeRequest, Sanitize(raw)));
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return ServiceResult<TelrCheckResult>.Failure("TELR_TIMEOUT", "Telr status check timed out."); }
         catch (HttpRequestException ex) { logger.LogWarning(ex, "Network error checking Telr order {OrderReference}", orderReference); return ServiceResult<TelrCheckResult>.Failure("TELR_NETWORK_ERROR", "Telr could not be reached."); }

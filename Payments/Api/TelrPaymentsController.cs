@@ -77,8 +77,24 @@ public sealed class TelrPaymentsController(IPaymentTransactionService payments, 
     [HttpGet("status/{paymentId:guid}"), Authorize, EnableRateLimiting("payments-status")]
     public async Task<IActionResult> Status(Guid paymentId, CancellationToken ct)
     {
-        var owner = await db.PaymentTransactions.Where(x => x.Id == paymentId).Select(x => x.Invoice.OwnerId).SingleOrDefaultAsync(ct);
-        if (owner.HasValue && !IsOwner(owner.Value)) return ProblemResult(403, "PAYMENT_ACCESS_DENIED", "You do not have permission to view this payment.");
+        var paymentInfo = await db.PaymentTransactions
+            .Where(x => x.Id == paymentId)
+            .Select(x => new { x.Invoice.OwnerId, x.Status, x.TelrOrderReference })
+            .SingleOrDefaultAsync(ct);
+
+        if (paymentInfo is null)
+            return ProblemResult(404, "PAYMENT_NOT_FOUND", "Payment was not found.");
+
+        if (paymentInfo.OwnerId.HasValue && !IsOwner(paymentInfo.OwnerId.Value))
+            return ProblemResult(403, "PAYMENT_ACCESS_DENIED", "You do not have permission to view this payment.");
+
+        if (paymentInfo.Status != PaymentStatus.Authorised && !string.IsNullOrWhiteSpace(paymentInfo.TelrOrderReference))
+        {
+            var check = await telr.CheckPaymentAsync(paymentInfo.TelrOrderReference, ct);
+            if (check.IsSuccess && check.Value is not null)
+                await payments.ApplyCheckedStatusAsync(paymentId, check.Value, ct);
+        }
+
         var result = await payments.GetStatusAsync(paymentId, ct);
         return result is null ? ProblemResult(404, "PAYMENT_NOT_FOUND", "Payment was not found.") : Ok(result);
     }
