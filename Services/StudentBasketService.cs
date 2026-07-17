@@ -57,6 +57,9 @@ namespace HelpEmpowermentApi.Services
                 var mergedExamSimulation = existingItem?.ExamSimulationReserv == true || dto.ExamSimulationReserv;
                 var mergedRecordedCourse = existingItem?.RecordedCourseReserv == true || dto.RecordedCourseReserv;
                 var mergedLiveCourse = existingItem?.LiveCourseReserv == true || dto.LiveCourseReserv;
+                var hasSelectedServices = mergedExamSimulation || mergedRecordedCourse || mergedLiveCourse;
+                if (!hasSelectedServices)
+                    return ApiResponse<StudentBasketDto>.ErrorResponse("Select at least one course service.");
 
                 var existingServices = await GetAlreadyPurchasedServicesAsync(
                     dto.StudentId, dto.CourseId,
@@ -71,18 +74,13 @@ namespace HelpEmpowermentApi.Services
                     return ApiResponse<StudentBasketDto>.ErrorResponse(
                         $"The following course service(s) are not configured or inactive: {string.Join(", ", missingServices)}");
 
-                decimal basePrice = 0;
-                if (!isEnrolled && !string.IsNullOrEmpty(course.Price) && decimal.TryParse(course.Price, out var parsedPrice))
-                {
-                    basePrice = parsedPrice;
-                }
-
-                decimal reservPrice = 0;
-                if (mergedRecordedCourse) reservPrice += course.RecordedCourseReservPrice ?? 0;
-                if (mergedExamSimulation) reservPrice += course.ExamSimulationReservPrice ?? 0;
-                if (mergedLiveCourse) reservPrice += course.LiveCourseReservPrice ?? 0;
-
-                var totalPrice = basePrice + reservPrice;
+                var totalPrice = await GetSelectedServicesTotalPriceAsync(
+                    dto.CourseId,
+                    mergedExamSimulation,
+                    mergedRecordedCourse,
+                    mergedLiveCourse);
+                if (totalPrice <= 0)
+                    return ApiResponse<StudentBasketDto>.ErrorResponse("Selected services have invalid prices.");
                 decimal discountAmount = 0;
                 string? appliedCoupon = existingItem?.CouponCode;
 
@@ -123,7 +121,9 @@ namespace HelpEmpowermentApi.Services
 
                     await _repository.UpdateAsync(existingItem);
                     var updated = await _repository.GetWithDetailsAsync(existingItem.Oid);
-                    return ApiResponse<StudentBasketDto>.SuccessResponse(MapToDto(updated!), "Course basket updated with selected service(s)");
+                    var updatedDto = MapToDto(updated!);
+                    await PopulateServicePricesAsync(updatedDto);
+                    return ApiResponse<StudentBasketDto>.SuccessResponse(updatedDto, "Course basket updated with selected service(s)");
                 }
 
                 var entity = new StudentBasket
@@ -145,7 +145,9 @@ namespace HelpEmpowermentApi.Services
 
                 var created = await _repository.AddAsync(entity);
                 var result = await _repository.GetWithDetailsAsync(created.Oid);
-                return ApiResponse<StudentBasketDto>.SuccessResponse(MapToDto(result!), "Course added to basket");
+                var createdDto = MapToDto(result!);
+                await PopulateServicePricesAsync(createdDto);
+                return ApiResponse<StudentBasketDto>.SuccessResponse(createdDto, "Course added to basket");
             }
             catch (Exception ex)
             {
@@ -161,10 +163,9 @@ namespace HelpEmpowermentApi.Services
                 if (entity == null)
                     return ApiResponse<StudentBasketDto>.ErrorResponse("Basket item not found");
 
-                // Load course to recalculate price from live data
-                var course = await _courseRepository.GetByIdAsync(entity.CourseId);
-                if (course == null)
-                    return ApiResponse<StudentBasketDto>.ErrorResponse("Course not found");
+                var hasSelectedServices = dto.ExamSimulationReserv || dto.RecordedCourseReserv || dto.LiveCourseReserv;
+                if (!hasSelectedServices)
+                    return ApiResponse<StudentBasketDto>.ErrorResponse("Select at least one course service.");
 
                 var existingServices = await GetAlreadyPurchasedServicesAsync(
                     entity.StudentId, entity.CourseId,
@@ -179,16 +180,13 @@ namespace HelpEmpowermentApi.Services
                     return ApiResponse<StudentBasketDto>.ErrorResponse(
                         $"The following course service(s) are not configured or inactive: {string.Join(", ", missingServices)}");
 
-                decimal basePrice = 0;
-                if (!string.IsNullOrEmpty(course.Price) && decimal.TryParse(course.Price, out var parsedPrice))
-                    basePrice = parsedPrice;
-
-                decimal reservPrice = 0;
-                if (dto.RecordedCourseReserv) reservPrice += course.RecordedCourseReservPrice ?? 0;
-                if (dto.ExamSimulationReserv) reservPrice += course.ExamSimulationReservPrice ?? 0;
-                if (dto.LiveCourseReserv) reservPrice += course.LiveCourseReservPrice ?? 0;
-
-                var totalPrice = basePrice + reservPrice;
+                var totalPrice = await GetSelectedServicesTotalPriceAsync(
+                    entity.CourseId,
+                    dto.ExamSimulationReserv,
+                    dto.RecordedCourseReserv,
+                    dto.LiveCourseReserv);
+                if (totalPrice <= 0)
+                    return ApiResponse<StudentBasketDto>.ErrorResponse("Selected services have invalid prices.");
 
                 entity.Quantity = dto.Quantity;
                 entity.RecordedCourseReserv = dto.RecordedCourseReserv;
@@ -202,7 +200,9 @@ namespace HelpEmpowermentApi.Services
 
                 await _repository.UpdateAsync(entity);
                 var result = await _repository.GetWithDetailsAsync(dto.Oid);
-                return ApiResponse<StudentBasketDto>.SuccessResponse(MapToDto(result!));
+                var updatedDto = MapToDto(result!);
+                await PopulateServicePricesAsync(updatedDto);
+                return ApiResponse<StudentBasketDto>.SuccessResponse(updatedDto);
             }
             catch (Exception ex)
             {
@@ -232,6 +232,7 @@ namespace HelpEmpowermentApi.Services
             {
                 var items = await _repository.GetByStudentIdAsync(studentId);
                 var dtos = items.Select(MapToDto).ToList();
+                await PopulateServicePricesAsync(dtos);
 
                 var summary = new BasketSummaryDto
                 {
@@ -305,6 +306,7 @@ namespace HelpEmpowermentApi.Services
                     dto.FinalPrice = item.OriginalPrice - (dto.DiscountAmount ?? 0);
                     return dto;
                 }).ToList();
+                await PopulateServicePricesAsync(dtos);
 
                 var summary = new BasketSummaryDto
                 {
@@ -366,19 +368,21 @@ namespace HelpEmpowermentApi.Services
 
                 foreach (var item in basketItems)
                 {
-                    // Recalculate from live course data — never trust stored discount
-                    var course = await _courseRepository.GetByIdAsync(item.CourseId);
+                    var requestedServiceValues = GetRequestedServiceValues(item).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    if (!requestedServiceValues.Any())
+                        return ApiResponse<List<StudentCourseDto>>.ErrorResponse("Each basket item must include at least one selected service.");
 
-                    decimal basePrice = 0;
-                    if (course != null && !string.IsNullOrEmpty(course.Price) && decimal.TryParse(course.Price, out var parsed))
-                        basePrice = parsed;
+                    var selectedServices = courseServicesByCourseId[item.CourseId]
+                        .Where(service => service.IsActive
+                            && !service.IsDeleted
+                            && service.ServiceLookup?.LookupValue != null
+                            && requestedServiceValues.Contains(service.ServiceLookup.LookupValue))
+                        .ToList();
 
-                    decimal reservPrice = 0;
-                    if (item.RecordedCourseReserv) reservPrice += course?.RecordedCourseReservPrice ?? 0;
-                    if (item.ExamSimulationReserv) reservPrice += course?.ExamSimulationReservPrice ?? 0;
-                    if (item.LiveCourseReserv) reservPrice += course?.LiveCourseReservPrice ?? 0;
+                    var originalPrice = selectedServices.Sum(service => service.Price);
+                    if (originalPrice <= 0)
+                        return ApiResponse<List<StudentCourseDto>>.ErrorResponse($"Selected services have invalid prices for course {item.CourseId}.");
 
-                    var originalPrice = basePrice + reservPrice;
                     var discountAmount = originalPrice * (discountPercent / 100);
                     var paidAmount = originalPrice - discountAmount;
 
@@ -520,10 +524,7 @@ namespace HelpEmpowermentApi.Services
             bool recordedCourse,
             bool liveCourse)
         {
-            var requested = new List<string>();
-            if (examSimulation) requested.Add("EXAM_SIMULATION");
-            if (recordedCourse) requested.Add("RECORDED_COURSE");
-            if (liveCourse) requested.Add("LIVE_COURSE");
+            var requested = BuildRequestedServiceValues(examSimulation, recordedCourse, liveCourse);
 
             return await _studentCourseReservationRepository
                 .GetExistingServiceValuesAsync(studentId, courseId, requested);
@@ -535,10 +536,7 @@ namespace HelpEmpowermentApi.Services
             bool recordedCourse,
             bool liveCourse)
         {
-            var requested = new List<string>();
-            if (examSimulation) requested.Add("EXAM_SIMULATION");
-            if (recordedCourse) requested.Add("RECORDED_COURSE");
-            if (liveCourse) requested.Add("LIVE_COURSE");
+            var requested = BuildRequestedServiceValues(examSimulation, recordedCourse, liveCourse);
             if (requested.Count == 0) return [];
 
             var configured = (await _courseServiceRepository.GetByCourseIdAsync(courseId))
@@ -546,6 +544,64 @@ namespace HelpEmpowermentApi.Services
                 .Select(service => service.ServiceLookup!.LookupValue)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             return requested.Where(value => !configured.Contains(value)).ToList();
+        }
+
+        private async Task<decimal> GetSelectedServicesTotalPriceAsync(
+            Guid courseId,
+            bool examSimulation,
+            bool recordedCourse,
+            bool liveCourse)
+        {
+            var requested = BuildRequestedServiceValues(examSimulation, recordedCourse, liveCourse);
+            if (requested.Count == 0)
+                return 0;
+
+            var configuredServices = (await _courseServiceRepository.GetByCourseIdAsync(courseId))
+                .Where(service => service.IsActive && !service.IsDeleted && service.ServiceLookup?.LookupValue != null)
+                .ToList();
+
+            return configuredServices
+                .Where(service => requested.Contains(service.ServiceLookup!.LookupValue, StringComparer.OrdinalIgnoreCase))
+                .Sum(service => service.Price);
+        }
+
+        private static List<string> BuildRequestedServiceValues(bool examSimulation, bool recordedCourse, bool liveCourse)
+        {
+            var requested = new List<string>();
+            if (examSimulation) requested.Add("EXAM_SIMULATION");
+            if (recordedCourse) requested.Add("RECORDED_COURSE");
+            if (liveCourse) requested.Add("LIVE_COURSE");
+            return requested;
+        }
+
+        private async Task PopulateServicePricesAsync(StudentBasketDto item)
+        {
+            await PopulateServicePricesAsync(new List<StudentBasketDto> { item });
+        }
+
+        private async Task PopulateServicePricesAsync(List<StudentBasketDto> items)
+        {
+            if (items.Count == 0)
+                return;
+
+            var pricesByCourseId = new Dictionary<Guid, Dictionary<string, decimal>>(items.Count);
+            foreach (var courseId in items.Select(x => x.CourseId).Distinct())
+            {
+                var servicePrices = (await _courseServiceRepository.GetByCourseIdAsync(courseId))
+                    .Where(service => service.IsActive && !service.IsDeleted && service.ServiceLookup?.LookupValue != null)
+                    .ToDictionary(service => service.ServiceLookup!.LookupValue, service => service.Price, StringComparer.OrdinalIgnoreCase);
+                pricesByCourseId[courseId] = servicePrices;
+            }
+
+            foreach (var item in items)
+            {
+                if (!pricesByCourseId.TryGetValue(item.CourseId, out var servicePrices))
+                    continue;
+
+                item.ExamSimulationReservPrice = servicePrices.TryGetValue("EXAM_SIMULATION", out var examPrice) ? examPrice : null;
+                item.RecordedCourseReservPrice = servicePrices.TryGetValue("RECORDED_COURSE", out var recordedPrice) ? recordedPrice : null;
+                item.LiveCourseReservPrice = servicePrices.TryGetValue("LIVE_COURSE", out var livePrice) ? livePrice : null;
+            }
         }
 
         private static StudentBasketDto MapToDto(StudentBasket entity)
@@ -566,9 +622,6 @@ namespace HelpEmpowermentApi.Services
                 RecordedCourseReserv = entity.RecordedCourseReserv,
                 LiveCourseReserv = entity.LiveCourseReserv,
                 ExamSimulationReserv = entity.ExamSimulationReserv,
-                RecordedCourseReservPrice = entity.Course?.RecordedCourseReservPrice,
-                ExamSimulationReservPrice = entity.Course?.ExamSimulationReservPrice,
-                LiveCourseReservPrice = entity.Course?.LiveCourseReservPrice,
                 AddedAt = entity.AddedAt
             };
         }

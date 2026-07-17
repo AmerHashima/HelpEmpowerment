@@ -29,6 +29,12 @@ public sealed class TelrPaymentsController(IPaymentTransactionService payments, 
             .Where(x => x.StudentId == studentId && !x.IsDeleted).ToListAsync(ct);
         if (basket.Count == 0) return ProblemResult(422, "BASKET_EMPTY", "The basket is empty.");
 
+        var courseIds = basket.Select(x => x.CourseId).Distinct().ToList();
+        var courseServicesByCourseId = await db.CourseServices.AsNoTracking()
+            .Include(service => service.ServiceLookup)
+            .Where(service => courseIds.Contains(service.CourseId) && service.IsActive && !service.IsDeleted)
+            .ToListAsync(ct);
+
         decimal discountPercent = 0;
         if (!string.IsNullOrWhiteSpace(request.CouponCode))
         {
@@ -42,12 +48,27 @@ public sealed class TelrPaymentsController(IPaymentTransactionService payments, 
         foreach (var basketItem in basket)
         {
             if (basketItem.Quantity <= 0 || basketItem.Course is null) return ProblemResult(422, "INVALID_BASKET", "The basket contains an invalid item.");
-            if (!decimal.TryParse(basketItem.Course.Price, NumberStyles.Number, CultureInfo.InvariantCulture, out var basePrice)) basePrice = 0;
-            decimal servicesPrice = 0;
-            if (basketItem.RecordedCourseReserv) servicesPrice += basketItem.Course.RecordedCourseReservPrice ?? 0;
-            if (basketItem.ExamSimulationReserv) servicesPrice += basketItem.Course.ExamSimulationReservPrice ?? 0;
-            if (basketItem.LiveCourseReserv) servicesPrice += basketItem.Course.LiveCourseReservPrice ?? 0;
-            var unitPrice = basePrice + servicesPrice;
+
+            var requestedServiceValues = new List<string>();
+            if (basketItem.ExamSimulationReserv) requestedServiceValues.Add("EXAM_SIMULATION");
+            if (basketItem.RecordedCourseReserv) requestedServiceValues.Add("RECORDED_COURSE");
+            if (basketItem.LiveCourseReserv) requestedServiceValues.Add("LIVE_COURSE");
+            if (requestedServiceValues.Count == 0)
+                return ProblemResult(422, "INVALID_BASKET", "Each basket item must include at least one selected service.");
+
+            var selectedServices = courseServicesByCourseId
+                .Where(service => service.CourseId == basketItem.CourseId
+                    && service.ServiceLookup?.LookupValue != null
+                    && requestedServiceValues.Contains(service.ServiceLookup.LookupValue, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+
+            if (selectedServices.Count != requestedServiceValues.Distinct(StringComparer.OrdinalIgnoreCase).Count())
+                return ProblemResult(422, "INVALID_BASKET", $"One or more selected services are not configured for course {basketItem.CourseId}.");
+
+            var unitPrice = selectedServices.Sum(service => service.Price);
+            if (unitPrice <= 0)
+                return ProblemResult(422, "INVALID_BASKET", $"Selected services have invalid prices for course {basketItem.CourseId}.");
+
             var gross = unitPrice * basketItem.Quantity;
             var discount = decimal.Round(gross * discountPercent / 100m, 2, MidpointRounding.AwayFromZero);
             invoice.Items.Add(new InvoiceItem { Id = Guid.NewGuid(), BasketItemId = basketItem.Oid, CourseId = basketItem.CourseId, Description = basketItem.Course.CourseName ?? $"Course {basketItem.CourseId}", Quantity = basketItem.Quantity, UnitPrice = unitPrice, DiscountAmount = discount, LineTotal = gross - discount, ExamSimulationReserv = basketItem.ExamSimulationReserv, RecordedCourseReserv = basketItem.RecordedCourseReserv, LiveCourseReserv = basketItem.LiveCourseReserv });
