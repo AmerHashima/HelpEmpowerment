@@ -150,6 +150,8 @@ namespace HelpEmpowermentApi.Services
         {
             Oid = entity.Oid,
             StudentCourseId = entity.StudentCourseId,
+            StudentId = entity.StudentCourse?.StudentId,
+            CourseId = entity.StudentCourse?.CourseId,
             CourseServiceId = entity.CourseServiceId,
             CourseName = entity.CourseService?.Course?.CourseName,
             ServiceName = entity.CourseService?.ServiceLookup?.LookupNameEn,

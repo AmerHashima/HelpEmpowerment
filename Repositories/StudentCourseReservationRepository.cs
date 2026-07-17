@@ -15,6 +15,8 @@ namespace HelpEmpowermentApi.Repositories
 
         public async Task<PagedResult<StudentCourseReservation>> GetPagedAsync(DataRequest request)
         {
+            var normalizedRequest = NormalizeRequest(request);
+
             var query = _dbSet
                 .Where(r => !r.IsDeleted)
                 .Include(r => r.CourseService)
@@ -24,11 +26,11 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(r => r.StudentCourse)
                 .AsQueryable();
 
-            query = query.ApplyFilters(request.Filters);
+            query = query.ApplyFilters(normalizedRequest.Filters);
             var totalCount = await query.CountAsync();
 
-            query = query.ApplySorting(request.Sort);
-            query = query.ApplyPagination(request.Pagination);
+            query = query.ApplySorting(normalizedRequest.Sort);
+            query = query.ApplyPagination(normalizedRequest.Pagination);
 
             var items = await query.ToListAsync();
 
@@ -36,8 +38,8 @@ namespace HelpEmpowermentApi.Repositories
             {
                 Items = items,
                 TotalCount = totalCount,
-                PageNumber = request.Pagination.PageNumber,
-                PageSize = request.Pagination.PageSize
+                PageNumber = normalizedRequest.Pagination.PageNumber,
+                PageSize = normalizedRequest.Pagination.PageSize
             };
         }
 
@@ -49,6 +51,7 @@ namespace HelpEmpowermentApi.Repositories
                     .ThenInclude(cs => cs.Course)
                 .Include(r => r.CourseService)
                     .ThenInclude(cs => cs.ServiceLookup)
+                .Include(r => r.StudentCourse)
                 .OrderBy(r => r.CreatedAt)
                 .ToListAsync();
         }
@@ -82,6 +85,40 @@ namespace HelpEmpowermentApi.Repositories
                 .Select(reservation => reservation.CourseService.ServiceLookup.LookupValue)
                 .Distinct()
                 .ToListAsync();
+        }
+
+        private static DataRequest NormalizeRequest(DataRequest request)
+        {
+            var normalized = new DataRequest
+            {
+                Pagination = request.Pagination,
+                Filters = request.Filters?.Select(filter => new FilterRequest
+                {
+                    PropertyName = NormalizePropertyPath(filter.PropertyName),
+                    Operation = filter.Operation,
+                    Value = filter.Value
+                }).ToList() ?? [],
+                Sort = request.Sort?.Select(sort => new SortRequest
+                {
+                    SortBy = NormalizePropertyPath(sort.SortBy),
+                    SortDirection = sort.SortDirection
+                }).ToList() ?? []
+            };
+
+            return normalized;
+        }
+
+        private static string NormalizePropertyPath(string? propertyName)
+        {
+            if (string.IsNullOrWhiteSpace(propertyName))
+                return string.Empty;
+
+            return propertyName.Trim() switch
+            {
+                "StudentId" => "StudentCourse.StudentId",
+                "CourseId" => "StudentCourse.CourseId",
+                _ => propertyName
+            };
         }
     }
 }

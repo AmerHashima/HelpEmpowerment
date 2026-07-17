@@ -4,6 +4,8 @@ namespace HelpEmpowermentApi.DTOs
     {
         public Guid Oid { get; set; }
         public Guid StudentCourseId { get; set; }
+        public Guid? StudentId { get; set; }
+        public Guid? CourseId { get; set; }
         public Guid CourseServiceId { get; set; }
         public string? CourseName { get; set; }      // from CourseService.Course
         public string? ServiceName { get; set; }     // from CourseService.ServiceLookup
