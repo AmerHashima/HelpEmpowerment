@@ -160,6 +160,21 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                                 item.Id);
                         }
 
+                        var selectedServiceIds = courseServices
+                            .Select(service => service.Oid)
+                            .ToHashSet();
+
+                        foreach (var existingReservation in enrollment.Reservations
+                            .Where(reservation => !reservation.IsDeleted && selectedServiceIds.Contains(reservation.CourseServiceId)))
+                        {
+                            if (!existingReservation.IsReserved)
+                            {
+                                existingReservation.IsReserved = true;
+                                existingReservation.UpdatedAt = now;
+                                existingReservation.UpdatedBy = studentId;
+                            }
+                        }
+
                         var existingServiceIds = enrollment.Reservations
                             .Where(reservation => !reservation.IsDeleted)
                             .Select(reservation => reservation.CourseServiceId)
@@ -173,7 +188,7 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                                 StudentCourseId = enrollment.Oid,
                                 CourseServiceId = service.Oid,
                                 ServicePrice = service.Price,
-                                IsReserved = false,
+                                IsReserved = true,
                                 CreatedBy = studentId,
                                 CreatedAt = now
                             });
