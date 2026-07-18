@@ -91,6 +91,7 @@ namespace HelpEmpowermentApi.Data
             // Configure Course
             modelBuilder.Entity<Course>(entity =>
             {
+                entity.Property(e => e.CertificateNumber).HasDefaultValue(1);
                 entity.HasIndex(e => e.CourseCode).IsUnique();
                 entity.HasIndex(e => e.IsDeleted);
                 entity.HasIndex(e => new { e.IsDeleted, e.IsActive });

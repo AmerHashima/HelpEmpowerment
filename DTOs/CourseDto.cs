@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace HelpEmpowermentApi.DTOs
 {
     public class CourseDto
@@ -6,6 +8,7 @@ namespace HelpEmpowermentApi.DTOs
         public string CourseCode { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public string? CourseDescription { get; set; }
+        public int CertificateNumber { get; set; }
         public Guid? CourseLevelLookupId { get; set; }
         public string? CourseLevelName { get; set; }
         public Guid? CourseCategoryLookupId { get; set; }
@@ -25,6 +28,8 @@ namespace HelpEmpowermentApi.DTOs
         public string? CourseCode { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public string? CourseDescription { get; set; }
+        [Range(1, int.MaxValue)]
+        public int? CertificateNumber { get; set; } = 1;
         public Guid? CourseLevelLookupId { get; set; }
         public Guid? CourseCategoryLookupId { get; set; }
         public decimal? RecordedCourseReservPrice { get; set; }
@@ -40,6 +45,8 @@ namespace HelpEmpowermentApi.DTOs
         public string? CourseCode { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public string? CourseDescription { get; set; }
+        [Range(1, int.MaxValue)]
+        public int? CertificateNumber { get; set; }
         public Guid? CourseLevelLookupId { get; set; }
         public Guid? CourseCategoryLookupId { get; set; }
         public decimal? RecordedCourseReservPrice { get; set; }

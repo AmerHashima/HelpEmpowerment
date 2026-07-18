@@ -107,6 +107,7 @@ namespace HelpEmpowermentApi.Services
                     CourseCode = dto.CourseCode,
                     CourseName = dto.CourseName,
                     CourseDescription = dto.CourseDescription,
+                    CertificateNumber = dto.CertificateNumber ?? 1,
                     CourseLevelLookupId = dto.CourseLevelLookupId,
                     CourseCategoryLookupId = dto.CourseCategoryLookupId,
                     IsActive = dto.IsActive,
@@ -158,6 +159,7 @@ namespace HelpEmpowermentApi.Services
                 course.CourseCode = dto.CourseCode;
                 course.CourseName = dto.CourseName;
                 course.CourseDescription = dto.CourseDescription;
+                course.CertificateNumber = dto.CertificateNumber ?? 1;
                 course.CourseLevelLookupId = dto.CourseLevelLookupId;
                 course.CourseCategoryLookupId = dto.CourseCategoryLookupId;
                 course.IsActive = dto.IsActive;
@@ -199,6 +201,7 @@ namespace HelpEmpowermentApi.Services
                 CourseCode = course.CourseCode,
                 CourseName = course.CourseName,
                 CourseDescription = course.CourseDescription,
+                CertificateNumber = course.CertificateNumber ?? 1,
                 CourseLevelLookupId = course.CourseLevelLookupId,
                 CourseLevelName = course.CourseLevelLookup?.LookupNameEn,
                 CourseCategoryLookupId = course.CourseCategoryLookupId,

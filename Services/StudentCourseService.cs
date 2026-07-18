@@ -1,8 +1,10 @@
 using HelpEmpowermentApi.Common;
+using HelpEmpowermentApi.Data;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace HelpEmpowermentApi.Services
 {
@@ -12,17 +14,20 @@ namespace HelpEmpowermentApi.Services
         private readonly IStudentRepository _studentRepository;
         private readonly ICourseRepository _courseRepository;
         private readonly ICourseVideoRepository _courseVideoRepository;
+        private readonly ApplicationDbContext _db;
 
         public StudentCourseService(
             IStudentCourseRepository repository,
             IStudentRepository studentRepository,
             ICourseRepository courseRepository,
-            ICourseVideoRepository courseVideoRepository)
+            ICourseVideoRepository courseVideoRepository,
+            ApplicationDbContext db)
         {
             _repository = repository;
             _studentRepository = studentRepository;
             _courseRepository = courseRepository;
             _courseVideoRepository = courseVideoRepository;
+            _db = db;
         }
 
         public async Task<PagedResponse<StudentCourseDto>> GetPagedAsync(DataRequest request)
@@ -173,6 +178,9 @@ namespace HelpEmpowermentApi.Services
                 entity.UpdatedBy = dto.UpdatedBy;
                 entity.UpdatedAt = DateTime.UtcNow;
 
+                if (entity.ProgressPercentage >= 100)
+                    await IssueCertificateAsync(entity);
+
                 await _repository.UpdateAsync(entity);
                 var result = await _repository.GetWithDetailsAsync(dto.Oid);
                 return ApiResponse<StudentCourseDto>.SuccessResponse(MapToDto(result!), "Enrollment updated successfully");
@@ -220,9 +228,7 @@ namespace HelpEmpowermentApi.Services
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 if (entity.ProgressPercentage >= 100)
-                {
-                    entity.CompletedDate = DateTime.UtcNow;
-                }
+                    await IssueCertificateAsync(entity);
 
                 await _repository.UpdateAsync(entity);
                 var result = await _repository.GetWithDetailsAsync(id);
@@ -313,6 +319,41 @@ namespace HelpEmpowermentApi.Services
                         UpdatedBy = r.UpdatedBy
                     }).ToList()
             };
+        }
+
+        private async Task IssueCertificateAsync(StudentCourse entity)
+        {
+            var completedAt = DateTime.UtcNow;
+            entity.CompletedDate ??= completedAt;
+
+            if (entity.IsCertificateIssued)
+                return;
+
+            var connection = _db.Database.GetDbConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                await connection.OpenAsync();
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                UPDATE courses
+                SET CertificateNumber = COALESCE(CertificateNumber, 1) + 1,
+                    UpdatedAt = SYSUTCDATETIME()
+                OUTPUT COALESCE(DELETED.CertificateNumber, 1)
+                WHERE Oid = @courseId
+                  AND IsDeleted = 0;
+                """;
+            var courseId = command.CreateParameter();
+            courseId.ParameterName = "@courseId";
+            courseId.Value = entity.CourseId;
+            command.Parameters.Add(courseId);
+
+            var allocatedNumber = await command.ExecuteScalarAsync();
+            if (allocatedNumber is null || allocatedNumber == DBNull.Value)
+                return;
+
+            entity.CertificateNumber = Convert.ToInt32(allocatedNumber).ToString();
+            entity.CertificateIssuedDate = completedAt;
+            entity.IsCertificateIssued = true;
         }
     }
 }

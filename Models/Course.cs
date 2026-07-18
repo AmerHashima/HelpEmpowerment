@@ -18,6 +18,8 @@ namespace HelpEmpowermentApi.Models
         [Column(TypeName = "text")]
         public string? CourseDescription { get; set; }
 
+        public int? CertificateNumber { get; set; } = 1;
+
         // ✅ NEW FIELDS
         [Column(TypeName = "text")]
         public string? HeaderOne { get; set; }
