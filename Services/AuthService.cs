@@ -906,7 +906,7 @@ namespace HelpEmpowermentApi.Services
             }
 
             var token = new JwtSecurityToken(
-                issuer: _configuration["JwtSettings:Issuer"],
+                issuer: JwtSettingsDefaults.ResolveIssuer(_configuration["JwtSettings:Issuer"]),
                 audience: _configuration["JwtSettings:Audience"],
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(GetAccessTokenExpiration()),
@@ -963,6 +963,7 @@ namespace HelpEmpowermentApi.Services
 
         private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
         {
+            var jwtIssuer = JwtSettingsDefaults.ResolveIssuer(_configuration["JwtSettings:Issuer"]);
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateAudience = true,
@@ -971,8 +972,18 @@ namespace HelpEmpowermentApi.Services
                 IssuerSigningKey = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!)),
                 ValidateLifetime = false, // Allow expired tokens
-                ValidIssuer = _configuration["JwtSettings:Issuer"],
-                ValidAudience = _configuration["JwtSettings:Audience"]
+                ValidIssuer = jwtIssuer,
+                ValidAudience = _configuration["JwtSettings:Audience"],
+                IssuerValidator = (issuer, token, parameters) =>
+                {
+                    if (string.IsNullOrWhiteSpace(issuer))
+                        return jwtIssuer;
+
+                    if (string.Equals(issuer, jwtIssuer, StringComparison.Ordinal))
+                        return issuer;
+
+                    throw new SecurityTokenInvalidIssuerException($"The issuer '{issuer}' is invalid");
+                }
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -994,6 +1005,7 @@ namespace HelpEmpowermentApi.Services
 
         private ClaimsPrincipal? GetPrincipalFromToken(string token)
         {
+            var jwtIssuer = JwtSettingsDefaults.ResolveIssuer(_configuration["JwtSettings:Issuer"]);
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateAudience = true,
@@ -1002,8 +1014,18 @@ namespace HelpEmpowermentApi.Services
                 IssuerSigningKey = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!)),
                 ValidateLifetime = true,
-                ValidIssuer = _configuration["JwtSettings:Issuer"],
-                ValidAudience = _configuration["JwtSettings:Audience"]
+                ValidIssuer = jwtIssuer,
+                ValidAudience = _configuration["JwtSettings:Audience"],
+                IssuerValidator = (issuer, token, parameters) =>
+                {
+                    if (string.IsNullOrWhiteSpace(issuer))
+                        return jwtIssuer;
+
+                    if (string.Equals(issuer, jwtIssuer, StringComparison.Ordinal))
+                        return issuer;
+
+                    throw new SecurityTokenInvalidIssuerException($"The issuer '{issuer}' is invalid");
+                }
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();

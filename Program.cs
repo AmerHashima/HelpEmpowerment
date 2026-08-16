@@ -55,6 +55,7 @@ namespace HelpEmpowermentApi
             });
 
             // ✅ ADD JWT AUTHENTICATION
+            var jwtIssuer = JwtSettingsDefaults.ResolveIssuer(builder.Configuration["JwtSettings:Issuer"]);
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -68,11 +69,21 @@ namespace HelpEmpowermentApi
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+                    ValidIssuer = jwtIssuer,
                     ValidAudience = builder.Configuration["JwtSettings:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]!)),
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = TimeSpan.Zero,
+                    IssuerValidator = (issuer, token, parameters) =>
+                    {
+                        if (string.IsNullOrWhiteSpace(issuer))
+                            return jwtIssuer;
+
+                        if (string.Equals(issuer, jwtIssuer, StringComparison.Ordinal))
+                            return issuer;
+
+                        throw new SecurityTokenInvalidIssuerException($"The issuer '{issuer}' is invalid");
+                    }
                 };
             });
 
