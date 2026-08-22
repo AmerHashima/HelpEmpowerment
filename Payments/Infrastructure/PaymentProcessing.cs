@@ -161,7 +161,7 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                                 && service.IsActive
                                 && !service.IsDeleted
                                 && requestedServiceValues.Contains(service.ServiceLookup.LookupValue))
-                            .Select(service => new { service.Oid, service.Price })
+                            .Select(service => new { service.Oid, service.Price, service.ActiveTime })
                             .ToListAsync(ct);
                         var requestedDistinctCount = requestedServiceValues.Distinct(StringComparer.OrdinalIgnoreCase).Count();
                         if (courseServices.Count != requestedDistinctCount)
@@ -181,6 +181,12 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                         foreach (var existingReservation in enrollment.Reservations
                             .Where(reservation => !reservation.IsDeleted && selectedServiceIds.Contains(reservation.CourseServiceId)))
                         {
+                            var courseService = courseServices.Single(service => service.Oid == existingReservation.CourseServiceId);
+                            existingReservation.ReservationDate = now;
+                            existingReservation.ReservationExpiryDate = courseService.ActiveTime.HasValue
+                                ? now.AddMinutes(courseService.ActiveTime.Value)
+                                : null;
+
                             if (!existingReservation.IsReserved)
                             {
                                 existingReservation.IsReserved = true;
@@ -201,6 +207,10 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                                 Oid = Guid.NewGuid(),
                                 StudentCourseId = enrollment.Oid,
                                 CourseServiceId = service.Oid,
+                                ReservationDate = now,
+                                ReservationExpiryDate = service.ActiveTime.HasValue
+                                    ? now.AddMinutes(service.ActiveTime.Value)
+                                    : null,
                                 ServicePrice = service.Price,
                                 IsReserved = true,
                                 CreatedBy = studentId,

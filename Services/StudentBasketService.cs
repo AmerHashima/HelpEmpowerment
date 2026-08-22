@@ -458,14 +458,19 @@ namespace HelpEmpowermentApi.Services
 
             foreach (var courseService in selectedServices)
             {
+                var reservationDate = DateTime.UtcNow;
                 var reservation = new StudentCourseReservation
                 {
                     StudentCourseId = studentCourseId,
                     CourseServiceId = courseService.Oid,
+                    ReservationDate = reservationDate,
+                    ReservationExpiryDate = courseService.ActiveTime.HasValue
+                        ? reservationDate.AddMinutes(courseService.ActiveTime.Value)
+                        : null,
                     ServicePrice = courseService.Price,
                     IsReserved = false,
                     CreatedBy = item.StudentId,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = reservationDate
                 };
 
                 var created = await _studentCourseReservationRepository.AddAsync(reservation);
