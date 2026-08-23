@@ -95,7 +95,7 @@ public sealed class TelrPaymentsController(IPaymentTransactionService payments, 
         return result.ErrorCode switch { "INVOICE_NOT_FOUND" => ProblemResult(404, result.ErrorCode, result.ErrorMessage!), "INVOICE_ALREADY_PAID" => ProblemResult(409, result.ErrorCode, result.ErrorMessage!), "TELR_NETWORK_ERROR" or "TELR_TIMEOUT" => ProblemResult(503, result.ErrorCode, result.ErrorMessage!), _ => ProblemResult(422, result.ErrorCode!, result.ErrorMessage!) };
     }
 
-    [HttpGet("status/{paymentId:guid}"), Authorize, EnableRateLimiting("payments-status")]
+    [HttpGet("status/{paymentId:guid}"), AllowAnonymous, EnableRateLimiting("payments-status")]
     public async Task<IActionResult> Status(Guid paymentId, CancellationToken ct)
     {
         var paymentInfo = await db.PaymentTransactions
@@ -106,7 +106,7 @@ public sealed class TelrPaymentsController(IPaymentTransactionService payments, 
         if (paymentInfo is null)
             return ProblemResult(404, "PAYMENT_NOT_FOUND", "Payment was not found.");
 
-        if (paymentInfo.OwnerId.HasValue && !IsOwner(paymentInfo.OwnerId.Value))
+        if (User.Identity?.IsAuthenticated == true && paymentInfo.OwnerId.HasValue && !IsOwner(paymentInfo.OwnerId.Value))
             return ProblemResult(403, "PAYMENT_ACCESS_DENIED", "You do not have permission to view this payment.");
 
         if (paymentInfo.Status != PaymentStatus.Authorised && !string.IsNullOrWhiteSpace(paymentInfo.TelrOrderReference))
