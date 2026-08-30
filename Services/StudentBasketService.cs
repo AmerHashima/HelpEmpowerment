@@ -465,7 +465,7 @@ namespace HelpEmpowermentApi.Services
                     CourseServiceId = courseService.Oid,
                     ReservationDate = reservationDate,
                     ReservationExpiryDate = courseService.ActiveTime.HasValue
-                        ? reservationDate.AddMinutes(courseService.ActiveTime.Value)
+                        ? reservationDate.AddDays(courseService.ActiveTime.Value)
                         : null,
                     ServicePrice = courseService.Price,
                     IsReserved = false,
@@ -618,7 +618,7 @@ namespace HelpEmpowermentApi.Services
                 StudentName = entity.Student?.NameEn,
                 CourseId = entity.CourseId,
                 CourseName = entity.Course?.CourseName,
-               // CourseImage = entity.Course?.ImageUrl,
+                // CourseImage = entity.Course?.ImageUrl,
                 OriginalPrice = entity.OriginalPrice,
                 DiscountAmount = entity.DiscountAmount,
                 FinalPrice = entity.FinalPrice,
