@@ -378,10 +378,10 @@ namespace HelpEmpowermentApi.Services
                                 ReservationExpiryDate = reservation.ReservationExpiryDate,
                                 IsReserved = reservation.IsReserved,
                                 ServicePrice = reservation.ServicePrice,
-                                AddedBy = reservation.CreatedBy.HasValue
+                                AddedBy = reservation.Notes ?? (reservation.CreatedBy.HasValue
                                     ? _db.Users.Where(user => user.Oid == reservation.CreatedBy.Value)
                                         .Select(user => user.Username).FirstOrDefault() ?? "user"
-                                    : "user"
+                                    : "user")
                             }).ToList()
                     }).ToList()
             }).ToListAsync(cancellationToken);
