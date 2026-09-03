@@ -326,6 +326,10 @@ namespace HelpEmpowermentApi.Services
                 Username = student.Username,
                 IsActive = student.IsActive,
                 CreatedAt = student.CreatedAt,
+                AddedBy = student.CreatedBy.HasValue
+                    ? _db.Users.Where(user => user.Oid == student.CreatedBy.Value)
+                        .Select(user => user.Username).FirstOrDefault() ?? "user"
+                    : "user",
                 PromoCode = student.PromoCode,
                 PromoDiscount = student.PromoDiscount,
                 PromoValidTo = student.PromoToDateValid,
@@ -376,8 +380,8 @@ namespace HelpEmpowermentApi.Services
                                 ServicePrice = reservation.ServicePrice,
                                 AddedBy = reservation.CreatedBy.HasValue
                                     ? _db.Users.Where(user => user.Oid == reservation.CreatedBy.Value)
-                                        .Select(user => user.Username).FirstOrDefault()
-                                    : null
+                                        .Select(user => user.Username).FirstOrDefault() ?? "user"
+                                    : "user"
                             }).ToList()
                     }).ToList()
             }).ToListAsync(cancellationToken);

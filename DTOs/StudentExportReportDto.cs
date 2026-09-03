@@ -12,6 +12,7 @@ public sealed class StudentExportReportDto
     public string Username { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public DateTime? CreatedAt { get; set; }
+    public string AddedBy { get; set; } = "user";
     public string? PromoCode { get; set; }
     public float? PromoDiscount { get; set; }
     public DateTime? PromoValidTo { get; set; }
@@ -42,7 +43,7 @@ public sealed class CourseReservationExportDto
     public DateTime? ReservationExpiryDate { get; set; }
     public bool IsReserved { get; set; }
     public decimal? ServicePrice { get; set; }
-    public string? AddedBy { get; set; }
+    public string AddedBy { get; set; } = "user";
 }
 
 public sealed class StudentExportSearchRequest : DataRequest;
