@@ -204,8 +204,12 @@ namespace HelpEmpowermentApi.Services
                 if (user == null)
                     return ApiResponse<bool>.ErrorResponse("User not found");
 
-                // Verify current password
-                if (user.PasswordHash != HashPassword(dto.CurrentPassword))
+                if (dto.NewPassword != dto.ConfirmPassword)
+                    return ApiResponse<bool>.ErrorResponse("Passwords do not match");
+
+                // BCrypt hashes are salted, so hashing the same password again and
+                // comparing the strings will never work. Verify against the stored hash.
+                if (!VerifyPassword(dto.CurrentPassword, user.PasswordHash))
                     return ApiResponse<bool>.ErrorResponse("Current password is incorrect");
 
                 user.PasswordHash = HashPassword(dto.NewPassword);
@@ -225,10 +229,9 @@ namespace HelpEmpowermentApi.Services
         {
             try
             {
-                var passwordHash = HashPassword(password);
-                var user = await _userRepository.AuthenticateAsync(username, passwordHash);
+                var user = await _userRepository.GetByUsernameAsync(username);
                 
-                if (user == null)
+                if (user == null || !VerifyPassword(password, user.PasswordHash))
                     return ApiResponse<UserDto>.ErrorResponse("Invalid username or password");
 
                 return ApiResponse<UserDto>.SuccessResponse(MapToDto(user), "Authentication successful");
@@ -260,9 +263,21 @@ namespace HelpEmpowermentApi.Services
 
         private string HashPassword(string password)
         {
+            return BCrypt.Net.BCrypt.HashPassword(password, BCrypt.Net.BCrypt.GenerateSalt(12));
+        }
+
+        private static bool VerifyPassword(string password, string hash)
+        {
+            if (hash.StartsWith("$2", StringComparison.Ordinal))
+                return BCrypt.Net.BCrypt.Verify(password, hash);
+
+            // Compatibility with users created before BCrypt was adopted.
             using var sha256 = SHA256.Create();
             var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(hashedBytes);
+            var legacyHash = Convert.ToBase64String(hashedBytes);
+            return CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(legacyHash),
+                Encoding.UTF8.GetBytes(hash));
         }
     }
 }
