@@ -4,6 +4,7 @@ using System.Text.Json;
 using HelpEmpowermentApi.Data;
 using HelpEmpowermentApi.Payments.Application;
 using HelpEmpowermentApi.Payments.Domain;
+using HelpEmpowermentApi.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Models = HelpEmpowermentApi.Models;
@@ -96,6 +97,20 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                 var paidStatusId = Guid.Parse("88888888-8888-8888-8888-888888888802");
                 var activeStatusId = Guid.Parse("99999999-9999-9999-9999-999999999901");
                 var invoiceItemIds = payment.Invoice.Items.Select(item => item.Id).ToList();
+                var revenueCourseIds = payment.Invoice.Items.Select(item => item.CourseId).Distinct().ToList();
+                var activeRevenueShares = await db.CourseRevenueShares.AsNoTracking()
+                    .Where(share => revenueCourseIds.Contains(share.CourseId)
+                        && share.IsActive && !share.IsDeleted
+                        && (!share.EffectiveFrom.HasValue || share.EffectiveFrom <= now)
+                        && (!share.EffectiveTo.HasValue || share.EffectiveTo >= now))
+                    .ToListAsync(ct);
+                var distributedShareIdsByItem = await db.CourseRevenueDistributions.AsNoTracking()
+                    .Where(distribution => distribution.PaymentTransactionId == payment.Id
+                        && invoiceItemIds.Contains(distribution.InvoiceItemId))
+                    .Select(distribution => new { distribution.InvoiceItemId, distribution.RevenueShareId })
+                    .ToListAsync(ct);
+                var existingDistributionKeys = distributedShareIdsByItem
+                    .Select(x => (x.InvoiceItemId, x.RevenueShareId)).ToHashSet();
                 var fulfilledItemIds = await db.StudentCourses
                     .Where(course => course.InvoiceItemId.HasValue && invoiceItemIds.Contains(course.InvoiceItemId.Value))
                     .Select(course => course.InvoiceItemId!.Value)
@@ -217,6 +232,25 @@ public sealed class InvoicePaymentProcessor(ApplicationDbContext db, IClock cloc
                                 CreatedAt = now
                             });
                         }
+                    }
+
+                    foreach (var share in activeRevenueShares.Where(x => x.CourseId == item.CourseId
+                        && !existingDistributionKeys.Contains((item.Id, x.Oid))))
+                    {
+                        var amount = share.CalculationType == RevenueCalculationType.Percentage
+                            ? decimal.Round(item.LineTotal * share.Value / 100m, 2, MidpointRounding.AwayFromZero)
+                            : decimal.Round(share.Value, 2, MidpointRounding.AwayFromZero);
+                        db.CourseRevenueDistributions.Add(new Models.CourseRevenueDistribution
+                        {
+                            Oid = Guid.NewGuid(), InvoiceId = payment.InvoiceId, InvoiceItemId = item.Id,
+                            PaymentTransactionId = payment.Id, CourseId = item.CourseId, RevenueShareId = share.Oid,
+                            BeneficiaryUserId = share.BeneficiaryUserId, ShareTypeLookupId = share.ShareTypeLookupId,
+                            CalculationType = share.CalculationType,
+                            AppliedPercentage = share.CalculationType == RevenueCalculationType.Percentage ? share.Value : null,
+                            AppliedFixedAmount = share.CalculationType == RevenueCalculationType.FixedAmount ? share.Value : null,
+                            BaseAmount = item.LineTotal, ShareAmount = amount,
+                            Status = RevenueDistributionStatus.Pending, CreatedAt = now
+                        });
                     }
                 }
 

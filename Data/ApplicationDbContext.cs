@@ -63,6 +63,10 @@ namespace HelpEmpowermentApi.Data
         public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
         public DbSet<PaymentReceipt> PaymentReceipts => Set<PaymentReceipt>();
         public DbSet<PaymentJournalEntry> PaymentJournalEntries => Set<PaymentJournalEntry>();
+        public DbSet<UserCourseAssignment> UserCourseAssignments => Set<UserCourseAssignment>();
+        public DbSet<CourseRevenueShare> CourseRevenueShares => Set<CourseRevenueShare>();
+        public DbSet<CourseRevenueDistribution> CourseRevenueDistributions => Set<CourseRevenueDistribution>();
+        public DbSet<RevenueSettlement> RevenueSettlements => Set<RevenueSettlement>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -87,6 +91,60 @@ namespace HelpEmpowermentApi.Data
             });
             modelBuilder.Entity<PaymentReceipt>(entity => { entity.ToTable("PaymentReceipts"); entity.HasKey(x => x.Id); entity.HasIndex(x => x.PaymentTransactionId).IsUnique(); entity.Property(x => x.Amount).HasPrecision(18, 2); entity.Property(x => x.Currency).HasMaxLength(3); entity.HasOne(x => x.PaymentTransaction).WithOne(x => x.Receipt).HasForeignKey<PaymentReceipt>(x => x.PaymentTransactionId).OnDelete(DeleteBehavior.Restrict); });
             modelBuilder.Entity<PaymentJournalEntry>(entity => { entity.ToTable("PaymentJournalEntries"); entity.HasKey(x => x.Id); entity.HasIndex(x => x.PaymentTransactionId).IsUnique(); entity.Property(x => x.Amount).HasPrecision(18, 2); entity.Property(x => x.Currency).HasMaxLength(3); entity.HasOne(x => x.PaymentTransaction).WithOne(x => x.JournalEntry).HasForeignKey<PaymentJournalEntry>(x => x.PaymentTransactionId).OnDelete(DeleteBehavior.Restrict); });
+
+            modelBuilder.Entity<UserCourseAssignment>(entity =>
+            {
+                entity.HasOne(x => x.User).WithMany(x => x.CourseAssignments).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.Course).WithMany(x => x.UserAssignments).HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.AssignmentType).WithMany().HasForeignKey(x => x.AssignmentTypeLookupId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(x => x.UserId);
+                entity.HasIndex(x => x.CourseId);
+                entity.HasIndex(x => new { x.UserId, x.CourseId, x.AssignmentTypeLookupId })
+                    .IsUnique().HasFilter("[IsDeleted] = 0 AND [IsActive] = 1");
+            });
+
+            modelBuilder.Entity<CourseRevenueShare>(entity =>
+            {
+                entity.Property(x => x.CalculationType).HasConversion<string>().HasMaxLength(20);
+                entity.HasOne(x => x.Course).WithMany(x => x.RevenueShares).HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.BeneficiaryUser).WithMany(x => x.RevenueShares).HasForeignKey(x => x.BeneficiaryUserId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.ShareType).WithMany().HasForeignKey(x => x.ShareTypeLookupId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(x => x.CourseId);
+                entity.HasIndex(x => new { x.CourseId, x.BeneficiaryUserId, x.ShareTypeLookupId })
+                    .IsUnique().HasFilter("[IsDeleted] = 0 AND [IsActive] = 1");
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_CourseRevenueShare_Value", "[Value] >= 0");
+                    t.HasCheckConstraint("CK_CourseRevenueShare_Dates", "[EffectiveTo] IS NULL OR [EffectiveFrom] IS NULL OR [EffectiveFrom] <= [EffectiveTo]");
+                    t.HasCheckConstraint("CK_CourseRevenueShare_Percentage", "[CalculationType] <> 'Percentage' OR [Value] <= 100");
+                });
+            });
+
+            modelBuilder.Entity<CourseRevenueDistribution>(entity =>
+            {
+                entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(x => x.CalculationType).HasConversion<string>().HasMaxLength(20);
+                entity.HasOne(x => x.Invoice).WithMany().HasForeignKey(x => x.InvoiceId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.InvoiceItem).WithMany().HasForeignKey(x => x.InvoiceItemId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.PaymentTransaction).WithMany().HasForeignKey(x => x.PaymentTransactionId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.Course).WithMany(x => x.RevenueDistributions).HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.RevenueShare).WithMany(x => x.Distributions).HasForeignKey(x => x.RevenueShareId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.BeneficiaryUser).WithMany(x => x.RevenueDistributions).HasForeignKey(x => x.BeneficiaryUserId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.ShareType).WithMany().HasForeignKey(x => x.ShareTypeLookupId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.Settlement).WithMany(x => x.Distributions).HasForeignKey(x => x.SettlementId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(x => new { x.PaymentTransactionId, x.InvoiceItemId, x.RevenueShareId }).IsUnique();
+                entity.HasIndex(x => new { x.BeneficiaryUserId, x.Status, x.CreatedAt });
+                entity.HasIndex(x => x.CourseId);
+            });
+
+            modelBuilder.Entity<RevenueSettlement>(entity =>
+            {
+                entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+                entity.HasOne(x => x.BeneficiaryUser).WithMany(x => x.RevenueSettlements).HasForeignKey(x => x.BeneficiaryUserId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(x => x.SettlementNumber).IsUnique();
+                entity.HasIndex(x => new { x.BeneficiaryUserId, x.Status });
+                entity.ToTable(t => t.HasCheckConstraint("CK_RevenueSettlement_Period", "[PeriodFrom] <= [PeriodTo]"));
+            });
 
             // Configure Course
             modelBuilder.Entity<Course>(entity =>
@@ -550,6 +608,7 @@ namespace HelpEmpowermentApi.Data
             // Configure StudentCourseReservation
             modelBuilder.Entity<StudentCourseReservation>(entity =>
             {
+                entity.Property(r => r.ServicePrice).HasPrecision(18, 2);
                 entity.HasOne(r => r.StudentCourse)
                     .WithMany(sc => sc.Reservations)
                     .HasForeignKey(r => r.StudentCourseId)
@@ -606,6 +665,7 @@ namespace HelpEmpowermentApi.Data
             var contactStatusHeaderId = Guid.Parse("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF");
             var examModeHeaderId = Guid.Parse("12121212-1212-1212-1212-121212121212");
             var serviceTypeHeaderId = Guid.Parse("13131313-1313-1313-1313-131313131313");
+            var courseAssignmentTypeHeaderId = Guid.Parse("14141414-1414-1414-1414-141414141414");
 
             // ============================================
             // SEED LOOKUP HEADERS
@@ -777,6 +837,16 @@ namespace HelpEmpowermentApi.Data
                      LookupCode = "SERVICE_TYPE",
                      LookupNameAr = "نوع الخدمة",
                      LookupNameEn = "Service Type",
+                     IsActive = true,
+                     CreatedAt = seedDate,
+                     CreatedBy = null
+                 },
+                 new AppLookupHeader
+                 {
+                     Oid = courseAssignmentTypeHeaderId,
+                     LookupCode = "COURSE_ASSIGNMENT_TYPE",
+                     LookupNameAr = "نوع التكليف بالدورة",
+                     LookupNameEn = "Course Assignment Type",
                      IsActive = true,
                      CreatedAt = seedDate,
                      CreatedBy = null
@@ -1724,6 +1794,48 @@ namespace HelpEmpowermentApi.Data
                     CreatedBy = null
                 }
             );
+
+            // Shared assignment/share types used by course staffing and revenue plans.
+            modelBuilder.Entity<AppLookupDetail>().HasData(
+                SeedAssignmentType("14141414-1414-1414-1414-141414141401", "OWNER", "المالك", "Owner", 1),
+                SeedAssignmentType("14141414-1414-1414-1414-141414141402", "TRAINER", "المدرب", "Trainer", 2),
+                SeedAssignmentType("14141414-1414-1414-1414-141414141403", "ASSISTANT_TRAINER", "المدرب المساعد", "Assistant Trainer", 3),
+                SeedAssignmentType("14141414-1414-1414-1414-141414141404", "MARKETING", "التسويق", "Marketing", 4),
+                SeedAssignmentType("14141414-1414-1414-1414-141414141405", "SALES", "المبيعات", "Sales", 5),
+                SeedAssignmentType("14141414-1414-1414-1414-141414141406", "OPERATIONS", "العمليات", "Operations", 6),
+                SeedAssignmentType("14141414-1414-1414-1414-141414141407", "OTHER", "أخرى", "Other", 7),
+                SeedAssignmentType("14141414-1414-1414-1414-141414141408", "PLATFORM", "المنصة", "Platform", 8)
+            );
+
+            modelBuilder.Entity<Link>().HasData(
+                SeedPermission("15151515-1515-1515-1515-151515151501", "Courses.AssignUsers"),
+                SeedPermission("15151515-1515-1515-1515-151515151502", "Courses.ViewAssignedUsers"),
+                SeedPermission("15151515-1515-1515-1515-151515151503", "RevenueShares.View"),
+                SeedPermission("15151515-1515-1515-1515-151515151504", "RevenueShares.Manage"),
+                SeedPermission("15151515-1515-1515-1515-151515151505", "RevenueDistributions.View"),
+                SeedPermission("15151515-1515-1515-1515-151515151506", "RevenueSettlements.View"),
+                SeedPermission("15151515-1515-1515-1515-151515151507", "RevenueSettlements.Manage"),
+                SeedPermission("15151515-1515-1515-1515-151515151508", "RevenueDashboard.View")
+            );
+
+            AppLookupDetail SeedAssignmentType(string id, string value, string nameAr, string nameEn, int orderNo) => new()
+            {
+                Oid = Guid.Parse(id),
+                LookupHeaderId = courseAssignmentTypeHeaderId,
+                LookupValue = value,
+                LookupNameAr = nameAr,
+                LookupNameEn = nameEn,
+                OrderNo = orderNo,
+                IsActive = true,
+                CreatedAt = seedDate,
+                CreatedBy = null
+            };
+
+            Link SeedPermission(string id, string name) => new()
+            {
+                Oid = Guid.Parse(id), NameAr = name, NameEn = name, Path = name,
+                Active = true, IsActive = true, IsDeleted = false, CreatedAt = seedDate
+            };
 
 
             //// ============================================

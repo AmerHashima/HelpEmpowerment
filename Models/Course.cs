@@ -80,5 +80,8 @@ namespace HelpEmpowermentApi.Models
         public virtual ICollection<StudentCourse> StudentEnrollments { get; set; } = new List<StudentCourse>();
         public virtual ICollection<StudentBasket> BasketItems { get; set; } = new List<StudentBasket>();
         public virtual ICollection<CourseService> CourseServices { get; set; } = new List<CourseService>();
+        public virtual ICollection<UserCourseAssignment> UserAssignments { get; set; } = new List<UserCourseAssignment>();
+        public virtual ICollection<CourseRevenueShare> RevenueShares { get; set; } = new List<CourseRevenueShare>();
+        public virtual ICollection<CourseRevenueDistribution> RevenueDistributions { get; set; } = new List<CourseRevenueDistribution>();
     }
 }

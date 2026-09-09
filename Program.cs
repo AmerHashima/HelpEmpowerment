@@ -24,7 +24,7 @@ namespace HelpEmpowermentApi
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -87,7 +87,11 @@ namespace HelpEmpowermentApi
                 };
             });
 
-            builder.Services.AddAuthorization();
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("InternalUser", policy =>
+                    policy.RequireClaim("UserType", "User"));
+            });
             builder.Services.AddHttpClient();
             var telrEnabled = builder.Configuration.GetValue<bool>($"{TelrOptions.SectionName}:Enabled");
             builder.Services.AddOptions<TelrOptions>().Bind(builder.Configuration.GetSection(TelrOptions.SectionName)).Validate(o => !o.Enabled || !string.IsNullOrWhiteSpace(o.StoreId), "Telr StoreId is required").Validate(o => !o.Enabled || !string.IsNullOrWhiteSpace(o.AuthKey), "Telr AuthKey must come from a secret source").Validate(o => !o.Enabled || !string.IsNullOrWhiteSpace(o.WebhookSecret), "Telr WebhookSecret must come from a secret source").Validate(o => !o.Enabled || (o.FrontendResultUrl is not null && Uri.CheckHostName(o.FrontendResultUrl.Host) != UriHostNameType.Unknown && (o.FrontendResultUrl.Scheme == Uri.UriSchemeHttp || o.FrontendResultUrl.Scheme == Uri.UriSchemeHttps)), "A valid HTTP or HTTPS Telr frontend result URL is required").ValidateOnStart();
@@ -167,7 +171,8 @@ namespace HelpEmpowermentApi
 
             app.UseExceptionHandler(errorApp => errorApp.Run(async context => { var error = context.Features.Get<IExceptionHandlerFeature>()?.Error; var problem = new ProblemDetails { Type = "https://httpstatuses.com/500", Title = "An unexpected error occurred", Status = 500, Detail = app.Environment.IsDevelopment() ? error?.Message : "The request could not be completed." }; problem.Extensions["traceId"] = context.TraceIdentifier; problem.Extensions["errorCode"] = "UNEXPECTED_ERROR"; context.Response.StatusCode = 500; await context.Response.WriteAsJsonAsync(problem); }));
 
-            // Auto-migrate database
+            // Apply pending migrations and the HasData seeds before accepting requests.
+            await app.Services.SeedAsync();
 
             app.UseForwardedHeaders();
 
@@ -273,6 +278,7 @@ namespace HelpEmpowermentApi
             services.AddScoped<IStudentCourseReservationService, StudentCourseReservationService>();
             services.AddScoped<IUserDeviceService, UserDeviceService>();
             services.AddScoped<ICourseServiceDetailService, CourseServiceDetailService>();
+            services.AddScoped<IRevenueManagementService, RevenueManagementService>();
         }
 
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HelpEmpowermentApi.Controllers
 {
@@ -14,6 +15,15 @@ namespace HelpEmpowermentApi.Controllers
         public UsersController(IUserService userService)
         {
             _userService = userService;
+        }
+
+        [HttpGet("{userId:guid}/courses"), Authorize(Policy = "InternalUser", Roles = "Admin")]
+        public async Task<IActionResult> GetAssignedCourses(
+            Guid userId,
+            [FromServices] IRevenueManagementService revenueManagementService,
+            CancellationToken cancellationToken)
+        {
+            return Ok(await revenueManagementService.GetUserCoursesAsync(userId, cancellationToken));
         }
 
         [HttpPost("search")]
