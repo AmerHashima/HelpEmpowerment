@@ -154,12 +154,21 @@ public sealed class RevenueManagementService(ApplicationDbContext db) : IRevenue
         if (dateFrom.HasValue) query = query.Where(x => x.CreatedAt >= dateFrom);
         if (dateTo.HasValue) query = query.Where(x => x.CreatedAt < dateTo.Value.Date.AddDays(1));
         if (status.HasValue) query = query.Where(x => x.Status == status);
-        var rows = await query.Select(x => new { x.CourseId, x.Course.CourseName }).Distinct()
-            .Select(course => new RevenueByCourseDto(course.CourseId, course.CourseName,
-                query.Where(x => x.CourseId == course.CourseId).Sum(x => x.ShareAmount),
-                query.Where(x => x.CourseId == course.CourseId && x.Status == RevenueDistributionStatus.Pending).Sum(x => x.ShareAmount),
-                query.Where(x => x.CourseId == course.CourseId && x.Status == RevenueDistributionStatus.Paid).Sum(x => x.ShareAmount)))
-            .OrderBy(x => x.CourseName).ToListAsync(ct);
+        var aggregates = await query
+            .GroupBy(x => new { x.CourseId, x.Course.CourseName })
+            .Select(group => new
+            {
+                group.Key.CourseId,
+                group.Key.CourseName,
+                Earned = group.Sum(x => x.ShareAmount),
+                Pending = group.Sum(x => x.Status == RevenueDistributionStatus.Pending ? x.ShareAmount : 0m),
+                Paid = group.Sum(x => x.Status == RevenueDistributionStatus.Paid ? x.ShareAmount : 0m)
+            })
+            .OrderBy(x => x.CourseName)
+            .ToListAsync(ct);
+        var rows = aggregates
+            .Select(x => new RevenueByCourseDto(x.CourseId, x.CourseName, x.Earned, x.Pending, x.Paid))
+            .ToList();
         return new(rows.Sum(x => x.Earned), rows.Sum(x => x.Pending), rows.Sum(x => x.Paid), rows);
     }
 
