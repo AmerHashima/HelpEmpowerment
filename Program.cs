@@ -278,6 +278,7 @@ namespace HelpEmpowermentApi
             services.AddScoped<IStudentCourseReservationService, StudentCourseReservationService>();
             services.AddScoped<IUserDeviceService, UserDeviceService>();
             services.AddScoped<ICourseServiceDetailService, CourseServiceDetailService>();
+            services.AddScoped<IRevenueManagementRepository, RevenueManagementRepository>();
             services.AddScoped<IRevenueManagementService, RevenueManagementService>();
         }
 

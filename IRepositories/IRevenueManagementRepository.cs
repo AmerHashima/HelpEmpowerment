@@ -3,16 +3,16 @@ using HelpEmpowermentApi.Enums;
 using HelpEmpowermentApi.Payments.Application;
 using HelpEmpowermentApi.Common;
 
-namespace HelpEmpowermentApi.IServices;
+namespace HelpEmpowermentApi.IRepositories;
 
-public interface IRevenueManagementService
+public interface IRevenueManagementRepository
 {
-    Task<PagedResponse<UserCourseAssignmentDto>> SearchAssignmentsAsync(DataRequest request, CancellationToken ct);
-    Task<ApiResponse<UserCourseAssignmentDto>> GetAssignmentByIdAsync(Guid id, CancellationToken ct);
-    Task<PagedResponse<CourseRevenueShareDto>> SearchSharesAsync(Guid courseId, DataRequest request, CancellationToken ct);
-    Task<ApiResponse<CourseRevenueShareDto>> GetShareByIdAsync(Guid courseId, Guid id, CancellationToken ct);
-    Task<PagedResponse<RevenueSettlementDto>> SearchSettlementsAsync(DataRequest request, CancellationToken ct);
-    Task<ApiResponse<RevenueSettlementDto>> GetSettlementByIdAsync(Guid id, CancellationToken ct);
+    Task<PagedResult<UserCourseAssignmentDto>> SearchAssignmentsAsync(DataRequest request, CancellationToken ct);
+    Task<UserCourseAssignmentDto?> GetAssignmentByIdAsync(Guid id, CancellationToken ct);
+    Task<PagedResult<CourseRevenueShareDto>> SearchSharesAsync(Guid courseId, DataRequest request, CancellationToken ct);
+    Task<CourseRevenueShareDto?> GetShareByIdAsync(Guid courseId, Guid id, CancellationToken ct);
+    Task<PagedResult<RevenueSettlementDto>> SearchSettlementsAsync(DataRequest request, CancellationToken ct);
+    Task<RevenueSettlementDto?> GetSettlementByIdAsync(Guid id, CancellationToken ct);
     Task<bool> CanAccessCourseAsync(Guid userId, Guid courseId, bool globalAccess, CancellationToken ct);
     Task<IReadOnlyList<UserCourseAssignmentDto>> GetAssignmentsAsync(Guid? userId, Guid? courseId, Guid? assignmentType, bool? isActive, CancellationToken ct);
     Task<ServiceResult<UserCourseAssignmentDto>> CreateAssignmentAsync(SaveUserCourseAssignmentDto dto, Guid actorId, CancellationToken ct);

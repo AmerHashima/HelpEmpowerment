@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using HelpEmpowermentApi.Enums;
+using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,26 +10,30 @@ namespace HelpEmpowermentApi.Controllers;
 [ApiController, Route("api/me"), Authorize(Policy = "InternalUser")]
 public sealed class MeController(IRevenueManagementService service) : ControllerBase
 {
-    [HttpGet("courses")]
-    public async Task<IActionResult> Courses(CancellationToken ct)
+    [HttpPost("courses/search")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<AssignedCourseDto>>>> Courses(CancellationToken ct)
     {
         if (!TryGetInternalUserId(out var userId)) return Forbid();
-        return Ok(await service.GetUserCoursesAsync(userId, ct));
+        var data = await service.GetUserCoursesAsync(userId, ct);
+        return Ok(ApiResponse<IReadOnlyList<AssignedCourseDto>>.SuccessResponse(data));
     }
 
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard(CancellationToken ct)
     {
         if (!TryGetInternalUserId(out var userId)) return Forbid();
-        return Ok(await service.GetDashboardAsync(userId, User.IsInRole("Admin"), ct));
+        var data = await service.GetDashboardAsync(userId, User.IsInRole("Admin"), ct);
+        return Ok(ApiResponse<AssignedDashboardDto>.SuccessResponse(data));
     }
 
-    [HttpGet("revenue")]
-    public async Task<IActionResult> Revenue([FromQuery] Guid? courseId, [FromQuery] DateTime? dateFrom,
-        [FromQuery] DateTime? dateTo, [FromQuery] RevenueDistributionStatus? status, CancellationToken ct)
+    [HttpPost("revenue/search")]
+    public async Task<ActionResult<ApiResponse<MyRevenueDto>>> Revenue(
+        [FromBody] MyRevenueSearchDto request, CancellationToken ct)
     {
         if (!TryGetInternalUserId(out var userId)) return Forbid();
-        return Ok(await service.GetMyRevenueAsync(userId, courseId, dateFrom, dateTo, status, ct));
+        var data = await service.GetMyRevenueAsync(userId, request.CourseId, request.DateFrom,
+            request.DateTo, request.Status, ct);
+        return Ok(ApiResponse<MyRevenueDto>.SuccessResponse(data));
     }
 
     private bool TryGetInternalUserId(out Guid id)

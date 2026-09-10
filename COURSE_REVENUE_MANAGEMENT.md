@@ -27,16 +27,19 @@ assignment and revenue share types so APIs do not rely on hard-coded role names.
 Internal-user authentication is required. Management operations and settlement
 operations additionally require the existing `Admin` JWT role.
 
-- `GET|POST /api/user-course-assignments`
+- `POST /api/user-course-assignments/search`
+- `POST /api/user-course-assignments`
 - `PUT|DELETE /api/user-course-assignments/{id}`
-- `GET /api/users/{userId}/courses`
-- `GET /api/me/courses`
+- `POST /api/users/{userId}/courses/search`
+- `POST /api/me/courses/search`
 - `GET /api/me/dashboard`
-- `GET /api/me/revenue?courseId=&dateFrom=&dateTo=&status=`
-- `GET|POST /api/courses/{courseId}/revenue-shares`
+- `POST /api/me/revenue/search`
+- `POST /api/courses/{courseId}/revenue-shares/search`
+- `POST /api/courses/{courseId}/revenue-shares`
 - `PUT|DELETE /api/courses/{courseId}/revenue-shares/{id}`
 - `GET /api/courses/{courseId}/revenue-summary`
-- `GET|POST /api/revenue-settlements`
+- `POST /api/revenue-settlements/search`
+- `POST /api/revenue-settlements`
 - `PUT /api/revenue-settlements/{id}/status`
 
 `/api/me/*` always derives the internal user ID from the authenticated JWT and

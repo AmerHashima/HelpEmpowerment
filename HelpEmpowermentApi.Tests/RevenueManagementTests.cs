@@ -9,6 +9,7 @@ using HelpEmpowermentApi.Payments.Application;
 using HelpEmpowermentApi.Payments.Domain;
 using HelpEmpowermentApi.Payments.Infrastructure;
 using HelpEmpowermentApi.Services;
+using HelpEmpowermentApi.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -74,9 +75,10 @@ public sealed class RevenueManagementTests
             }
         };
 
-        var result = Assert.IsType<OkObjectResult>(await controller.Courses(default));
-        var courses = Assert.IsAssignableFrom<IReadOnlyList<AssignedCourseDto>>(result.Value);
-        Assert.Empty(courses);
+        var action = await controller.Courses(default);
+        var result = Assert.IsType<OkObjectResult>(action.Result);
+        var response = Assert.IsType<ApiResponse<IReadOnlyList<AssignedCourseDto>>>(result.Value);
+        Assert.Empty(response.Data!);
     }
 
     [Fact]
@@ -178,7 +180,7 @@ public sealed class RevenueManagementTests
         public RevenueManagementService Service { get; }
 
         private TestDatabase(ApplicationDbContext db)
-        { Db = db; Service = new(db); }
+        { Db = db; Service = new(new RevenueManagementRepository(db)); }
 
         public static async Task<TestDatabase> CreateAsync()
         {

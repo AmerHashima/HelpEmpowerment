@@ -3,6 +3,28 @@ using HelpEmpowermentApi.Enums;
 
 namespace HelpEmpowermentApi.DTOs;
 
+public sealed class UserCourseAssignmentSearchDto
+{
+    public Guid? UserId { get; set; }
+    public Guid? CourseId { get; set; }
+    public Guid? AssignmentTypeId { get; set; }
+    public bool? IsActive { get; set; }
+}
+
+public sealed class MyRevenueSearchDto
+{
+    public Guid? CourseId { get; set; }
+    public DateTime? DateFrom { get; set; }
+    public DateTime? DateTo { get; set; }
+    public RevenueDistributionStatus? Status { get; set; }
+}
+
+public sealed class RevenueSettlementSearchDto
+{
+    public Guid? BeneficiaryUserId { get; set; }
+    public RevenueSettlementStatus? Status { get; set; }
+}
+
 public sealed record UserCourseAssignmentDto(Guid Oid, Guid UserId, string UserName, Guid CourseId,
     string CourseName, Guid AssignmentTypeId, string AssignmentType, bool IsPrimary, bool IsActive);
 

@@ -1,52 +1,77 @@
 using System.Security.Claims;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
-using Microsoft.AspNetCore.Authorization;
+using HelpEmpowermentApi.Common;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HelpEmpowermentApi.Controllers;
 
-[ApiController, Route("api/courses/{courseId:guid}"), Authorize(Policy = "InternalUser")]
-public sealed class CourseRevenueController(IRevenueManagementService service) : ControllerBase
+[ApiController]
+[Route("api/[controller]")]
+public class CourseRevenueController : ControllerBase
 {
-    [HttpGet("revenue-shares")]
-    public async Task<IActionResult> GetShares(Guid courseId, CancellationToken ct)
+    private readonly IRevenueManagementService _service;
+
+    public CourseRevenueController(IRevenueManagementService service)
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
-        if (!await service.CanAccessCourseAsync(userId, courseId, User.IsInRole("Admin"), ct)) return Forbid();
-        return Ok(await service.GetSharesAsync(courseId, ct));
+        _service = service;
     }
 
-    [HttpPost("revenue-shares"), Authorize(Roles = "Admin")]
+    [HttpPost("{courseId}/search")]
+    public async Task<ActionResult<PagedResponse<CourseRevenueShareDto>>> SearchShares(
+        Guid courseId, [FromBody] DataRequest request, CancellationToken ct)
+    {
+        if (!TryGetUserId(out var userId)) return Unauthorized();
+        var response = await _service.SearchSharesAsync(courseId, request, ct);
+        return response.Success ? Ok(response) : BadRequest(response);
+    }
+
+    [HttpGet("{courseId}/{id}")]
+    public async Task<ActionResult<ApiResponse<CourseRevenueShareDto>>> GetShareById(Guid courseId, Guid id, CancellationToken ct)
+    {
+        if (!TryGetUserId(out var userId)) return Unauthorized();
+        var response = await _service.GetShareByIdAsync(courseId, id, ct);
+        return response.Success ? Ok(response) : NotFound(response);
+    }
+
+    [HttpPost("{courseId}")]
     public async Task<IActionResult> CreateShare(Guid courseId, SaveCourseRevenueShareDto dto, CancellationToken ct)
     {
         if (!TryGetUserId(out var actorId)) return Unauthorized();
-        var result = await service.CreateShareAsync(courseId, dto, actorId, ct);
-        return result.IsSuccess ? Created($"api/courses/{courseId}/revenue-shares/{result.Value!.Oid}", result.Value) : UnprocessableEntity(result);
+        var result = await _service.CreateShareAsync(courseId, dto, actorId, ct);
+        return result.IsSuccess
+            ? Created($"api/courses/{courseId}/revenue-shares/{result.Value!.Oid}", ApiResponse<CourseRevenueShareDto>.SuccessResponse(result.Value, "Revenue share created successfully"))
+            : UnprocessableEntity(ApiResponse<CourseRevenueShareDto>.ErrorResponse(result.ErrorMessage ?? "Unable to create revenue share"));
     }
 
-    [HttpPut("revenue-shares/{id:guid}"), Authorize(Roles = "Admin")]
+    [HttpPut("{courseId}/{id}")]
     public async Task<IActionResult> UpdateShare(Guid courseId, Guid id, SaveCourseRevenueShareDto dto, CancellationToken ct)
     {
         if (!TryGetUserId(out var actorId)) return Unauthorized();
-        var result = await service.UpdateShareAsync(courseId, id, dto, actorId, ct);
-        return result.IsSuccess ? Ok(result.Value) : UnprocessableEntity(result);
+        var result = await _service.UpdateShareAsync(courseId, id, dto, actorId, ct);
+        return result.IsSuccess
+            ? Ok(ApiResponse<CourseRevenueShareDto>.SuccessResponse(result.Value!, "Revenue share updated successfully"))
+            : UnprocessableEntity(ApiResponse<CourseRevenueShareDto>.ErrorResponse(result.ErrorMessage ?? "Unable to update revenue share"));
     }
 
-    [HttpDelete("revenue-shares/{id:guid}"), Authorize(Roles = "Admin")]
+    [HttpDelete("{courseId}/{id}")]
     public async Task<IActionResult> DeleteShare(Guid courseId, Guid id, CancellationToken ct)
     {
         if (!TryGetUserId(out var actorId)) return Unauthorized();
-        return await service.DeleteShareAsync(courseId, id, actorId, ct) ? NoContent() : NotFound();
+        var deleted = await _service.DeleteShareAsync(courseId, id, actorId, ct);
+        return deleted
+            ? Ok(ApiResponse<bool>.SuccessResponse(true, "Revenue share deleted successfully"))
+            : NotFound(ApiResponse<bool>.ErrorResponse("Revenue share not found"));
     }
 
-    [HttpGet("revenue-summary")]
+    [HttpGet("{courseId}/summary")]
     public async Task<IActionResult> GetSummary(Guid courseId, CancellationToken ct)
     {
         if (!TryGetUserId(out var userId)) return Unauthorized();
-        if (!await service.CanAccessCourseAsync(userId, courseId, User.IsInRole("Admin"), ct)) return Forbid();
-        var result = await service.GetCourseSummaryAsync(courseId, ct);
-        return result is null ? NotFound() : Ok(result);
+        var result = await _service.GetCourseSummaryAsync(courseId, ct);
+        return result is null
+            ? NotFound(ApiResponse<CourseRevenueSummaryDto>.ErrorResponse("Course not found"))
+            : Ok(ApiResponse<CourseRevenueSummaryDto>.SuccessResponse(result));
     }
 
     private bool TryGetUserId(out Guid id) => Guid.TryParse(

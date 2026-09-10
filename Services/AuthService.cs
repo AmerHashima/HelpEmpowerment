@@ -51,9 +51,10 @@ namespace HelpEmpowermentApi.Services
         {
             try
             {
-                var users = await _userRepository.FindAsync(
-                    u => u.Username == dto.Username && !u.IsDeleted);
-                var user = users.FirstOrDefault();
+                // The role navigation is required when creating the JWT. Using the
+                // generic FindAsync here left RoleLookup unloaded and produced tokens
+                // without a ClaimTypes.Role claim, causing Admin endpoints to return 403.
+                var user = await _userRepository.GetByUsernameAsync(dto.Username);
 
                 if (user == null)
                     return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid username or password");
