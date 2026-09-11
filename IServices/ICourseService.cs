@@ -5,7 +5,7 @@ namespace HelpEmpowermentApi.IServices
 {
     public interface ICourseService
     {
-        Task<PagedResponse<CourseDto>> GetPagedAsync(DataRequest request);
+        Task<PagedResponse<CourseDto>> GetPagedAsync(DataRequest request, Guid? assignedUserId = null);
         Task<ApiResponse<CourseDto>> GetByIdAsync(Guid id);
         Task<ApiResponse<CourseDto>> GetByCodeAsync(string courseCode);
         Task<ApiResponse<CourseDto>> CreateAsync(CreateCourseDto dto);

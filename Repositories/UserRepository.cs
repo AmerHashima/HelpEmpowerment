@@ -16,7 +16,7 @@ namespace HelpEmpowermentApi.Repositories
         public async Task<PagedResult<User>> GetPagedAsync(DataRequest request)
         {
             var query = _dbSet
-                .Include(u => u.RoleLookup)
+                .Include(u => u.Role)
                 .Include(u => u.StatusLookup)
                 .Where(u => !u.IsDeleted)
                 .AsQueryable();
@@ -41,15 +41,23 @@ namespace HelpEmpowermentApi.Repositories
         public async Task<User?> GetByUsernameAsync(string username)
         {
             return await _dbSet
-                .Include(u => u.RoleLookup)
+                .Include(u => u.Role)
                 .Include(u => u.StatusLookup)
                 .FirstOrDefaultAsync(u => u.Username == username && !u.IsDeleted);
+        }
+
+        public async Task<User?> GetByIdWithDetailsAsync(Guid id)
+        {
+            return await _dbSet
+                .Include(u => u.Role)
+                .Include(u => u.StatusLookup)
+                .FirstOrDefaultAsync(u => u.Oid == id && !u.IsDeleted);
         }
 
         public async Task<User?> GetByEmailAsync(string email)
         {
             return await _dbSet
-                .Include(u => u.RoleLookup)
+                .Include(u => u.Role)
                 .Include(u => u.StatusLookup)
                 .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
         }
@@ -80,7 +88,7 @@ namespace HelpEmpowermentApi.Repositories
         public async Task<User?> AuthenticateAsync(string username, string passwordHash)
         {
             return await _dbSet
-                .Include(u => u.RoleLookup)
+                .Include(u => u.Role)
                 .Include(u => u.StatusLookup)
                 .FirstOrDefaultAsync(u => u.Username == username && u.PasswordHash == passwordHash && !u.IsDeleted && u.IsActive);
         }

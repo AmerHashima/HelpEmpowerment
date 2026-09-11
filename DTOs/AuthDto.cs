@@ -38,7 +38,7 @@ namespace HelpEmpowermentApi.DTOs
         public string? NameEn { get; set; }
         public string? NameAr { get; set; }
         public string? Mobile { get; set; }
-        public Guid? RoleLookupId { get; set; }
+        public Guid? RoleId { get; set; }
     }
 
     public class RegisterStudentDto

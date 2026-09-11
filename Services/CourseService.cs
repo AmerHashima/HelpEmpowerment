@@ -17,11 +17,11 @@ namespace HelpEmpowermentApi.Services
             _lookupDetailRepository = lookupDetailRepository;
         }
 
-        public async Task<PagedResponse<CourseDto>> GetPagedAsync(DataRequest request)
+        public async Task<PagedResponse<CourseDto>> GetPagedAsync(DataRequest request, Guid? assignedUserId = null)
         {
             try
             {
-                var pagedResult = await _courseRepository.GetPagedAsync(request);
+                var pagedResult = await _courseRepository.GetPagedAsync(request, assignedUserId);
 
                 var dtos = pagedResult.Items.Select(MapToDto).ToList();
 

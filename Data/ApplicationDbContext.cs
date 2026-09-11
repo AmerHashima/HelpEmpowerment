@@ -281,9 +281,9 @@ namespace HelpEmpowermentApi.Data
                 entity.HasIndex(e => e.IsDeleted);
                 entity.HasIndex(e => new { e.IsDeleted, e.IsActive });
 
-                entity.HasOne(u => u.RoleLookup)
-                    .WithMany()
-                    .HasForeignKey(u => u.RoleLookupId)
+                entity.HasOne(u => u.Role)
+                    .WithMany(role => role.Users)
+                    .HasForeignKey(u => u.RoleId)
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired(false);
 

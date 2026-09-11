@@ -18,7 +18,7 @@ namespace HelpEmpowermentApi.Models
         [MaxLength(150)]
         public string? Email { get; set; }
 
-        public Guid? RoleLookupId { get; set; }
+        public Guid? RoleId { get; set; }
 
         public Guid? StatusLookupId { get; set; }
 
@@ -35,8 +35,8 @@ namespace HelpEmpowermentApi.Models
         public string? OtpCode { get; set; }
         public DateTime? OtpExpiry { get; set; }
         // Navigation properties
-        [ForeignKey(nameof(RoleLookupId))]
-        public virtual AppLookupDetail? RoleLookup { get; set; }
+        [ForeignKey(nameof(RoleId))]
+        public virtual Role? Role { get; set; }
 
         [ForeignKey(nameof(StatusLookupId))]
         public virtual AppLookupDetail? StatusLookup { get; set; }

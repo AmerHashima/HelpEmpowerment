@@ -3,6 +3,7 @@ using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace HelpEmpowermentApi.Controllers
 {
@@ -67,9 +68,14 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost("with-courses")]
+        [Authorize]
         public async Task<ActionResult<PagedResponse<StudentWithCoursesDto>>> StudentsWithCourses([FromBody] DataRequest request)
         {
-            var response = await _studentService.GetStudentsWithCoursesAsync(request);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var userId))
+                return Unauthorized();
+
+            var isAdmin = User.IsInRole("Admin");
+            var response = await _studentService.GetStudentsWithCoursesAsync(request, isAdmin ? null : userId);
             return response.Success ? Ok(response) : BadRequest(response);
         }
 

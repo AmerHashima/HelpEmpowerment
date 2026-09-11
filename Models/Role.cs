@@ -12,5 +12,7 @@ namespace HelpEmpowermentApi.Models
         public bool IsActive { get; set; } = true;
         public Guid? CreatedBy { get; set; }
         public Guid? UpdatedBy { get; set; }
+
+        public virtual ICollection<User> Users { get; set; } = new List<User>();
     }
 }

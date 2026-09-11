@@ -5,7 +5,7 @@ namespace HelpEmpowermentApi.DTOs
         public Guid Oid { get; set; }
         public string Username { get; set; } = string.Empty;
         public string? Email { get; set; }
-        public Guid? RoleLookupId { get; set; }
+        public Guid? RoleId { get; set; }
         public string? RoleName { get; set; }
         public Guid? StatusLookupId { get; set; }
         public string? StatusName { get; set; }
@@ -21,7 +21,7 @@ namespace HelpEmpowermentApi.DTOs
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string? Email { get; set; }
-        public Guid? RoleLookupId { get; set; }
+        public Guid? RoleId { get; set; }
         public Guid? StatusLookupId { get; set; }
         public bool IsActive { get; set; } = true;
         public Guid? CreatedBy { get; set; }
@@ -32,7 +32,7 @@ namespace HelpEmpowermentApi.DTOs
         public Guid Oid { get; set; }
         public string Username { get; set; } = string.Empty;
         public string? Email { get; set; }
-        public Guid? RoleLookupId { get; set; }
+        public Guid? RoleId { get; set; }
         public Guid? StatusLookupId { get; set; }
         public bool IsActive { get; set; }
         public Guid? UpdatedBy { get; set; }

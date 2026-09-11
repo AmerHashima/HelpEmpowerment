@@ -3,6 +3,7 @@ using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Common;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HelpEmpowermentApi.Controllers;
 

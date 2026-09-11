@@ -17,6 +17,7 @@ namespace HelpEmpowermentApi.Services
         private const int MaxDevicesPerStudent = 2;
 
         private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;
         private readonly IStudentRepository _studentRepository;
         private readonly IUserDeviceRepository _userDeviceRepository;
         private readonly IStudentDeviceRepository _studentDeviceRepository;
@@ -27,6 +28,7 @@ namespace HelpEmpowermentApi.Services
 
         public AuthService(
             IUserRepository userRepository,
+            IRoleRepository roleRepository,
             IStudentRepository studentRepository,
             IUserDeviceRepository userDeviceRepository,
             IStudentDeviceRepository studentDeviceRepository,
@@ -36,6 +38,7 @@ namespace HelpEmpowermentApi.Services
             ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
+            _roleRepository = roleRepository;
             _studentRepository = studentRepository;
             _userDeviceRepository = userDeviceRepository;
             _studentDeviceRepository = studentDeviceRepository;
@@ -52,7 +55,7 @@ namespace HelpEmpowermentApi.Services
             try
             {
                 // The role navigation is required when creating the JWT. Using the
-                // generic FindAsync here left RoleLookup unloaded and produced tokens
+                // generic FindAsync here left Role unloaded and produced tokens
                 // without a ClaimTypes.Role claim, causing Admin endpoints to return 403.
                 var user = await _userRepository.GetByUsernameAsync(dto.Username);
 
@@ -104,7 +107,7 @@ namespace HelpEmpowermentApi.Services
                 }
 
                 // Generate tokens
-                var token = GenerateJwtToken(user.Oid, user.Username, "User", user.RoleLookup?.LookupNameEn);
+                var token = GenerateJwtToken(user.Oid, user.Username, "User", user.Role?.Name);
                 var refreshToken = GenerateRefreshToken();
 
                 // Update user with refresh token
@@ -123,7 +126,7 @@ namespace HelpEmpowermentApi.Services
                     RefreshToken = refreshToken,
                     TokenExpires = DateTime.UtcNow.AddMinutes(GetAccessTokenExpiration()),
                     UserType = "User",
-                    Roles = user.RoleLookup != null ? new List<string> { user.RoleLookup.LookupNameEn } : new List<string>()
+                    Roles = user.Role != null ? new List<string> { user.Role.Name } : new List<string>()
                 };
 
                 return ApiResponse<LoginResponseDto>.SuccessResponse(response, "Login successful");
@@ -163,6 +166,14 @@ namespace HelpEmpowermentApi.Services
                         return ApiResponse<LoginResponseDto>.ErrorResponse("Email already registered");
                 }
 
+                Role? role = null;
+                if (dto.RoleId.HasValue)
+                {
+                    role = await _roleRepository.GetByIdAsync(dto.RoleId.Value);
+                    if (role == null || !role.IsActive)
+                        return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid role");
+                }
+
                 // Create user
                 var user = new User
                 {
@@ -170,7 +181,8 @@ namespace HelpEmpowermentApi.Services
                     PasswordHash = HashPassword(dto.Password),
                     Email = dto.Email,
              
-                    RoleLookupId = dto.RoleLookupId,
+                    RoleId = dto.RoleId,
+                    Role = role,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -178,7 +190,7 @@ namespace HelpEmpowermentApi.Services
                 var createdUser = await _userRepository.AddAsync(user);
 
                 // Generate tokens
-                var token = GenerateJwtToken(createdUser.Oid, createdUser.Username, "User", null);
+                var token = GenerateJwtToken(createdUser.Oid, createdUser.Username, "User", role?.Name);
                 var refreshToken = GenerateRefreshToken();
 
                 // Update with refresh token
@@ -195,7 +207,8 @@ namespace HelpEmpowermentApi.Services
                     Token = token,
                     RefreshToken = refreshToken,
                     TokenExpires = DateTime.UtcNow.AddMinutes(GetAccessTokenExpiration()),
-                    UserType = "User"
+                    UserType = "User",
+                    Roles = role != null ? new List<string> { role.Name } : new List<string>()
                 };
 
                 return ApiResponse<LoginResponseDto>.SuccessResponse(response, "Registration successful");
@@ -542,12 +555,12 @@ namespace HelpEmpowermentApi.Services
 
                 if (userTypeClaim == "User")
                 {
-                    var user = await _userRepository.GetByIdAsync(userId);
+                    var user = await _userRepository.GetByIdWithDetailsAsync(userId);
                     if (user == null || user.RefreshToken != dto.RefreshToken || 
                         user.RefreshTokenExpiry < DateTime.UtcNow)
                         return ApiResponse<TokenResponseDto>.ErrorResponse("Invalid refresh token");
 
-                    var newToken = GenerateJwtToken(user.Oid, user.Username, "User", user.RoleLookup?.LookupNameEn);
+                    var newToken = GenerateJwtToken(user.Oid, user.Username, "User", user.Role?.Name);
                     var newRefreshToken = GenerateRefreshToken();
 
                     user.RefreshToken = newRefreshToken;
@@ -663,7 +676,7 @@ namespace HelpEmpowermentApi.Services
 
                 if (userTypeClaim == "User")
                 {
-                    var user = await _userRepository.GetByIdAsync(userId);
+                    var user = await _userRepository.GetByIdWithDetailsAsync(userId);
                     if (user == null || !user.IsActive)
                         return ApiResponse<LoginResponseDto>.ErrorResponse("User not found or inactive");
 

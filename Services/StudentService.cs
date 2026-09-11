@@ -8,6 +8,7 @@ using System.Text;
 using HelpEmpowermentApi.Data;
 using HelpEmpowermentApi.Payments.Domain;
 using Microsoft.EntityFrameworkCore;
+using HelpEmpowermentApi.Extensions;
 
 namespace HelpEmpowermentApi.Services
 {
@@ -216,23 +217,56 @@ namespace HelpEmpowermentApi.Services
             };
         }
 
-        public async Task<PagedResponse<StudentWithCoursesDto>> GetStudentsWithCoursesAsync(DataRequest request)
+        public async Task<PagedResponse<StudentWithCoursesDto>> GetStudentsWithCoursesAsync(DataRequest request, Guid? assignedUserId = null)
         {
             try
             {
-                var pagedResult = await _studentRepository.GetPagedAsync(request);
+                var studentsQuery = _db.Students
+                    .AsNoTracking()
+                    .Where(student => !student.IsDeleted);
 
-                var dtos = new List<StudentWithCoursesDto>();
-                foreach (var student in pagedResult.Items)
+                if (assignedUserId.HasValue)
                 {
-                    var studentCourses = await _studentCourseRepository.GetByStudentIdAsync(student.Oid);
-                    var courseNames = studentCourses
-                        .Where(sc => sc.Course != null)
-                        .Select(sc => sc.Course!.CourseName)
-                        .Distinct()
-                        .ToList();
+                    var userId = assignedUserId.Value;
+                    studentsQuery = studentsQuery.Where(student => student.EnrolledCourses.Any(enrollment =>
+                        !enrollment.IsDeleted && !enrollment.Course.IsDeleted &&
+                        (enrollment.Course.InstructorOid == userId ||
+                         enrollment.Course.UserAssignments.Any(assignment =>
+                             assignment.UserId == userId && assignment.IsActive && !assignment.IsDeleted))));
+                }
 
-                    dtos.Add(new StudentWithCoursesDto
+                studentsQuery = studentsQuery.ApplyFilters(request.Filters);
+                var totalCount = await studentsQuery.CountAsync();
+                studentsQuery = studentsQuery.ApplySorting(request.Sort);
+                studentsQuery = studentsQuery.ApplyPagination(request.Pagination);
+
+                var students = await studentsQuery.ToListAsync();
+                var studentIds = students.Select(student => student.Oid).ToList();
+
+                var enrollmentsQuery = _db.StudentCourses
+                    .AsNoTracking()
+                    .Where(enrollment => studentIds.Contains(enrollment.StudentId) &&
+                                         !enrollment.IsDeleted && !enrollment.Course.IsDeleted);
+
+                if (assignedUserId.HasValue)
+                {
+                    var userId = assignedUserId.Value;
+                    enrollmentsQuery = enrollmentsQuery.Where(enrollment =>
+                        enrollment.Course.InstructorOid == userId ||
+                        enrollment.Course.UserAssignments.Any(assignment =>
+                            assignment.UserId == userId && assignment.IsActive && !assignment.IsDeleted));
+                }
+
+                var courseRows = await enrollmentsQuery
+                    .Select(enrollment => new { enrollment.StudentId, enrollment.Course.CourseName })
+                    .Distinct()
+                    .ToListAsync();
+                var coursesByStudent = courseRows
+                    .GroupBy(row => row.StudentId)
+                    .ToDictionary(group => group.Key, group => group.Select(row => row.CourseName).ToList());
+
+                var dtos = students.Select(student =>
+                    new StudentWithCoursesDto
                     {
                         Oid = student.Oid,
                         NameEn = student.NameEn,
@@ -243,17 +277,16 @@ namespace HelpEmpowermentApi.Services
                         Mobile = student.Mobile,
                         Username = student.Username,
                         IsActive = student.IsActive,
-                        Courses = courseNames
-                    });
-                }
+                        Courses = coursesByStudent.GetValueOrDefault(student.Oid, new List<string>())
+                    }).ToList();
 
                 return new PagedResponse<StudentWithCoursesDto>
                 {
                     Success = true,
                     Data = dtos,
-                    TotalCount = pagedResult.TotalCount,
-                    PageNumber = pagedResult.PageNumber,
-                    PageSize = pagedResult.PageSize
+                    TotalCount = totalCount,
+                    PageNumber = request.Pagination.PageNumber,
+                    PageSize = request.Pagination.PageSize
                 };
             }
             catch (Exception ex)

@@ -6,6 +6,7 @@ namespace HelpEmpowermentApi.IRepositories
     public interface IUserRepository : IRepository<User>
     {
         Task<PagedResult<User>> GetPagedAsync(DataRequest request);
+        Task<User?> GetByIdWithDetailsAsync(Guid id);
         Task<User?> GetByUsernameAsync(string username);
         Task<User?> GetByEmailAsync(string email);
         Task<bool> IsUsernameUniqueAsync(string username, Guid? excludeId = null);

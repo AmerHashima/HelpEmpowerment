@@ -5,7 +5,7 @@ namespace HelpEmpowermentApi.IRepositories
 {
     public interface ICourseRepository : IRepository<Course>
     {
-        Task<PagedResult<Course>> GetPagedAsync(DataRequest request);
+        Task<PagedResult<Course>> GetPagedAsync(DataRequest request, Guid? assignedUserId = null);
         Task<Course?> GetByCodeAsync(string courseCode);
         Task<bool> IsCourseCodeUniqueAsync(string courseCode, Guid? excludeId = null);
     }

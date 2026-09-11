@@ -12,11 +12,13 @@ namespace HelpEmpowermentApi.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IAppLookupDetailRepository _lookupDetailRepository;
+        private readonly IRoleRepository _roleRepository;
 
-        public UserService(IUserRepository userRepository, IAppLookupDetailRepository lookupDetailRepository)
+        public UserService(IUserRepository userRepository, IAppLookupDetailRepository lookupDetailRepository, IRoleRepository roleRepository)
         {
             _userRepository = userRepository;
             _lookupDetailRepository = lookupDetailRepository;
+            _roleRepository = roleRepository;
         }
 
         public async Task<PagedResponse<UserDto>> GetPagedAsync(DataRequest request)
@@ -50,7 +52,7 @@ namespace HelpEmpowermentApi.Services
         {
             try
             {
-                var user = await _userRepository.GetByIdAsync(id);
+                var user = await _userRepository.GetByIdWithDetailsAsync(id);
                 if (user == null)
                     return ApiResponse<UserDto>.ErrorResponse("User not found");
 
@@ -90,11 +92,11 @@ namespace HelpEmpowermentApi.Services
                 if (!string.IsNullOrWhiteSpace(dto.Email) && !await _userRepository.IsEmailUniqueAsync(dto.Email))
                     return ApiResponse<UserDto>.ErrorResponse("Email already exists");
 
-                // Validate Role Lookup
-                if (dto.RoleLookupId.HasValue)
+                // Validate application role
+                if (dto.RoleId.HasValue)
                 {
-                    var roleExists = await _lookupDetailRepository.ExistsAsync(
-                        d => d.Oid == dto.RoleLookupId.Value && !d.IsDeleted && d.IsActive);
+                    var roleExists = await _roleRepository.ExistsAsync(
+                        role => role.Oid == dto.RoleId.Value && !role.IsDeleted && role.IsActive);
                     if (!roleExists)
                         return ApiResponse<UserDto>.ErrorResponse("Invalid Role. Please select a valid role.");
                 }
@@ -113,7 +115,7 @@ namespace HelpEmpowermentApi.Services
                     Username = dto.Username,
                     PasswordHash = HashPassword(dto.Password),
                     Email = dto.Email,
-                    RoleLookupId = dto.RoleLookupId,
+                    RoleId = dto.RoleId,
                     StatusLookupId = dto.StatusLookupId,
                     IsActive = dto.IsActive,
                     CreatedBy = dto.CreatedBy,
@@ -121,7 +123,8 @@ namespace HelpEmpowermentApi.Services
                 };
 
                 var createdUser = await _userRepository.AddAsync(user);
-                return ApiResponse<UserDto>.SuccessResponse(MapToDto(createdUser), "User created successfully");
+                var createdUserWithDetails = await _userRepository.GetByIdWithDetailsAsync(createdUser.Oid) ?? createdUser;
+                return ApiResponse<UserDto>.SuccessResponse(MapToDto(createdUserWithDetails), "User created successfully");
             }
             catch (Exception ex)
             {
@@ -133,7 +136,7 @@ namespace HelpEmpowermentApi.Services
         {
             try
             {
-                var user = await _userRepository.GetByIdAsync(dto.Oid);
+                var user = await _userRepository.GetByIdWithDetailsAsync(dto.Oid);
                 if (user == null)
                     return ApiResponse<UserDto>.ErrorResponse("User not found");
 
@@ -145,11 +148,11 @@ namespace HelpEmpowermentApi.Services
                 if (!string.IsNullOrWhiteSpace(dto.Email) && !await _userRepository.IsEmailUniqueAsync(dto.Email, dto.Oid))
                     return ApiResponse<UserDto>.ErrorResponse("Email already exists");
 
-                // Validate Role Lookup
-                if (dto.RoleLookupId.HasValue)
+                // Validate application role
+                if (dto.RoleId.HasValue)
                 {
-                    var roleExists = await _lookupDetailRepository.ExistsAsync(
-                        d => d.Oid == dto.RoleLookupId.Value && !d.IsDeleted && d.IsActive);
+                    var roleExists = await _roleRepository.ExistsAsync(
+                        role => role.Oid == dto.RoleId.Value && !role.IsDeleted && role.IsActive);
                     if (!roleExists)
                         return ApiResponse<UserDto>.ErrorResponse("Invalid Role. Please select a valid role.");
                 }
@@ -165,14 +168,15 @@ namespace HelpEmpowermentApi.Services
 
                 user.Username = dto.Username;
                 user.Email = dto.Email;
-                user.RoleLookupId = dto.RoleLookupId;
+                user.RoleId = dto.RoleId;
                 user.StatusLookupId = dto.StatusLookupId;
                 user.IsActive = dto.IsActive;
                 user.UpdatedBy = dto.UpdatedBy;
                 user.UpdatedAt = DateTime.UtcNow;
 
                 var updatedUser = await _userRepository.UpdateAsync(user);
-                return ApiResponse<UserDto>.SuccessResponse(MapToDto(updatedUser), "User updated successfully");
+                var updatedUserWithDetails = await _userRepository.GetByIdWithDetailsAsync(updatedUser.Oid) ?? updatedUser;
+                return ApiResponse<UserDto>.SuccessResponse(MapToDto(updatedUserWithDetails), "User updated successfully");
             }
             catch (Exception ex)
             {
@@ -249,8 +253,8 @@ namespace HelpEmpowermentApi.Services
                 Oid = user.Oid,
                 Username = user.Username,
                 Email = user.Email,
-                RoleLookupId = user.RoleLookupId,
-                RoleName = user.RoleLookup?.LookupNameEn,
+                RoleId = user.RoleId,
+                RoleName = user.Role?.Name,
                 StatusLookupId = user.StatusLookupId,
                 StatusName = user.StatusLookup?.LookupNameEn,
                 IsActive = user.IsActive,

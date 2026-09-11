@@ -13,13 +13,22 @@ namespace HelpEmpowermentApi.Repositories
         {
         }
 
-        public async Task<PagedResult<Course>> GetPagedAsync(DataRequest request)
+        public async Task<PagedResult<Course>> GetPagedAsync(DataRequest request, Guid? assignedUserId = null)
         {
             var query = _dbSet
                 .Include(c => c.CourseLevelLookup)
                 .Include(c => c.CourseCategoryLookup)
                 .Where(x => !x.IsDeleted)
                 .AsQueryable();
+
+            if (assignedUserId.HasValue)
+            {
+                var userId = assignedUserId.Value;
+                query = query.Where(course =>
+                    course.InstructorOid == userId ||
+                    course.UserAssignments.Any(assignment =>
+                        assignment.UserId == userId && assignment.IsActive && !assignment.IsDeleted));
+            }
 
             query = query.ApplyFilters(request.Filters);
             var totalCount = await query.CountAsync();
