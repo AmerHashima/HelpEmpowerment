@@ -69,6 +69,17 @@ public sealed record CourseRevenueSummaryDto(Guid CourseId, decimal TotalRevenue
     decimal DistributedRevenue, decimal PendingRevenue, decimal PaidRevenue,
     IReadOnlyList<RevenueShareBreakdownDto> Shares);
 
+public sealed class CourseRevenueDetailsDto
+{
+    public CourseDto Course { get; set; } = new();
+    public decimal TotalRevenue { get; set; }
+    public decimal DistributedRevenue { get; set; }
+    public decimal PendingRevenue { get; set; }
+    public decimal PaidRevenue { get; set; }
+    public IReadOnlyList<CourseRevenueShareDto> RevenueShares { get; set; } = [];
+    public IReadOnlyList<RevenueShareBreakdownDto> DistributionDetails { get; set; } = [];
+}
+
 public sealed record AssignedDashboardDto(int AssignedCourses, int ActiveCourses,
     int StudentsCount, int ReservationsCount, decimal TotalRevenue, decimal MyRevenue,
     decimal PendingRevenue, decimal PaidRevenue, int UpcomingLiveSessions);

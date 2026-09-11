@@ -10,6 +10,7 @@ public interface IRevenueManagementRepository
     Task<PagedResult<UserCourseAssignmentDto>> SearchAssignmentsAsync(DataRequest request, CancellationToken ct);
     Task<UserCourseAssignmentDto?> GetAssignmentByIdAsync(Guid id, CancellationToken ct);
     Task<PagedResult<CourseRevenueShareDto>> SearchSharesAsync(Guid courseId, DataRequest request, CancellationToken ct);
+    Task<PagedResult<CourseRevenueDetailsDto>> SearchCourseRevenueAsync(DataRequest request, Guid userId, bool globalAccess, CancellationToken ct);
     Task<CourseRevenueShareDto?> GetShareByIdAsync(Guid courseId, Guid id, CancellationToken ct);
     Task<PagedResult<RevenueSettlementDto>> SearchSettlementsAsync(DataRequest request, CancellationToken ct);
     Task<RevenueSettlementDto?> GetSettlementByIdAsync(Guid id, CancellationToken ct);

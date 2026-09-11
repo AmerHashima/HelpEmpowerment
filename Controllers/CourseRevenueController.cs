@@ -18,6 +18,18 @@ public class CourseRevenueController : ControllerBase
         _service = service;
     }
 
+    [HttpPost("search")]
+    [Authorize]
+    public async Task<ActionResult<PagedResponse<CourseRevenueDetailsDto>>> SearchCourseRevenue(
+        [FromBody] DataRequest request, CancellationToken ct)
+    {
+        if (!TryGetUserId(out var userId)) return Unauthorized();
+
+        var response = await _service.SearchCourseRevenueAsync(
+            request, userId, User.IsInRole(SystemRoles.Admin), ct);
+        return response.Success ? Ok(response) : BadRequest(response);
+    }
+
     [HttpPost("{courseId}/search")]
     public async Task<ActionResult<PagedResponse<CourseRevenueShareDto>>> SearchShares(
         Guid courseId, [FromBody] DataRequest request, CancellationToken ct)

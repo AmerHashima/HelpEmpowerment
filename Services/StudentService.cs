@@ -301,6 +301,7 @@ namespace HelpEmpowermentApi.Services
 
         public async Task<PaginatedStudentExportResponse> SearchExportReportAsync(
             StudentExportSearchRequest request,
+            Guid? assignedUserId,
             CancellationToken cancellationToken)
         {
             var errors = ValidateExportRequest(request);
@@ -315,6 +316,16 @@ namespace HelpEmpowermentApi.Services
             }
 
             var query = _db.Students.AsNoTracking().Where(student => !student.IsDeleted);
+
+            if (assignedUserId.HasValue)
+            {
+                var userId = assignedUserId.Value;
+                query = query.Where(student => student.EnrolledCourses.Any(enrollment =>
+                    !enrollment.IsDeleted && !enrollment.Course.IsDeleted &&
+                    (enrollment.Course.InstructorOid == userId ||
+                     enrollment.Course.UserAssignments.Any(assignment =>
+                         assignment.UserId == userId && assignment.IsActive && !assignment.IsDeleted))));
+            }
 
             foreach (var filter in request.Filters)
             {
@@ -389,7 +400,11 @@ namespace HelpEmpowermentApi.Services
                             && invoice.PaymentTransactions.Any(payment => payment.Status == PaymentStatus.Authorised))
                         .Sum(invoice => (decimal?)invoice.TotalAmount) ?? 0m,
                 Courses = student.EnrolledCourses
-                    .Where(course => !course.IsDeleted)
+                    .Where(course => !course.IsDeleted &&
+                        (!assignedUserId.HasValue ||
+                         course.Course.InstructorOid == assignedUserId.Value ||
+                         course.Course.UserAssignments.Any(assignment =>
+                             assignment.UserId == assignedUserId.Value && assignment.IsActive && !assignment.IsDeleted)))
                     .Select(course => new StudentCourseExportDto
                     {
                         StudentCourseId = course.Oid,

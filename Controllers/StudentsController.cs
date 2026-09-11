@@ -80,12 +80,18 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost("export-report/search")]
-       // [Authorize(Roles = "ADMIN")]
+        [Authorize]
         public async Task<ActionResult<PaginatedStudentExportResponse>> SearchExportReport(
             [FromBody] StudentExportSearchRequest request,
             CancellationToken cancellationToken)
         {
-            var response = await _studentService.SearchExportReportAsync(request, cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var userId))
+                return Unauthorized();
+
+            var response = await _studentService.SearchExportReportAsync(
+                request,
+                User.IsInRole(SystemRoles.Admin) ? null : userId,
+                cancellationToken);
             return response.Success ? Ok(response) : BadRequest(response);
         }
     }

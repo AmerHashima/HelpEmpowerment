@@ -38,6 +38,96 @@ public sealed class RevenueManagementRepository(ApplicationDbContext db) : IReve
         return PagedResult<CourseRevenueShareDto>.Create(items, total, request.Pagination.PageNumber, request.Pagination.PageSize);
     }
 
+    public async Task<PagedResult<CourseRevenueDetailsDto>> SearchCourseRevenueAsync(
+        DataRequest request, Guid userId, bool globalAccess, CancellationToken ct)
+    {
+        var query = db.Courses.AsNoTracking().Where(course => !course.IsDeleted);
+        if (!globalAccess)
+        {
+            query = query.Where(course => course.InstructorOid == userId ||
+                course.UserAssignments.Any(assignment =>
+                    assignment.UserId == userId && assignment.IsActive && !assignment.IsDeleted));
+        }
+
+        query = query.ApplyFilters(request.Filters);
+        var total = await query.CountAsync(ct);
+        query = query.ApplySorting(request.Sort).ApplyPagination(request.Pagination);
+
+        var courses = await query.Select(course => new CourseDto
+        {
+            Oid = course.Oid,
+            CourseCode = course.CourseCode,
+            CourseName = course.CourseName,
+            CourseDescription = course.CourseDescription,
+            CertificateNumber = course.CertificateNumber ?? 1,
+            CourseLevelLookupId = course.CourseLevelLookupId,
+            CourseLevelName = course.CourseLevelLookup == null ? null : course.CourseLevelLookup.LookupNameEn,
+            CourseCategoryLookupId = course.CourseCategoryLookupId,
+            CourseCategoryName = course.CourseCategoryLookup == null ? null : course.CourseCategoryLookup.LookupNameEn,
+            RecordedCourseReservPrice = course.RecordedCourseReservPrice,
+            ExamSimulationReservPrice = course.ExamSimulationReservPrice,
+            LiveCourseReservPrice = course.LiveCourseReservPrice,
+            IsActive = course.IsActive,
+            CreatedAt = course.CreatedAt,
+            CreatedBy = course.CreatedBy,
+            UpdatedAt = course.UpdatedAt,
+            UpdatedBy = course.UpdatedBy
+        }).ToListAsync(ct);
+
+        var courseIds = courses.Select(course => course.Oid).ToList();
+        var invoiceTotals = await db.InvoiceItems.AsNoTracking()
+            .Where(item => courseIds.Contains(item.CourseId) && item.Invoice.IsPaid)
+            .GroupBy(item => item.CourseId)
+            .Select(group => new { CourseId = group.Key, Total = group.Sum(item => item.LineTotal) })
+            .ToDictionaryAsync(row => row.CourseId, row => row.Total, ct);
+
+        var configuredShares = await db.CourseRevenueShares.AsNoTracking()
+            .Where(share => courseIds.Contains(share.CourseId) && !share.IsDeleted)
+            .Select(share => new CourseRevenueShareDto(share.Oid, share.CourseId, share.BeneficiaryUserId,
+                share.BeneficiaryUser == null ? null : share.BeneficiaryUser.Username, share.ShareTypeLookupId,
+                share.ShareType.LookupNameEn ?? share.ShareType.LookupValue, share.CalculationType, share.Value,
+                share.IsActive, share.EffectiveFrom, share.EffectiveTo, share.Notes))
+            .ToListAsync(ct);
+
+        var distributionRows = await db.CourseRevenueDistributions.AsNoTracking()
+            .Where(distribution => courseIds.Contains(distribution.CourseId) && !distribution.IsDeleted)
+            .GroupBy(distribution => new
+            {
+                distribution.CourseId,
+                distribution.BeneficiaryUserId,
+                UserName = distribution.BeneficiaryUser == null ? null : distribution.BeneficiaryUser.Username,
+                Type = distribution.ShareType.LookupNameEn,
+                distribution.AppliedPercentage
+            })
+            .Select(group => new
+            {
+                group.Key.CourseId,
+                Detail = new RevenueShareBreakdownDto(group.Key.BeneficiaryUserId, group.Key.UserName,
+                    group.Key.Type ?? string.Empty, group.Key.AppliedPercentage,
+                    group.Sum(item => item.ShareAmount),
+                    group.Sum(item => item.Status == RevenueDistributionStatus.Pending ? item.ShareAmount : 0m),
+                    group.Sum(item => item.Status == RevenueDistributionStatus.Paid ? item.ShareAmount : 0m))
+            }).ToListAsync(ct);
+
+        var items = courses.Select(course =>
+        {
+            var details = distributionRows.Where(row => row.CourseId == course.Oid).Select(row => row.Detail).ToList();
+            return new CourseRevenueDetailsDto
+            {
+                Course = course,
+                TotalRevenue = invoiceTotals.GetValueOrDefault(course.Oid),
+                DistributedRevenue = details.Sum(detail => detail.Amount),
+                PendingRevenue = details.Sum(detail => detail.Pending),
+                PaidRevenue = details.Sum(detail => detail.Paid),
+                RevenueShares = configuredShares.Where(share => share.CourseId == course.Oid).ToList(),
+                DistributionDetails = details
+            };
+        }).ToList();
+
+        return PagedResult<CourseRevenueDetailsDto>.Create(
+            items, total, request.Pagination.PageNumber, request.Pagination.PageSize);
+    }
+
     public Task<CourseRevenueShareDto?> GetShareByIdAsync(Guid courseId, Guid id, CancellationToken ct) =>
         db.CourseRevenueShares.AsNoTracking().Where(x => x.Oid == id && x.CourseId == courseId && !x.IsDeleted)
             .Select(x => new CourseRevenueShareDto(x.Oid, x.CourseId, x.BeneficiaryUserId,
