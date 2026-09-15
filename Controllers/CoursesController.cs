@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
-using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace HelpEmpowermentApi.Controllers
@@ -19,14 +18,26 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost("search")]
-        [Authorize]
         public async Task<ActionResult<PagedResponse<CourseDto>>> Search([FromBody] DataRequest request)
         {
-            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var userId))
+            Guid? assignedUserId = null;
+            var hasAuthorizationHeader = Request.Headers.ContainsKey("Authorization");
+
+            if (hasAuthorizationHeader && User.Identity?.IsAuthenticated != true)
                 return Unauthorized();
 
-            var isAdmin = User.IsInRole("Admin");
-            var response = await _courseService.GetPagedAsync(request, isAdmin ? null : userId);
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                if (!Guid.TryParse(
+                        User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"),
+                        out var userId))
+                    return Unauthorized();
+
+                if (!User.IsInRole("Admin"))
+                    assignedUserId = userId;
+            }
+
+            var response = await _courseService.GetPagedAsync(request, assignedUserId);
             return response.Success ? Ok(response) : BadRequest(response);
         }
 
