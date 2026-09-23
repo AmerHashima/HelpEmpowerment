@@ -18,6 +18,7 @@ namespace HelpEmpowermentApi.Data
         public DbSet<CourseAnswer> CourseAnswers { get; set; }
         public DbSet<AppLookupHeader> AppLookupHeaders { get; set; }
         public DbSet<AppLookupDetail> AppLookupDetails { get; set; }
+        public DbSet<CourseTabContent> CourseTabContents { get; set; }
 
         // NEW DbSets - AUTH & USERS
         public DbSet<User> Users { get; set; }
@@ -258,6 +259,12 @@ namespace HelpEmpowermentApi.Data
                 entity.HasIndex(e => e.OrderNo);
             });
 
+            modelBuilder.Entity<CourseTabContent>(entity =>
+            {
+                entity.HasIndex(e => new { e.CourseCode, e.TabKey }).IsUnique();
+                entity.HasIndex(e => new { e.CourseCode, e.Status, e.IsDeleted });
+            });
+
             // Seed Initial Data
             SeedLookupData(modelBuilder);
 
@@ -268,6 +275,7 @@ namespace HelpEmpowermentApi.Data
             ConfigureBaseEntityIndexes<CourseAnswer>(modelBuilder);
             ConfigureBaseEntityIndexes<AppLookupHeader>(modelBuilder);
             ConfigureBaseEntityIndexes<AppLookupDetail>(modelBuilder);
+            ConfigureBaseEntityIndexes<CourseTabContent>(modelBuilder);
 
             // ###################################
             // NEW CONFIGURATIONS

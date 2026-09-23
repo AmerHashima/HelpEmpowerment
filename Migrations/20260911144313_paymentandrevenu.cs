@@ -27,7 +27,7 @@ namespace HelpEmpowermentApi.Migrations
             migrationBuilder.Sql("""
                 IF NOT EXISTS (SELECT 1 FROM roles WHERE LOWER(Name) = 'admin' AND IsDeleted = 0)
                     INSERT INTO roles (Oid, Name, Description, IsActive, CreatedAt, IsDeleted)
-                    VALUES ('A1000000-0000-0000-0000-000000000001', 'Admin', 'Application administrator', 1, SYSUTCDATETIME(), 0);
+                    VALUES ('A1000000-0000-0000-0000-000000000001', 'Admin', 'Application administrator', 1, SYSUTCDATETIME(), 0);  
 
                 IF NOT EXISTS (SELECT 1 FROM roles WHERE LOWER(Name) = 'trainer' AND IsDeleted = 0)
                     INSERT INTO roles (Oid, Name, Description, IsActive, CreatedAt, IsDeleted)

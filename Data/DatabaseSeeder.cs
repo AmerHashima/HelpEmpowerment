@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using HelpEmpowermentApi.Models;
+using System.Reflection;
+using System.Text.Json;
 
 namespace HelpEmpowermentApi.Data;
 
@@ -57,6 +59,7 @@ public static class DatabaseSeeder
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
+            await SeedCourseTabsAsync(dbContext, cancellationToken);
             logger.LogInformation("Database migrations and seed data applied successfully.");
         }
         catch (Exception exception)
@@ -64,5 +67,42 @@ public static class DatabaseSeeder
             logger.LogCritical(exception, "Database migration or seeding failed.");
             throw;
         }
+    }
+
+    private sealed record SeedTab(string TabKey, bool IsEnabled, int OrderNo, string Status, JsonElement Content);
+
+    private static async Task SeedCourseTabsAsync(ApplicationDbContext db, CancellationToken ct)
+    {
+        var assembly = typeof(DatabaseSeeder).Assembly;
+        foreach (var code in new[] { "PMP", "CAPM" })
+        {
+            var resource = assembly.GetManifestResourceNames()
+                .Single(name => name.EndsWith($".{code.ToLowerInvariant()}-tabs.json", StringComparison.Ordinal));
+            await using var stream = assembly.GetManifestResourceStream(resource)!;
+            var tabs = await JsonSerializer.DeserializeAsync<SeedTab[]>(stream,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web), ct) ?? [];
+            var existing = await db.CourseTabContents.AsTracking()
+                .Where(x => !x.IsDeleted && x.CourseCode == code).ToListAsync(ct);
+            foreach (var tab in tabs)
+            {
+                var row = existing.FirstOrDefault(x => x.TabKey == tab.TabKey);
+                if (row is not null)
+                {
+                    // Upgrade only untouched placeholders created by the earlier GET-time defaults.
+                    if (row.UpdatedAt is null && row.CreatedBy is null &&
+                        (row.ContentJson.Contains("Everything you need for your") ||
+                         row.ContentJson.Contains("\"titlePart1\":\"\"")))
+                        row.ContentJson = tab.Content.GetRawText();
+                    continue; // Never overwrite dashboard edits.
+                }
+                db.CourseTabContents.Add(new CourseTabContent
+                {
+                    CourseCode = code, TabKey = tab.TabKey, IsEnabled = tab.IsEnabled,
+                    OrderNo = tab.OrderNo, Status = tab.Status,
+                    ContentJson = tab.Content.GetRawText()
+                });
+            }
+        }
+        await db.SaveChangesAsync(ct);
     }
 }

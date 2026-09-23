@@ -111,6 +111,8 @@ namespace HelpEmpowermentApi
                 options.MultipartHeadersLengthLimit = int.MaxValue;
             });
             builder.Services.AddControllers();
+            builder.Services.AddResponseCaching();
+            builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
             //builder.Services.AddOpenApi();
 
             // Register repositories
@@ -185,6 +187,8 @@ namespace HelpEmpowermentApi
 
             app.UseHttpsRedirection();
             app.UseCors();
+            app.UseResponseCompression();
+            app.UseResponseCaching();
             app.UseRateLimiter();
 
             // ✅ ADD Authentication & Authorization Middleware
