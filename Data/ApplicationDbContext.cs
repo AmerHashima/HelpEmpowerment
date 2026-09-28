@@ -15,6 +15,7 @@ namespace HelpEmpowermentApi.Data
         public DbSet<Course> Courses { get; set; }
         public DbSet<CoursesMasterExam> CoursesMasterExams { get; set; }
         public DbSet<CourseQuestion> CourseQuestions { get; set; }
+        public DbSet<CourseQuestionImage> CourseQuestionImages { get; set; }
         public DbSet<CourseAnswer> CourseAnswers { get; set; }
         public DbSet<AppLookupHeader> AppLookupHeaders { get; set; }
         public DbSet<AppLookupDetail> AppLookupDetails { get; set; }
@@ -257,6 +258,18 @@ namespace HelpEmpowermentApi.Data
                 entity.HasIndex(e => e.QuestionId);
                 entity.HasIndex(e => new { e.IsDeleted, e.IsCorrect });
                 entity.HasIndex(e => e.OrderNo);
+            });
+
+            modelBuilder.Entity<CourseQuestionImage>(entity =>
+            {
+                entity.HasOne(image => image.CourseQuestion)
+                    .WithMany(question => question.Images)
+                    .HasForeignKey(image => image.CourseQuestionOid)
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                entity.HasIndex(image => image.CourseQuestionOid);
+                entity.HasIndex(image => new { image.CourseQuestionOid, image.OrderNo });
             });
 
             modelBuilder.Entity<CourseTabContent>(entity =>

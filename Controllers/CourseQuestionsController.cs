@@ -86,6 +86,17 @@ namespace HelpEmpowermentApi.Controllers
             return response.Success ? Ok(response) : BadRequest(response);
         }
 
+        [HttpPost("{id}/images")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ApiResponse<CourseQuestionDto>>> UploadImages(Guid id, [FromForm] List<IFormFile> images)
+        {
+            if (images == null || images.Count == 0 || images.Any(image => image.Length == 0))
+                return BadRequest(ApiResponse<CourseQuestionDto>.ErrorResponse("No image files provided"));
+
+            var response = await _questionService.UploadImagesAsync(id, images);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
         [HttpGet("{id}/image")]
         public async Task<IActionResult> GetImage(Guid id)
         {
@@ -93,24 +104,16 @@ namespace HelpEmpowermentApi.Controllers
             if (!fileNameResponse.Success)
                 return NotFound(fileNameResponse);
 
-            var basePath = _configuration["FileStorage:QuestionImagesPath"] ?? "/var/www/images/questions";
-            var filePath = Path.Combine(basePath, fileNameResponse.Data!);
+            return ServeImage(fileNameResponse.Data!);
+        }
 
-            if (!System.IO.File.Exists(filePath))
-                return NotFound($"Image file not found on server. Looked in: {filePath}");
-
-            var ext = Path.GetExtension(filePath).ToLowerInvariant();
-            var contentType = ext switch
-            {
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".png"            => "image/png",
-                ".gif"            => "image/gif",
-                ".webp"           => "image/webp",
-                _                 => "application/octet-stream"
-            };
-
-            var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-            return File(stream, contentType);
+        [HttpGet("{id}/images/{imageId}")]
+        public async Task<IActionResult> GetImage(Guid id, Guid imageId)
+        {
+            var fileNameResponse = await _questionService.GetImagePathAsync(id, imageId);
+            return fileNameResponse.Success
+                ? ServeImage(fileNameResponse.Data!)
+                : NotFound(fileNameResponse);
         }
 
         [HttpDelete("{id}/image")]
@@ -118,6 +121,32 @@ namespace HelpEmpowermentApi.Controllers
         {
             var response = await _questionService.DeleteImageAsync(id);
             return response.Success ? Ok(response) : NotFound(response);
+        }
+
+        [HttpDelete("{id}/images/{imageId}")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteImage(Guid id, Guid imageId)
+        {
+            var response = await _questionService.DeleteImageAsync(id, imageId);
+            return response.Success ? Ok(response) : NotFound(response);
+        }
+
+        private IActionResult ServeImage(string fileName)
+        {
+            var basePath = _configuration["FileStorage:QuestionImagesPath"] ?? "/var/www/images/questions";
+            var filePath = Path.Combine(basePath, fileName);
+            if (!System.IO.File.Exists(filePath))
+                return NotFound("Image file not found on server");
+
+            var contentType = Path.GetExtension(filePath).ToLowerInvariant() switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".webp" => "image/webp",
+                _ => "application/octet-stream"
+            };
+
+            return File(new FileStream(filePath, FileMode.Open, FileAccess.Read), contentType);
         }
     }
 }

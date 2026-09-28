@@ -500,10 +500,23 @@ namespace HelpEmpowermentApi.Services
                 if (!passwordValidation.IsValid)
                     return ApiResponse<bool>.ErrorResponse(passwordValidation.Message);
 
-                // Try User first
-                var user = await _userRepository.GetByIdAsync(dto.UserId);
-                if (user != null)
+                var principal = _httpContextAccessor.HttpContext?.User;
+                var authenticatedIdValue = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                    ?? principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+                var userType = principal?.FindFirst("UserType")?.Value;
+
+                if (!Guid.TryParse(authenticatedIdValue, out var authenticatedId))
+                    return ApiResponse<bool>.ErrorResponse("Invalid authenticated identity");
+
+                if (dto.UserId != Guid.Empty && dto.UserId != authenticatedId)
+                    return ApiResponse<bool>.ErrorResponse("You cannot change another account's password");
+
+                if (string.Equals(userType, "User", StringComparison.Ordinal))
                 {
+                    var user = await _userRepository.GetByIdAsync(authenticatedId);
+                    if (user == null)
+                        return ApiResponse<bool>.ErrorResponse("User not found");
+
                     if (!VerifyPassword(dto.CurrentPassword, user.PasswordHash))
                         return ApiResponse<bool>.ErrorResponse("Current password is incorrect");
 
@@ -513,10 +526,12 @@ namespace HelpEmpowermentApi.Services
                     return ApiResponse<bool>.SuccessResponse(true, "Password changed successfully");
                 }
 
-                // Try Student
-                var student = await _studentRepository.GetByIdAsync(dto.UserId);
-                if (student != null)
+                if (string.Equals(userType, "Student", StringComparison.Ordinal))
                 {
+                    var student = await _studentRepository.GetByIdAsync(authenticatedId);
+                    if (student == null)
+                        return ApiResponse<bool>.ErrorResponse("Student not found");
+
                     if (!VerifyPassword(dto.CurrentPassword, student.PasswordHash))
                         return ApiResponse<bool>.ErrorResponse("Current password is incorrect");
 
@@ -526,7 +541,7 @@ namespace HelpEmpowermentApi.Services
                     return ApiResponse<bool>.SuccessResponse(true, "Password changed successfully");
                 }
 
-                return ApiResponse<bool>.ErrorResponse("User not found");
+                return ApiResponse<bool>.ErrorResponse("Invalid account type");
             }
             catch (Exception ex)
             {
@@ -553,7 +568,7 @@ namespace HelpEmpowermentApi.Services
                 if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
                     return ApiResponse<TokenResponseDto>.ErrorResponse("Invalid token");
 
-                if (userTypeClaim == "User")
+                if (string.Equals(userTypeClaim, "User", StringComparison.Ordinal))
                 {
                     var user = await _userRepository.GetByIdWithDetailsAsync(userId);
                     if (user == null || user.RefreshToken != dto.RefreshToken || 
@@ -574,7 +589,7 @@ namespace HelpEmpowermentApi.Services
                         TokenExpires = DateTime.UtcNow.AddMinutes(GetAccessTokenExpiration())
                     });
                 }
-                else
+                else if (string.Equals(userTypeClaim, "Student", StringComparison.Ordinal))
                 {
                     var student = await _studentRepository.GetByIdAsync(userId);
                     if (student == null || student.RefreshToken != dto.RefreshToken || 
@@ -595,6 +610,8 @@ namespace HelpEmpowermentApi.Services
                         TokenExpires = DateTime.UtcNow.AddMinutes(GetAccessTokenExpiration())
                     });
                 }
+
+                return ApiResponse<TokenResponseDto>.ErrorResponse("Invalid token account type");
             }
             catch (Exception ex)
             {
@@ -674,7 +691,7 @@ namespace HelpEmpowermentApi.Services
                 if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
                     return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid token");
 
-                if (userTypeClaim == "User")
+                if (string.Equals(userTypeClaim, "User", StringComparison.Ordinal))
                 {
                     var user = await _userRepository.GetByIdWithDetailsAsync(userId);
                     if (user == null || !user.IsActive)
@@ -685,11 +702,11 @@ namespace HelpEmpowermentApi.Services
                         UserId = user.Oid,
                         Username = user.Username,
                         Email = user.Email,
-             
-                        UserType = "User"
+                        UserType = "User",
+                        Roles = user.Role != null ? new List<string> { user.Role.Name } : new List<string>()
                     });
                 }
-                else
+                else if (string.Equals(userTypeClaim, "Student", StringComparison.Ordinal))
                 {
                     var student = await _studentRepository.GetByIdAsync(userId);
                     if (student == null || !student.IsActive)
@@ -705,6 +722,8 @@ namespace HelpEmpowermentApi.Services
                         UserType = "Student"
                     });
                 }
+
+                return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid token account type");
             }
             catch (Exception ex)
             {

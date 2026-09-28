@@ -3,6 +3,7 @@ using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IServices;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HelpEmpowermentApi.Controllers
 {
@@ -28,6 +29,18 @@ namespace HelpEmpowermentApi.Controllers
 
             if (User.Identity?.IsAuthenticated == true)
             {
+                var userType = User.FindFirstValue("UserType");
+                if (string.Equals(userType, "Student", StringComparison.Ordinal))
+                {
+                    // A student token must not be interpreted as an internal user id.
+                    // Student/public catalogue requests are not filtered by staff assignments.
+                    var studentResponse = await _courseService.GetPagedAsync(request);
+                    return studentResponse.Success ? Ok(studentResponse) : BadRequest(studentResponse);
+                }
+
+                if (!string.Equals(userType, "User", StringComparison.Ordinal))
+                    return Unauthorized();
+
                 if (!Guid.TryParse(
                         User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"),
                         out var userId))
@@ -56,6 +69,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "InternalUser")]
         public async Task<ActionResult<ApiResponse<CourseDto>>> Create([FromBody] CreateCourseDto dto)
         {
             var response = await _courseService.CreateAsync(dto);
@@ -63,6 +77,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPut]
+        [Authorize(Policy = "InternalUser")]
         public async Task<ActionResult<ApiResponse<CourseDto>>> Update([FromBody] UpdateCourseDto dto)
         {
             var response = await _courseService.UpdateAsync(dto);
@@ -70,6 +85,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = "InternalUser")]
         public async Task<ActionResult<ApiResponse<bool>>> Delete(Guid id)
         {
             var response = await _courseService.DeleteAsync(id);

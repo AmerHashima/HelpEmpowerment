@@ -414,6 +414,8 @@ namespace HelpEmpowermentApi.Services
                         Oid = created.Oid,
                         StudentId = created.StudentId,
                         CourseId = created.CourseId,
+                        CourseName = item.Course?.CourseName,
+                        CourseCode = item.Course?.CourseCode,
                         Price = created.Price,
                         DiscountAmount = created.DiscountAmount,
                         PaidAmount = created.PaidAmount,

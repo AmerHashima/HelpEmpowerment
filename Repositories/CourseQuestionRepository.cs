@@ -19,6 +19,7 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(q => q.MasterExam)
                 .Include(q => q.QuestionTypeLookup)
                 .Include(q => q.Answers.Where(a => !a.IsDeleted))
+                .Include(q => q.Images.Where(image => !image.IsDeleted))
                 .Where(q => !q.IsDeleted)
                 .AsQueryable();
 
@@ -45,6 +46,7 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(q => q.MasterExam)
                 .Include(q => q.QuestionTypeLookup)
                 .Include(q => q.Answers.Where(a => !a.IsDeleted))
+                .Include(q => q.Images.Where(image => !image.IsDeleted))
                 .FirstOrDefaultAsync(q => q.Oid == id && !q.IsDeleted);
         }
 
@@ -54,6 +56,7 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(q => q.MasterExam)
                 .Include(q => q.QuestionTypeLookup)
                 .Include(q => q.Answers.Where(a => !a.IsDeleted))
+                .Include(q => q.Images.Where(image => !image.IsDeleted))
                 .Where(q => q.CoursesMasterExamOid == masterExamId && !q.IsDeleted && q.IsActive)
                 .OrderBy(q => q.OrderNo)
                 .ToListAsync();
@@ -64,6 +67,7 @@ namespace HelpEmpowermentApi.Repositories
             return await _dbSet
                 .Include(q => q.MasterExam)
                 .Include(q => q.QuestionTypeLookup)
+                .Include(q => q.Images.Where(image => !image.IsDeleted))
                 .Where(q => q.CoursesMasterExamOid == examId && !q.IsDeleted && q.IsActive)
                 .OrderBy(q => q.OrderNo)
                 .ToListAsync();
@@ -76,6 +80,7 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(q => q.QuestionTypeLookup)
                 .Include(q => q.Answers.Where(a => !a.IsDeleted))
                     .ThenInclude(a => a.Question)
+                .Include(q => q.Images.Where(image => !image.IsDeleted))
                 .Where(q => q.CoursesMasterExamOid == examId && !q.IsDeleted && q.IsActive)
                 .OrderBy(q => q.OrderNo)
                 .ToListAsync();

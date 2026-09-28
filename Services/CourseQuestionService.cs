@@ -14,6 +14,7 @@ namespace HelpEmpowermentApi.Services
         private readonly ICourseAnswerRepository _answerRepository;
         private readonly IAppLookupDetailRepository _lookupDetailRepository;
         private readonly ICoursesMasterExamRepository _examRepository;
+        private readonly IRepository<CourseQuestionImage> _questionImageRepository;
         private readonly IConfiguration _configuration;
 
         public CourseQuestionService(
@@ -21,12 +22,14 @@ namespace HelpEmpowermentApi.Services
             ICourseAnswerRepository answerRepository,
             IAppLookupDetailRepository lookupDetailRepository,
             ICoursesMasterExamRepository examRepository,
+            IRepository<CourseQuestionImage> questionImageRepository,
             IConfiguration configuration)
         {
             _questionRepository = questionRepository;
             _answerRepository = answerRepository;
             _lookupDetailRepository = lookupDetailRepository;
             _examRepository = examRepository;
+            _questionImageRepository = questionImageRepository;
             _configuration = configuration;
         }
 
@@ -60,7 +63,7 @@ namespace HelpEmpowermentApi.Services
         {
             try
             {
-                var question = await _questionRepository.GetByIdAsync(id);
+                var question = await _questionRepository.GetWithAnswersAsync(id);
                 if (question == null)
                     return ApiResponse<CourseQuestionDto>.ErrorResponse("Question not found");
 
@@ -318,40 +321,66 @@ namespace HelpEmpowermentApi.Services
 
         public async Task<ApiResponse<CourseQuestionDto>> UploadImageAsync(Guid id, IFormFile image)
         {
+            // Preserve the original single-image endpoint's replace behavior.
+            await DeleteImageAsync(id);
+            return await UploadImagesAsync(id, new[] { image });
+        }
+
+        public async Task<ApiResponse<CourseQuestionDto>> UploadImagesAsync(Guid id, IReadOnlyCollection<IFormFile> images)
+        {
             try
             {
-                var question = await _questionRepository.GetByIdAsync(id);
+                var question = await _questionRepository.GetWithAnswersAsync(id);
                 if (question == null)
                     return ApiResponse<CourseQuestionDto>.ErrorResponse("Question not found");
 
-                var ext = Path.GetExtension(image.FileName).ToLowerInvariant();
-                if (!_allowedImageExtensions.Contains(ext))
-                    return ApiResponse<CourseQuestionDto>.ErrorResponse($"Invalid file type. Allowed: {string.Join(", ", _allowedImageExtensions)}");
+                if (images.Count == 0 || images.Any(image => image == null || image.Length == 0))
+                    return ApiResponse<CourseQuestionDto>.ErrorResponse("At least one non-empty image is required");
+
+                var invalidImage = images.FirstOrDefault(image =>
+                    !_allowedImageExtensions.Contains(Path.GetExtension(image.FileName).ToLowerInvariant()));
+                if (invalidImage != null)
+                    return ApiResponse<CourseQuestionDto>.ErrorResponse($"Invalid file type for '{invalidImage.FileName}'. Allowed: {string.Join(", ", _allowedImageExtensions)}");
 
                 var basePath = ImageStoragePath;
                 Directory.CreateDirectory(basePath);
 
-                // Delete previous image file if it exists
-                if (!string.IsNullOrEmpty(question.QuestionImage))
+                var existingImages = (await _questionImageRepository.FindAsync(image => image.CourseQuestionOid == id))
+                    .OrderBy(image => image.OrderNo)
+                    .ToList();
+                var nextOrder = existingImages.Count == 0 ? 1 : existingImages.Max(image => image.OrderNo) + 1;
+
+                foreach (var image in images)
                 {
-                    var oldFilePath = Path.Combine(basePath, question.QuestionImage);
-                    if (File.Exists(oldFilePath))
-                        File.Delete(oldFilePath);
+                    var ext = Path.GetExtension(image.FileName).ToLowerInvariant();
+                    var imageId = Guid.NewGuid();
+                    var fileName = $"{id}_{imageId}{ext}";
+                    var filePath = Path.Combine(basePath, fileName);
+
+                    await using (var stream = new FileStream(filePath, FileMode.CreateNew))
+                        await image.CopyToAsync(stream);
+
+                    await _questionImageRepository.AddAsync(new CourseQuestionImage
+                    {
+                        Oid = imageId,
+                        CourseQuestionOid = id,
+                        FileName = fileName,
+                        OrderNo = nextOrder++
+                    });
                 }
 
-                var fileName = $"{id}{ext}";
-                var filePath = Path.Combine(basePath, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                    await image.CopyToAsync(stream);
-
-                // Store only the filename, not the full path
-                question.QuestionImage = fileName;
-                question.UpdatedAt = DateTime.UtcNow;
-                await _questionRepository.UpdateAsync(question);
+                // Keep the old single-image field populated for older clients.
+                if (string.IsNullOrWhiteSpace(question.QuestionImage))
+                {
+                    question.QuestionImage = (await _questionImageRepository.FindAsync(image => image.CourseQuestionOid == id))
+                        .OrderBy(image => image.OrderNo)
+                        .Select(image => image.FileName)
+                        .FirstOrDefault() ?? string.Empty;
+                    await _questionRepository.UpdateAsync(question);
+                }
 
                 var result = await _questionRepository.GetWithAnswersAsync(id);
-                return ApiResponse<CourseQuestionDto>.SuccessResponse(MapToDto(result!), "Image uploaded successfully");
+                return ApiResponse<CourseQuestionDto>.SuccessResponse(MapToDto(result!), "Images uploaded successfully");
             }
             catch (Exception ex)
             {
@@ -367,16 +396,29 @@ namespace HelpEmpowermentApi.Services
                 if (question == null)
                     return ApiResponse<string>.ErrorResponse("Question not found");
 
-                if (string.IsNullOrEmpty(question.QuestionImage))
+                var firstImage = (await _questionImageRepository.FindAsync(image => image.CourseQuestionOid == id))
+                    .OrderBy(image => image.OrderNo)
+                    .FirstOrDefault();
+                var fileName = firstImage?.FileName ?? question.QuestionImage;
+
+                if (string.IsNullOrEmpty(fileName))
                     return ApiResponse<string>.ErrorResponse("No image uploaded for this question");
 
-                // Return only the filename; the controller resolves the full path
-                return ApiResponse<string>.SuccessResponse(question.QuestionImage);
+                return ApiResponse<string>.SuccessResponse(fileName);
             }
             catch (Exception ex)
             {
                 return ApiResponse<string>.ErrorResponse($"Error: {ex.Message}");
             }
+        }
+
+        public async Task<ApiResponse<string>> GetImagePathAsync(Guid id, Guid imageId)
+        {
+            var image = await _questionImageRepository.GetByIdAsync(imageId);
+            if (image == null || image.CourseQuestionOid != id)
+                return ApiResponse<string>.ErrorResponse("Image not found");
+
+            return ApiResponse<string>.SuccessResponse(image.FileName);
         }
 
         public async Task<ApiResponse<bool>> DeleteImageAsync(Guid id)
@@ -387,12 +429,21 @@ namespace HelpEmpowermentApi.Services
                 if (question == null)
                     return ApiResponse<bool>.ErrorResponse("Question not found");
 
-                if (string.IsNullOrEmpty(question.QuestionImage))
+                var images = (await _questionImageRepository.FindAsync(image => image.CourseQuestionOid == id))
+                    .OrderBy(image => image.OrderNo)
+                    .ToList();
+
+                if (images.Count == 0 && string.IsNullOrEmpty(question.QuestionImage))
                     return ApiResponse<bool>.ErrorResponse("No image to delete for this question");
 
-                var filePath = Path.Combine(ImageStoragePath, question.QuestionImage);
-                if (File.Exists(filePath))
-                    File.Delete(filePath);
+                foreach (var image in images)
+                {
+                    DeletePhysicalImage(image.FileName);
+                    await _questionImageRepository.SoftDeleteAsync(image.Oid);
+                }
+
+                if (images.Count == 0)
+                    DeletePhysicalImage(question.QuestionImage);
 
                 question.QuestionImage = string.Empty;
                 question.UpdatedAt = DateTime.UtcNow;
@@ -404,6 +455,43 @@ namespace HelpEmpowermentApi.Services
             {
                 return ApiResponse<bool>.ErrorResponse($"Error deleting image: {ex.Message}");
             }
+        }
+
+        public async Task<ApiResponse<bool>> DeleteImageAsync(Guid id, Guid imageId)
+        {
+            try
+            {
+                var question = await _questionRepository.GetByIdAsync(id);
+                if (question == null)
+                    return ApiResponse<bool>.ErrorResponse("Question not found");
+
+                var image = await _questionImageRepository.GetByIdAsync(imageId);
+                if (image == null || image.CourseQuestionOid != id)
+                    return ApiResponse<bool>.ErrorResponse("Image not found");
+
+                DeletePhysicalImage(image.FileName);
+                await _questionImageRepository.SoftDeleteAsync(imageId);
+
+                var nextImage = (await _questionImageRepository.FindAsync(item => item.CourseQuestionOid == id))
+                    .OrderBy(item => item.OrderNo)
+                    .FirstOrDefault();
+                question.QuestionImage = nextImage?.FileName ?? string.Empty;
+                await _questionRepository.UpdateAsync(question);
+
+                return ApiResponse<bool>.SuccessResponse(true, "Image deleted successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<bool>.ErrorResponse($"Error deleting image: {ex.Message}");
+            }
+        }
+
+        private void DeletePhysicalImage(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName)) return;
+            var filePath = Path.Combine(ImageStoragePath, fileName);
+            if (File.Exists(filePath))
+                File.Delete(filePath);
         }
 
         private static CourseQuestionDto MapToDto(CourseQuestion question)
@@ -418,6 +506,15 @@ namespace HelpEmpowermentApi.Services
                 QuestionTypeLookupId = question.QuestionTypeLookupId,
                 QuestionTypeName = question.QuestionTypeLookup?.LookupNameEn,
                 QuestionImage = question.QuestionImage,
+                QuestionImages = question.Images?
+                    .Where(image => !image.IsDeleted)
+                    .OrderBy(image => image.OrderNo)
+                    .Select(image => new CourseQuestionImageDto
+                    {
+                        Oid = image.Oid,
+                        FileName = image.FileName,
+                        OrderNo = image.OrderNo
+                    }).ToList() ?? new(),
                 QuestionScore = question.QuestionScore,
                 OrderNo = question.OrderNo,
                 IsActive = question.IsActive,

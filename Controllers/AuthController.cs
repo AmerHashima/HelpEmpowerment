@@ -117,7 +117,7 @@ namespace HelpEmpowermentApi.Controllers
         /// <summary>
         /// Logout user and revoke refresh token
         /// </summary>
-        [Authorize]
+        [Authorize(Policy = "InternalUser")]
         [HttpPost("user/logout")]
         public async Task<ActionResult<ApiResponse<bool>>> LogoutUser()
         {
@@ -137,7 +137,7 @@ namespace HelpEmpowermentApi.Controllers
         /// <summary>
         /// Logout student from a device, revoke refresh token, and hard delete the student device
         /// </summary>
-        [Authorize]
+        [Authorize(Policy = "Student")]
         [HttpPost("student/logout")]
         public async Task<ActionResult<ApiResponse<bool>>> LogoutStudent([FromBody] StudentLogoutDto? dto)
         {

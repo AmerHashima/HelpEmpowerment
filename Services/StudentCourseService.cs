@@ -278,6 +278,7 @@ namespace HelpEmpowermentApi.Services
                 StudentName = entity.Student?.NameEn,
                 CourseId = entity.CourseId,
                 CourseName = entity.Course?.CourseName,
+                CourseCode = entity.Course?.CourseCode,
                 PaymentStatusLookupId = entity.PaymentStatusLookupId,
                 PaymentStatusName = entity.PaymentStatus?.LookupNameEn,
                 Price = entity.Price,

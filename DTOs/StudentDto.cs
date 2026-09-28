@@ -26,6 +26,9 @@
         public Guid Oid { get; set; }
         public string? PromoCode { get; set; }
         public float? PromoDiscount { get; set; }
+        public int UsersUsedPromo { get; set; }
+        public float TotalMoneyWithPromo { get; set; }
+        public DateTime? PromoToDateValid { get; set; }
         public string? NameEn { get; set; }
         public string? NameAr { get; set; }
         public string? Email { get; set; }

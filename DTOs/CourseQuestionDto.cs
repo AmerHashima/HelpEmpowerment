@@ -11,6 +11,7 @@ namespace HelpEmpowermentApi.DTOs
         public Guid? QuestionTypeLookupId { get; set; }
         public string QuestionExplination { get; set; } = string.Empty;
         public string QuestionImage { get; set; } = string.Empty;
+        public List<CourseQuestionImageDto> QuestionImages { get; set; } = new();
 
         public string? QuestionTypeName { get; set; }
         public int QuestionScore { get; set; }
@@ -24,6 +25,13 @@ namespace HelpEmpowermentApi.DTOs
         public Guid? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public Guid? UpdatedBy { get; set; }
+    }
+
+    public class CourseQuestionImageDto
+    {
+        public Guid Oid { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public int OrderNo { get; set; }
     }
 
     public class CreateCourseQuestionDto

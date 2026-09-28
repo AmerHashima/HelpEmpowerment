@@ -7,6 +7,7 @@ namespace HelpEmpowermentApi.DTOs
         public string? StudentName { get; set; }
         public Guid CourseId { get; set; }
         public string? CourseName { get; set; }
+        public string? CourseCode { get; set; }
         public Guid? PaymentStatusLookupId { get; set; }
         public string? PaymentStatusName { get; set; }
         public decimal? Price { get; set; }

@@ -9,6 +9,7 @@ namespace HelpEmpowermentApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "InternalUser")]
 public class UserCourseAssignmentsController : ControllerBase
 {
     private readonly IRevenueManagementService _service;

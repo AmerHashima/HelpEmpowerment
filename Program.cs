@@ -73,6 +73,8 @@ namespace HelpEmpowermentApi
                     ValidAudience = builder.Configuration["JwtSettings:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]!)),
+                    NameClaimType = System.Security.Claims.ClaimTypes.Name,
+                    RoleClaimType = System.Security.Claims.ClaimTypes.Role,
                     ClockSkew = TimeSpan.Zero,
                     IssuerValidator = (issuer, token, parameters) =>
                     {
@@ -91,6 +93,11 @@ namespace HelpEmpowermentApi
             {
                 options.AddPolicy("InternalUser", policy =>
                     policy.RequireClaim("UserType", "User"));
+                options.AddPolicy("Student", policy =>
+                    policy.RequireClaim("UserType", "Student"));
+                options.AddPolicy("Admin", policy =>
+                    policy.RequireClaim("UserType", "User")
+                        .RequireRole(SystemRoles.Admin));
             });
             builder.Services.AddHttpClient();
             var telrEnabled = builder.Configuration.GetValue<bool>($"{TelrOptions.SectionName}:Enabled");

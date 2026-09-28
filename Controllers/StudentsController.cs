@@ -68,7 +68,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost("with-courses")]
-        [Authorize]
+        [Authorize(Policy = "InternalUser")]
         public async Task<ActionResult<PagedResponse<StudentWithCoursesDto>>> StudentsWithCourses([FromBody] DataRequest request)
         {
             if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var userId))
@@ -80,7 +80,7 @@ namespace HelpEmpowermentApi.Controllers
         }
 
         [HttpPost("export-report/search")]
-        [Authorize]
+        [Authorize(Policy = "InternalUser")]
         public async Task<ActionResult<PaginatedStudentExportResponse>> SearchExportReport(
             [FromBody] StudentExportSearchRequest request,
             CancellationToken cancellationToken)

@@ -15,7 +15,10 @@ namespace HelpEmpowermentApi.IServices
         Task<ApiResponse<CourseQuestionDto>> UpdateAsync(UpdateCourseQuestionDto dto);
         Task<ApiResponse<bool>> DeleteAsync(Guid id);
         Task<ApiResponse<CourseQuestionDto>> UploadImageAsync(Guid id, IFormFile image);
+        Task<ApiResponse<CourseQuestionDto>> UploadImagesAsync(Guid id, IReadOnlyCollection<IFormFile> images);
         Task<ApiResponse<string>> GetImagePathAsync(Guid id);
+        Task<ApiResponse<string>> GetImagePathAsync(Guid id, Guid imageId);
         Task<ApiResponse<bool>> DeleteImageAsync(Guid id);
+        Task<ApiResponse<bool>> DeleteImageAsync(Guid id, Guid imageId);
     }
 }

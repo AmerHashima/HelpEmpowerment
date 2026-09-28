@@ -19,7 +19,7 @@ public sealed class TelrPaymentsController(IPaymentTransactionService payments, 
 {
     private readonly TelrOptions _options = options.Value;
 
-    [HttpPost("checkout"), Authorize, EnableRateLimiting("payments-create")]
+    [HttpPost("checkout"), Authorize(Policy = "Student"), EnableRateLimiting("payments-create")]
     public async Task<IActionResult> Checkout([FromBody] CheckoutTelrRequest request, CancellationToken ct)
     {
         if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var studentId))
@@ -84,7 +84,7 @@ public sealed class TelrPaymentsController(IPaymentTransactionService payments, 
         return Ok(new CheckoutTelrResponse(invoice.Id, invoice.InvoiceNumber, invoice.TotalAmount, invoice.Currency, payment.Value));
     }
 
-    [HttpPost("create"), Authorize, EnableRateLimiting("payments-create")]
+    [HttpPost("create"), Authorize(Policy = "Student"), EnableRateLimiting("payments-create")]
     public async Task<IActionResult> Create([FromBody] CreateTelrPaymentRequest request, CancellationToken ct)
     {
         if (request.InvoiceId == Guid.Empty) return ProblemResult(400, "INVALID_REQUEST", "InvoiceId is required.");

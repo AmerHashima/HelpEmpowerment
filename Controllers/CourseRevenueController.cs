@@ -9,6 +9,7 @@ namespace HelpEmpowermentApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "InternalUser")]
 public class CourseRevenueController : ControllerBase
 {
     private readonly IRevenueManagementService _service;
@@ -19,7 +20,6 @@ public class CourseRevenueController : ControllerBase
     }
 
     [HttpPost("search")]
-    [Authorize]
     public async Task<ActionResult<PagedResponse<CourseRevenueDetailsDto>>> SearchCourseRevenue(
         [FromBody] DataRequest request, CancellationToken ct)
     {

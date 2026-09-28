@@ -4,11 +4,13 @@ using HelpEmpowermentApi.Enums;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.IServices;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HelpEmpowermentApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "InternalUser")]
 public class RevenueSettlementsController : ControllerBase
 {
     private readonly IRevenueManagementService _service;
