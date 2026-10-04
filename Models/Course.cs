@@ -18,6 +18,9 @@ namespace HelpEmpowermentApi.Models
         [Column(TypeName = "text")]
         public string? CourseDescription { get; set; }
 
+        [MaxLength(255)]
+        public string? ImagePath { get; set; }
+
         public int? CertificateNumber { get; set; } = 1;
 
         // ✅ NEW FIELDS

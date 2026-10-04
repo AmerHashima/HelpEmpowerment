@@ -12,10 +12,12 @@ namespace HelpEmpowermentApi.Controllers
     public class CoursesController : ControllerBase
     {
         private readonly ICourseService _courseService;
+        private readonly IConfiguration _configuration;
 
-        public CoursesController(ICourseService courseService)
+        public CoursesController(ICourseService courseService, IConfiguration configuration)
         {
             _courseService = courseService;
+            _configuration = configuration;
         }
 
         [HttpPost("search")]
@@ -89,6 +91,42 @@ namespace HelpEmpowermentApi.Controllers
         public async Task<ActionResult<ApiResponse<bool>>> Delete(Guid id)
         {
             var response = await _courseService.DeleteAsync(id);
+            return response.Success ? Ok(response) : NotFound(response);
+        }
+
+        [HttpPost("{id}/image")]
+        [Authorize(Policy = "InternalUser")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ApiResponse<CourseDto>>> UploadImage(Guid id, IFormFile image)
+        {
+            var response = await _courseService.UploadImageAsync(id, image);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
+        [HttpGet("{id}/image")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetImage(Guid id)
+        {
+            var response = await _courseService.GetImagePathAsync(id);
+            if (!response.Success) return NotFound(response);
+            var filePath = Path.Combine(_configuration["FileStorage:CourseImagesPath"] ?? "/var/www/images/courses", Path.GetFileName(response.Data!));
+            if (!System.IO.File.Exists(filePath)) return NotFound("Image file not found on server");
+            var contentType = Path.GetExtension(filePath).ToLowerInvariant() switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".webp" => "image/webp",
+                _ => "application/octet-stream"
+            };
+            return File(new FileStream(filePath, FileMode.Open, FileAccess.Read), contentType);
+        }
+
+        [HttpDelete("{id}/image")]
+        [Authorize(Policy = "InternalUser")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteImage(Guid id)
+        {
+            var response = await _courseService.DeleteImageAsync(id);
             return response.Success ? Ok(response) : NotFound(response);
         }
     }

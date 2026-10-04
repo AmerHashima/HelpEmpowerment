@@ -8,6 +8,7 @@ namespace HelpEmpowermentApi.DTOs
         public string CourseCode { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public string? CourseDescription { get; set; }
+        public string? ImagePath { get; set; }
         public int CertificateNumber { get; set; }
         public Guid? CourseLevelLookupId { get; set; }
         public string? CourseLevelName { get; set; }

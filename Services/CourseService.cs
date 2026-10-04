@@ -10,11 +10,13 @@ namespace HelpEmpowermentApi.Services
     {
         private readonly ICourseRepository _courseRepository;
         private readonly IAppLookupDetailRepository _lookupDetailRepository;
+        private readonly IConfiguration _configuration;
 
-        public CourseService(ICourseRepository courseRepository, IAppLookupDetailRepository lookupDetailRepository)
+        public CourseService(ICourseRepository courseRepository, IAppLookupDetailRepository lookupDetailRepository, IConfiguration configuration)
         {
             _courseRepository = courseRepository;
             _lookupDetailRepository = lookupDetailRepository;
+            _configuration = configuration;
         }
 
         public async Task<PagedResponse<CourseDto>> GetPagedAsync(DataRequest request, Guid? assignedUserId = null)
@@ -193,6 +195,65 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
+        private static readonly HashSet<string> AllowedImageExtensions = new() { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        private string ImageStoragePath => _configuration["FileStorage:CourseImagesPath"] ?? "/var/www/images/courses";
+
+        public async Task<ApiResponse<CourseDto>> UploadImageAsync(Guid id, IFormFile image)
+        {
+            try
+            {
+                var course = await _courseRepository.GetByIdAsync(id);
+                if (course == null) return ApiResponse<CourseDto>.ErrorResponse("Course not found");
+                if (image == null || image.Length == 0) return ApiResponse<CourseDto>.ErrorResponse("A non-empty image is required");
+                var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+                if (!AllowedImageExtensions.Contains(extension))
+                    return ApiResponse<CourseDto>.ErrorResponse($"Invalid file type. Allowed: {string.Join(", ", AllowedImageExtensions)}");
+
+                Directory.CreateDirectory(ImageStoragePath);
+                var fileName = $"{id}_{Guid.NewGuid()}{extension}";
+                var filePath = Path.Combine(ImageStoragePath, fileName);
+                await using (var stream = new FileStream(filePath, FileMode.CreateNew))
+                    await image.CopyToAsync(stream);
+
+                var oldFileName = course.ImagePath;
+                course.ImagePath = fileName;
+                var updated = await _courseRepository.UpdateAsync(course);
+                DeletePhysicalImage(oldFileName);
+                return ApiResponse<CourseDto>.SuccessResponse(MapToDto(updated), "Course image uploaded successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<CourseDto>.ErrorResponse($"Error uploading course image: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<string>> GetImagePathAsync(Guid id)
+        {
+            var course = await _courseRepository.GetByIdAsync(id);
+            if (course == null) return ApiResponse<string>.ErrorResponse("Course not found");
+            return string.IsNullOrWhiteSpace(course.ImagePath)
+                ? ApiResponse<string>.ErrorResponse("No image uploaded for this course")
+                : ApiResponse<string>.SuccessResponse(course.ImagePath);
+        }
+
+        public async Task<ApiResponse<bool>> DeleteImageAsync(Guid id)
+        {
+            var course = await _courseRepository.GetByIdAsync(id);
+            if (course == null) return ApiResponse<bool>.ErrorResponse("Course not found");
+            if (string.IsNullOrWhiteSpace(course.ImagePath)) return ApiResponse<bool>.ErrorResponse("No image uploaded for this course");
+            DeletePhysicalImage(course.ImagePath);
+            course.ImagePath = null;
+            await _courseRepository.UpdateAsync(course);
+            return ApiResponse<bool>.SuccessResponse(true, "Course image deleted successfully");
+        }
+
+        private void DeletePhysicalImage(string? fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName)) return;
+            var filePath = Path.Combine(ImageStoragePath, Path.GetFileName(fileName));
+            if (File.Exists(filePath)) File.Delete(filePath);
+        }
+
         private static CourseDto MapToDto(Course course)
         {
             return new CourseDto
@@ -201,6 +262,7 @@ namespace HelpEmpowermentApi.Services
                 CourseCode = course.CourseCode,
                 CourseName = course.CourseName,
                 CourseDescription = course.CourseDescription,
+                ImagePath = course.ImagePath,
                 CertificateNumber = course.CertificateNumber ?? 1,
                 CourseLevelLookupId = course.CourseLevelLookupId,
                 CourseLevelName = course.CourseLevelLookup?.LookupNameEn,

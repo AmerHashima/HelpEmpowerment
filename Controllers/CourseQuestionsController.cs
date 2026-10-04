@@ -130,6 +130,34 @@ namespace HelpEmpowermentApi.Controllers
             return response.Success ? Ok(response) : NotFound(response);
         }
 
+        [HttpPost("{id}/explanation-images")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ApiResponse<CourseQuestionDto>>> UploadExplanationImages(
+            Guid id, [FromForm] List<IFormFile> images)
+        {
+            if (images == null || images.Count == 0 || images.Any(image => image.Length == 0))
+                return BadRequest(ApiResponse<CourseQuestionDto>.ErrorResponse("No image files provided"));
+
+            var response = await _questionService.UploadExplanationImagesAsync(id, images);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
+        [HttpGet("{id}/explanation-images/{imageId}")]
+        public async Task<IActionResult> GetExplanationImage(Guid id, Guid imageId)
+        {
+            var fileNameResponse = await _questionService.GetExplanationImagePathAsync(id, imageId);
+            return fileNameResponse.Success
+                ? ServeImage(fileNameResponse.Data!)
+                : NotFound(fileNameResponse);
+        }
+
+        [HttpDelete("{id}/explanation-images/{imageId}")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteExplanationImage(Guid id, Guid imageId)
+        {
+            var response = await _questionService.DeleteExplanationImageAsync(id, imageId);
+            return response.Success ? Ok(response) : NotFound(response);
+        }
+
         private IActionResult ServeImage(string fileName)
         {
             var basePath = _configuration["FileStorage:QuestionImagesPath"] ?? "/var/www/images/questions";

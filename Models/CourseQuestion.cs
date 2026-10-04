@@ -50,5 +50,6 @@ namespace HelpEmpowermentApi.Models
 
         public virtual ICollection<CourseAnswer> Answers { get; set; } = new List<CourseAnswer>();
         public virtual ICollection<CourseQuestionImage> Images { get; set; } = new List<CourseQuestionImage>();
+        public virtual ICollection<CourseQuestionExplanationImage> ExplanationImages { get; set; } = new List<CourseQuestionExplanationImage>();
     }
 }

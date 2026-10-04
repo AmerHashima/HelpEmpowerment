@@ -12,6 +12,7 @@ namespace HelpEmpowermentApi.DTOs
         public string QuestionExplination { get; set; } = string.Empty;
         public string QuestionImage { get; set; } = string.Empty;
         public List<CourseQuestionImageDto> QuestionImages { get; set; } = new();
+        public List<CourseQuestionImageDto> ExplanationImages { get; set; } = new();
 
         public string? QuestionTypeName { get; set; }
         public int QuestionScore { get; set; }

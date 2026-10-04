@@ -349,8 +349,41 @@ public sealed class RevenueManagementRepository(ApplicationDbContext db) : IReve
         }).SingleOrDefaultAsync(ct);
         var upcoming = await db.CourseLiveSessions.CountAsync(x => courseIds.Contains(x.CourseOid)
             && x.Active && !x.IsDeleted && x.Date >= DateTime.UtcNow.Date, ct);
+
+        var dashboardCourses = await db.Courses.AsNoTracking()
+            .Where(x => courseIds.Contains(x.Oid) && !x.IsDeleted)
+            .OrderBy(x => x.CourseName)
+            .Select(x => new { x.Oid, x.CourseCode, x.CourseName })
+            .ToListAsync(ct);
+        var serviceReservationCounts = await db.StudentCourseReservations.AsNoTracking()
+            .Where(x => courseIds.Contains(x.StudentCourse.CourseId) && x.IsReserved && !x.IsDeleted)
+            .GroupBy(x => new
+            {
+                x.StudentCourse.CourseId,
+                ServiceType = x.CourseService.ServiceLookup.LookupValue
+            })
+            .Select(group => new
+            {
+                group.Key.CourseId,
+                group.Key.ServiceType,
+                Count = group.Count()
+            })
+            .ToListAsync(ct);
+        var countsByCourse = serviceReservationCounts
+            .GroupBy(x => x.CourseId)
+            .ToDictionary(group => group.Key, group => group.ToDictionary(x => x.ServiceType, x => x.Count));
+        var courseStatistics = dashboardCourses.Select(course =>
+        {
+            countsByCourse.TryGetValue(course.Oid, out var counts);
+            var examSimulator = counts?.GetValueOrDefault("EXAM_SIMULATION") ?? 0;
+            var recordedVideos = counts?.GetValueOrDefault("RECORDED_COURSE") ?? 0;
+            var liveCourse = counts?.GetValueOrDefault("LIVE_COURSE") ?? 0;
+            return new CourseDashboardStatisticsDto(course.Oid, course.CourseCode, course.CourseName,
+                examSimulator, recordedVideos, liveCourse, counts?.Values.Sum() ?? 0);
+        }).ToList();
+
         return new(assigned, active, students, reservations, totalRevenue, revenue?.Total ?? 0,
-            revenue?.Pending ?? 0, revenue?.Paid ?? 0, upcoming);
+            revenue?.Pending ?? 0, revenue?.Paid ?? 0, upcoming, courseStatistics);
     }
 
     public async Task<IReadOnlyList<RevenueSettlementDto>> GetSettlementsAsync(

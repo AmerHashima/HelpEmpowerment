@@ -80,9 +80,14 @@ public sealed class CourseRevenueDetailsDto
     public IReadOnlyList<RevenueShareBreakdownDto> DistributionDetails { get; set; } = [];
 }
 
+public sealed record CourseDashboardStatisticsDto(Guid CourseId, string CourseCode, string CourseName,
+    int ExamSimulatorReservations, int RecordedVideoReservations, int LiveCourseReservations,
+    int TotalReservations);
+
 public sealed record AssignedDashboardDto(int AssignedCourses, int ActiveCourses,
     int StudentsCount, int ReservationsCount, decimal TotalRevenue, decimal MyRevenue,
-    decimal PendingRevenue, decimal PaidRevenue, int UpcomingLiveSessions);
+    decimal PendingRevenue, decimal PaidRevenue, int UpcomingLiveSessions,
+    IReadOnlyList<CourseDashboardStatisticsDto> Courses);
 
 public sealed record RevenueSettlementDto(Guid Oid, Guid BeneficiaryUserId, string BeneficiaryName,
     string SettlementNumber, DateTime PeriodFrom, DateTime PeriodTo, decimal TotalAmount,

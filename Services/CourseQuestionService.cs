@@ -15,6 +15,7 @@ namespace HelpEmpowermentApi.Services
         private readonly IAppLookupDetailRepository _lookupDetailRepository;
         private readonly ICoursesMasterExamRepository _examRepository;
         private readonly IRepository<CourseQuestionImage> _questionImageRepository;
+        private readonly IRepository<CourseQuestionExplanationImage> _explanationImageRepository;
         private readonly IConfiguration _configuration;
 
         public CourseQuestionService(
@@ -23,6 +24,7 @@ namespace HelpEmpowermentApi.Services
             IAppLookupDetailRepository lookupDetailRepository,
             ICoursesMasterExamRepository examRepository,
             IRepository<CourseQuestionImage> questionImageRepository,
+            IRepository<CourseQuestionExplanationImage> explanationImageRepository,
             IConfiguration configuration)
         {
             _questionRepository = questionRepository;
@@ -30,6 +32,7 @@ namespace HelpEmpowermentApi.Services
             _lookupDetailRepository = lookupDetailRepository;
             _examRepository = examRepository;
             _questionImageRepository = questionImageRepository;
+            _explanationImageRepository = explanationImageRepository;
             _configuration = configuration;
         }
 
@@ -486,6 +489,90 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
+        public async Task<ApiResponse<CourseQuestionDto>> UploadExplanationImagesAsync(
+            Guid id, IReadOnlyCollection<IFormFile> images)
+        {
+            try
+            {
+                var question = await _questionRepository.GetWithAnswersAsync(id);
+                if (question == null)
+                    return ApiResponse<CourseQuestionDto>.ErrorResponse("Question not found");
+
+                if (images.Count == 0 || images.Any(image => image == null || image.Length == 0))
+                    return ApiResponse<CourseQuestionDto>.ErrorResponse("At least one non-empty image is required");
+
+                var invalidImage = images.FirstOrDefault(image =>
+                    !_allowedImageExtensions.Contains(Path.GetExtension(image.FileName).ToLowerInvariant()));
+                if (invalidImage != null)
+                    return ApiResponse<CourseQuestionDto>.ErrorResponse(
+                        $"Invalid file type for '{invalidImage.FileName}'. Allowed: {string.Join(", ", _allowedImageExtensions)}");
+
+                Directory.CreateDirectory(ImageStoragePath);
+                var existingImages = (await _explanationImageRepository.FindAsync(
+                        image => image.CourseQuestionOid == id))
+                    .OrderBy(image => image.OrderNo)
+                    .ToList();
+                var nextOrder = existingImages.Count == 0 ? 1 : existingImages.Max(image => image.OrderNo) + 1;
+
+                foreach (var image in images)
+                {
+                    var ext = Path.GetExtension(image.FileName).ToLowerInvariant();
+                    var imageId = Guid.NewGuid();
+                    var fileName = $"{id}_explanation_{imageId}{ext}";
+                    var filePath = Path.Combine(ImageStoragePath, fileName);
+
+                    await using (var stream = new FileStream(filePath, FileMode.CreateNew))
+                        await image.CopyToAsync(stream);
+
+                    await _explanationImageRepository.AddAsync(new CourseQuestionExplanationImage
+                    {
+                        Oid = imageId,
+                        CourseQuestionOid = id,
+                        FileName = fileName,
+                        OrderNo = nextOrder++
+                    });
+                }
+
+                var result = await _questionRepository.GetWithAnswersAsync(id);
+                return ApiResponse<CourseQuestionDto>.SuccessResponse(
+                    MapToDto(result!), "Explanation images uploaded successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<CourseQuestionDto>.ErrorResponse($"Error uploading explanation image: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<string>> GetExplanationImagePathAsync(Guid id, Guid imageId)
+        {
+            var image = await _explanationImageRepository.GetByIdAsync(imageId);
+            if (image == null || image.CourseQuestionOid != id)
+                return ApiResponse<string>.ErrorResponse("Explanation image not found");
+
+            return ApiResponse<string>.SuccessResponse(image.FileName);
+        }
+
+        public async Task<ApiResponse<bool>> DeleteExplanationImageAsync(Guid id, Guid imageId)
+        {
+            try
+            {
+                if (await _questionRepository.GetByIdAsync(id) == null)
+                    return ApiResponse<bool>.ErrorResponse("Question not found");
+
+                var image = await _explanationImageRepository.GetByIdAsync(imageId);
+                if (image == null || image.CourseQuestionOid != id)
+                    return ApiResponse<bool>.ErrorResponse("Explanation image not found");
+
+                DeletePhysicalImage(image.FileName);
+                await _explanationImageRepository.SoftDeleteAsync(imageId);
+                return ApiResponse<bool>.SuccessResponse(true, "Explanation image deleted successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<bool>.ErrorResponse($"Error deleting explanation image: {ex.Message}");
+            }
+        }
+
         private void DeletePhysicalImage(string fileName)
         {
             if (string.IsNullOrWhiteSpace(fileName)) return;
@@ -507,6 +594,15 @@ namespace HelpEmpowermentApi.Services
                 QuestionTypeName = question.QuestionTypeLookup?.LookupNameEn,
                 QuestionImage = question.QuestionImage,
                 QuestionImages = question.Images?
+                    .Where(image => !image.IsDeleted)
+                    .OrderBy(image => image.OrderNo)
+                    .Select(image => new CourseQuestionImageDto
+                    {
+                        Oid = image.Oid,
+                        FileName = image.FileName,
+                        OrderNo = image.OrderNo
+                    }).ToList() ?? new(),
+                ExplanationImages = question.ExplanationImages?
                     .Where(image => !image.IsDeleted)
                     .OrderBy(image => image.OrderNo)
                     .Select(image => new CourseQuestionImageDto

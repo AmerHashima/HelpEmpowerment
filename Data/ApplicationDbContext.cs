@@ -16,6 +16,7 @@ namespace HelpEmpowermentApi.Data
         public DbSet<CoursesMasterExam> CoursesMasterExams { get; set; }
         public DbSet<CourseQuestion> CourseQuestions { get; set; }
         public DbSet<CourseQuestionImage> CourseQuestionImages { get; set; }
+        public DbSet<CourseQuestionExplanationImage> CourseQuestionExplanationImages { get; set; }
         public DbSet<CourseAnswer> CourseAnswers { get; set; }
         public DbSet<AppLookupHeader> AppLookupHeaders { get; set; }
         public DbSet<AppLookupDetail> AppLookupDetails { get; set; }
@@ -264,6 +265,18 @@ namespace HelpEmpowermentApi.Data
             {
                 entity.HasOne(image => image.CourseQuestion)
                     .WithMany(question => question.Images)
+                    .HasForeignKey(image => image.CourseQuestionOid)
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                entity.HasIndex(image => image.CourseQuestionOid);
+                entity.HasIndex(image => new { image.CourseQuestionOid, image.OrderNo });
+            });
+
+            modelBuilder.Entity<CourseQuestionExplanationImage>(entity =>
+            {
+                entity.HasOne(image => image.CourseQuestion)
+                    .WithMany(question => question.ExplanationImages)
                     .HasForeignKey(image => image.CourseQuestionOid)
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();

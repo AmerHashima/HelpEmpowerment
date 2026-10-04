@@ -341,6 +341,15 @@ namespace HelpEmpowermentApi.Services
                     CoursesMasterExamOid = q.Question?.CoursesMasterExamOid,
                     QuestionText_Ar = q.Question?.QuestionText_Ar ?? string.Empty,
                     QuestionExplination = q.Question?.QuestionExplination ?? string.Empty,
+                    ExplanationImages = q.Question?.ExplanationImages
+                        .Where(image => !image.IsDeleted)
+                        .OrderBy(image => image.OrderNo)
+                        .Select(image => new CourseQuestionImageDto
+                        {
+                            Oid = image.Oid,
+                            FileName = image.FileName,
+                            OrderNo = image.OrderNo
+                        }).ToList() ?? new(),
                     ExamName = q.Question?.MasterExam?.CourseName,
                     QuestionTypeLookupId = q.Question?.QuestionTypeLookupId,
                     QuestionTypeName = q.Question?.QuestionTypeLookup?.LookupNameEn,
