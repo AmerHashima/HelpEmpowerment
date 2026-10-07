@@ -12,8 +12,13 @@ namespace HelpEmpowermentApi.Controllers;
 
 [ApiController]
 [Route("api/course-tab-contents")]
-public class CourseTabContentsController(ApplicationDbContext db) : ControllerBase
+public class CourseTabContentsController(ApplicationDbContext db, IConfiguration configuration) : ControllerBase
 {
+    private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+    private string InstructorImagesPath => configuration["FileStorage:InstructorImagesPath"]
+        ?? "/var/www/images/instructors";
+
     [AllowAnonymous]
     [HttpGet("{courseCode}")]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
@@ -53,6 +58,13 @@ public class CourseTabContentsController(ApplicationDbContext db) : ControllerBa
             !banner.TryGetProperty("ar", out var ar) || ar.ValueKind != JsonValueKind.Object ||
             !dto.Content.TryGetProperty("sections", out var sections) || sections.ValueKind != JsonValueKind.Array)
             return BadRequest("Content must include banner.en, banner.ar and a sections array.");
+        if (dto.TabKey.Equals("quiz-game", StringComparison.OrdinalIgnoreCase) &&
+            dto.Content.TryGetProperty("quizGame", out var quizGame) &&
+            (quizGame.ValueKind != JsonValueKind.Object ||
+             !quizGame.TryGetProperty("availability", out var availability) ||
+             availability.ValueKind != JsonValueKind.String ||
+             availability.GetString() is not ("play-now" or "coming-soon")))
+            return BadRequest("Quiz Game availability must be either 'play-now' or 'coming-soon'.");
         if (sections.GetArrayLength() > 100)
             return BadRequest("Too many sections.");
         foreach (var section in sections.EnumerateArray())
@@ -87,6 +99,52 @@ public class CourseTabContentsController(ApplicationDbContext db) : ControllerBa
         row.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return Ok(Map(row));
+    }
+
+    [Authorize(Policy = "InternalUser")]
+    [HttpPost("{courseCode}/instructor-image")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<ActionResult<object>> UploadInstructorImage(
+        string courseCode, [FromForm] IFormFile image, CancellationToken ct)
+    {
+        var code = courseCode.Trim().ToUpperInvariant();
+        if (!await db.Courses.AnyAsync(x => !x.IsDeleted && x.CourseCode == code, ct))
+            return NotFound("Course not found.");
+        if (image is null || image.Length == 0)
+            return BadRequest("A non-empty instructor image is required.");
+
+        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+        if (!AllowedImageExtensions.Contains(extension))
+            return BadRequest($"Invalid image type. Allowed: {string.Join(", ", AllowedImageExtensions)}");
+
+        Directory.CreateDirectory(InstructorImagesPath);
+        var safeCode = string.Concat(code.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_'));
+        var fileName = $"{safeCode}_{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(InstructorImagesPath, fileName);
+        await using var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write);
+        await image.CopyToAsync(stream, ct);
+
+        return Ok(new { fileName });
+    }
+
+    [AllowAnonymous]
+    [HttpGet("instructor-images/{fileName}")]
+    public IActionResult GetInstructorImage(string fileName)
+    {
+        if (!string.Equals(fileName, Path.GetFileName(fileName), StringComparison.Ordinal))
+            return BadRequest();
+        var filePath = Path.Combine(InstructorImagesPath, fileName);
+        if (!System.IO.File.Exists(filePath)) return NotFound();
+        var contentType = Path.GetExtension(fileName).ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".webp" => "image/webp",
+            _ => "application/octet-stream"
+        };
+        return PhysicalFile(filePath, contentType);
     }
 
     private static CourseTabContentDto Map(CourseTabContent row) => new()
