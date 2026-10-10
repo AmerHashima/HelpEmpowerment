@@ -566,9 +566,12 @@ namespace HelpEmpowermentApi.Services
             if (dto.Answers.Select(x => x.SubQuestionOid).Distinct().Count() != dto.Answers.Count)
                 return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse("A sub-question can only be submitted once per request.");
 
-            await using var transaction = await _db.Database.BeginTransactionAsync();
-            try
+            var strategy = _db.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
+                await using var transaction = await _db.Database.BeginTransactionAsync();
+                try
+                {
                 var studentExam = await _db.StudentExams
                     .FirstOrDefaultAsync(x => x.Oid == dto.StudentExamOid && !x.IsDeleted);
                 if (studentExam == null)
@@ -659,7 +662,7 @@ namespace HelpEmpowermentApi.Services
                 await CalcAndUpdateStudentExamScoreAsync(dto.StudentExamOid);
                 await transaction.CommitAsync();
 
-                return ApiResponse<SubQuestionAnswerValidationResult>.SuccessResponse(
+                    return ApiResponse<SubQuestionAnswerValidationResult>.SuccessResponse(
                     new SubQuestionAnswerValidationResult
                     {
                         QuestionOid = question.Oid,
@@ -670,12 +673,13 @@ namespace HelpEmpowermentApi.Services
                         IsCorrect = allCorrect
                     },
                     "Sub-question answers saved successfully.");
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse($"Error saving sub-question answers: {ex.Message}");
-            }
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse($"Error saving sub-question answers: {ex.Message}");
+                }
+            });
         }
 
         public async Task<ApiResponse<AnswerValidationResult>> ValidateAnswersAsync(ValidateAnswersDto dto)

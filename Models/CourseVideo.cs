@@ -30,6 +30,8 @@ namespace HelpEmpowermentApi.Models
 
         public bool IsPreview { get; set; } = false;
 
+        public bool IsFree { get; set; } = false;
+
         public bool IsActive { get; set; } = true;
 
         // Navigation properties

@@ -15,6 +15,7 @@ namespace HelpEmpowermentApi.DTOs
         public Guid? VideoTypeLookupId { get; set; }
         public string? VideoTypeName { get; set; }
         public bool IsPreview { get; set; }
+        public bool IsFree { get; set; }
         public bool IsActive { get; set; }
         public DateTime? CreatedAt { get; set; }
         public List<CourseVideoAttachmentDto> Attachments { get; set; } = new();
@@ -32,6 +33,7 @@ namespace HelpEmpowermentApi.DTOs
         public int? OrderNo { get; set; }
         public Guid? VideoTypeLookupId { get; set; }
         public bool IsPreview { get; set; } = false;
+        public bool IsFree { get; set; } = false;
         public bool IsActive { get; set; } = true;
     }
 
@@ -48,6 +50,7 @@ namespace HelpEmpowermentApi.DTOs
         public int? OrderNo { get; set; }
         public Guid? VideoTypeLookupId { get; set; }
         public bool IsPreview { get; set; }
+        public bool IsFree { get; set; }
         public bool IsActive { get; set; }
     }
 }

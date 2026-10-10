@@ -129,6 +129,7 @@ namespace HelpEmpowermentApi.Services
                     OrderNo = dto.OrderNo,
                     VideoTypeLookupId = dto.VideoTypeLookupId,
                     IsPreview = dto.IsPreview,
+                    IsFree = dto.IsFree,
                     IsActive = dto.IsActive,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -174,6 +175,7 @@ namespace HelpEmpowermentApi.Services
                 video.OrderNo = dto.OrderNo;
                 video.VideoTypeLookupId = dto.VideoTypeLookupId;
                 video.IsPreview = dto.IsPreview;
+                video.IsFree = dto.IsFree;
                 video.IsActive = dto.IsActive;
                 video.UpdatedAt = DateTime.UtcNow;
 
@@ -259,6 +261,7 @@ namespace HelpEmpowermentApi.Services
                 VideoTypeLookupId = video.VideoTypeLookupId,
                 VideoTypeName = video.VideoTypeLookup?.LookupNameEn,
                 IsPreview = video.IsPreview,
+                IsFree = video.IsFree,
                 IsActive = video.IsActive,
                 CreatedAt = video.CreatedAt
             };
@@ -299,6 +302,7 @@ namespace HelpEmpowermentApi.Services
                 VideoTypeLookupId = video.VideoTypeLookupId,
                 VideoTypeName = video.VideoTypeLookup?.LookupNameEn,
                 IsPreview = video.IsPreview,
+                IsFree = video.IsFree,
                 IsActive = video.IsActive,
                 CreatedAt = video.CreatedAt,
                 Attachments = video.Attachments.Select(a => new CourseVideoAttachmentDto
