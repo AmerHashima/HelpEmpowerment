@@ -3,13 +3,16 @@ using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Models;
+using HelpEmpowermentApi.Data;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace HelpEmpowermentApi.Services
 {
     public class CourseQuestionService : ICourseQuestionService
     {
+        private static readonly Guid MultiImageQuestionTypeId = Guid.Parse("33333333-3333-3333-3333-333333333307");
         private readonly ICourseQuestionRepository _questionRepository;
         private readonly ICourseAnswerRepository _answerRepository;
         private readonly IAppLookupDetailRepository _lookupDetailRepository;
@@ -17,6 +20,7 @@ namespace HelpEmpowermentApi.Services
         private readonly IRepository<CourseQuestionImage> _questionImageRepository;
         private readonly IRepository<CourseQuestionExplanationImage> _explanationImageRepository;
         private readonly IConfiguration _configuration;
+        private readonly ApplicationDbContext _db;
 
         public CourseQuestionService(
             ICourseQuestionRepository questionRepository, 
@@ -25,6 +29,7 @@ namespace HelpEmpowermentApi.Services
             ICoursesMasterExamRepository examRepository,
             IRepository<CourseQuestionImage> questionImageRepository,
             IRepository<CourseQuestionExplanationImage> explanationImageRepository,
+            ApplicationDbContext db,
             IConfiguration configuration)
         {
             _questionRepository = questionRepository;
@@ -33,6 +38,7 @@ namespace HelpEmpowermentApi.Services
             _examRepository = examRepository;
             _questionImageRepository = questionImageRepository;
             _explanationImageRepository = explanationImageRepository;
+            _db = db;
             _configuration = configuration;
         }
 
@@ -148,6 +154,9 @@ namespace HelpEmpowermentApi.Services
                         return ApiResponse<CourseQuestionDto>.ErrorResponse("Invalid Correct Choice. The referenced question does not exist.");
                 }
 
+                if (dto.QuestionTypeLookupId == MultiImageQuestionTypeId)
+                    return await CreateMultiQuestionAsync(dto);
+
                 var question = new CourseQuestion
                 {
                     CoursesMasterExamOid = dto.CoursesMasterExamOid,
@@ -220,6 +229,9 @@ namespace HelpEmpowermentApi.Services
                     if (!correctChoiceExists)
                         return ApiResponse<CourseQuestionDto>.ErrorResponse("Invalid Correct Choice. The referenced question does not exist.");
                 }
+
+                if (dto.QuestionTypeLookupId == MultiImageQuestionTypeId)
+                    return await UpdateMultiQuestionAsync(question, dto);
 
                 // Update question properties
                 question.CoursesMasterExamOid = dto.CoursesMasterExamOid;
@@ -573,6 +585,194 @@ namespace HelpEmpowermentApi.Services
             }
         }
 
+        private static string? ValidateSubQuestions(IReadOnlyCollection<UpsertCourseQuestionSubQuestionDto>? subQuestions)
+        {
+            if (subQuestions == null || subQuestions.Count == 0)
+                return "Multiple Sub-Questions requires at least one sub-question.";
+
+            foreach (var subQuestion in subQuestions)
+            {
+                if (string.IsNullOrWhiteSpace(subQuestion.QuestionText) &&
+                    string.IsNullOrWhiteSpace(subQuestion.QuestionTextAr))
+                    return "Every sub-question requires English or Arabic text.";
+                if (subQuestion.Choices == null || subQuestion.Choices.Count < 2)
+                    return "Every sub-question requires at least two choices.";
+                if (subQuestion.Choices.Count(choice => choice.IsCorrect) != 1)
+                    return "Every sub-question must have exactly one correct choice.";
+                if (subQuestion.Choices.Any(choice =>
+                    string.IsNullOrWhiteSpace(choice.ChoiceText) && string.IsNullOrWhiteSpace(choice.ChoiceTextAr)))
+                    return "Every choice requires English or Arabic text.";
+            }
+
+            return null;
+        }
+
+        private async Task<ApiResponse<CourseQuestionDto>> CreateMultiQuestionAsync(CreateCourseQuestionDto dto)
+        {
+            var validationError = ValidateSubQuestions(dto.SubQuestions);
+            if (validationError != null)
+                return ApiResponse<CourseQuestionDto>.ErrorResponse(validationError);
+            if (dto.QuestionScore <= 0)
+                return ApiResponse<CourseQuestionDto>.ErrorResponse("Question score must be greater than zero.");
+
+            try
+            {
+                var question = new CourseQuestion
+                {
+                    CoursesMasterExamOid = dto.CoursesMasterExamOid,
+                    QuestionText = dto.QuestionText,
+                    QuestionText_Ar = dto.QuestionText_Ar,
+                    QuestionTypeLookupId = MultiImageQuestionTypeId,
+                    QuestionScore = dto.QuestionScore,
+                    OrderNo = dto.OrderNo,
+                    IsActive = dto.IsActive,
+                    QuestionExplination = dto.QuestionExplination,
+                    CreatedBy = dto.CreatedBy
+                };
+                _db.CourseQuestions.Add(question);
+
+                var subQuestionOrder = 1;
+                foreach (var subQuestionDto in dto.SubQuestions)
+                {
+                    var subQuestion = new CourseQuestionSubQuestion
+                    {
+                        CourseQuestion = question,
+                        QuestionText = subQuestionDto.QuestionText.Trim(),
+                        QuestionTextAr = subQuestionDto.QuestionTextAr.Trim(),
+                        OrderNo = subQuestionOrder++,
+                        CreatedBy = dto.CreatedBy
+                    };
+                    var choiceOrder = 1;
+                    foreach (var choiceDto in subQuestionDto.Choices)
+                    {
+                        subQuestion.Choices.Add(new CourseQuestionSubQuestionChoice
+                        {
+                            ChoiceText = choiceDto.ChoiceText.Trim(),
+                            ChoiceTextAr = choiceDto.ChoiceTextAr.Trim(),
+                            IsCorrect = choiceDto.IsCorrect,
+                            OrderNo = choiceOrder++,
+                            CreatedBy = dto.CreatedBy
+                        });
+                    }
+                    question.SubQuestions.Add(subQuestion);
+                }
+
+                await _db.SaveChangesAsync();
+                var result = await _questionRepository.GetWithAnswersAsync(question.Oid);
+                return ApiResponse<CourseQuestionDto>.SuccessResponse(MapToDto(result!), "Multiple sub-question created successfully");
+            }
+            catch { throw; }
+        }
+
+        private async Task<ApiResponse<CourseQuestionDto>> UpdateMultiQuestionAsync(
+            CourseQuestion question, UpdateCourseQuestionDto dto)
+        {
+            var validationError = ValidateSubQuestions(dto.SubQuestions);
+            if (validationError != null)
+                return ApiResponse<CourseQuestionDto>.ErrorResponse(validationError);
+            if (dto.QuestionScore <= 0)
+                return ApiResponse<CourseQuestionDto>.ErrorResponse("Question score must be greater than zero.");
+            var submittedSubQuestions = dto.SubQuestions!;
+
+            try
+            {
+                var trackedQuestion = await _db.CourseQuestions
+                    .Include(x => x.SubQuestions)
+                        .ThenInclude(x => x.Choices)
+                    .FirstAsync(x => x.Oid == question.Oid && !x.IsDeleted);
+
+                trackedQuestion.CoursesMasterExamOid = dto.CoursesMasterExamOid;
+                trackedQuestion.QuestionText = dto.QuestionText;
+                trackedQuestion.QuestionText_Ar = dto.QuestionText_Ar;
+                trackedQuestion.QuestionTypeLookupId = MultiImageQuestionTypeId;
+                trackedQuestion.QuestionScore = dto.QuestionScore;
+                trackedQuestion.OrderNo = dto.OrderNo;
+                trackedQuestion.IsActive = dto.IsActive;
+                trackedQuestion.QuestionExplination = dto.QuestionExplination;
+                trackedQuestion.UpdatedBy = dto.UpdatedBy;
+                trackedQuestion.UpdatedAt = DateTime.UtcNow;
+
+                var incomingSubIds = submittedSubQuestions
+                    .Where(x => x.Oid.HasValue && x.Oid != Guid.Empty)
+                    .Select(x => x.Oid!.Value)
+                    .ToHashSet();
+                foreach (var existingSub in trackedQuestion.SubQuestions.Where(x => !x.IsDeleted && !incomingSubIds.Contains(x.Oid)))
+                {
+                    existingSub.IsDeleted = true;
+                    existingSub.DeletedAt = DateTime.UtcNow;
+                    foreach (var choice in existingSub.Choices.Where(x => !x.IsDeleted))
+                    {
+                        choice.IsDeleted = true;
+                        choice.DeletedAt = DateTime.UtcNow;
+                    }
+                }
+
+                for (var subIndex = 0; subIndex < submittedSubQuestions.Count; subIndex++)
+                {
+                    var subDto = submittedSubQuestions[subIndex];
+                    var subQuestion = subDto.Oid.HasValue && subDto.Oid != Guid.Empty
+                        ? trackedQuestion.SubQuestions.FirstOrDefault(x => x.Oid == subDto.Oid.Value && !x.IsDeleted)
+                        : null;
+                    if (subDto.Oid.HasValue && subDto.Oid != Guid.Empty && subQuestion == null)
+                        return ApiResponse<CourseQuestionDto>.ErrorResponse("A sub-question does not belong to this question.");
+                    if (subQuestion == null)
+                    {
+                        subQuestion = new CourseQuestionSubQuestion
+                        {
+                            CourseQuestionOid = trackedQuestion.Oid,
+                            CreatedBy = dto.UpdatedBy
+                        };
+                        trackedQuestion.SubQuestions.Add(subQuestion);
+                    }
+                    subQuestion.QuestionText = subDto.QuestionText.Trim();
+                    subQuestion.QuestionTextAr = subDto.QuestionTextAr.Trim();
+                    subQuestion.OrderNo = subIndex + 1;
+                    subQuestion.UpdatedBy = dto.UpdatedBy;
+                    subQuestion.UpdatedAt = DateTime.UtcNow;
+
+                    var incomingChoiceIds = subDto.Choices
+                        .Where(x => x.Oid.HasValue && x.Oid != Guid.Empty)
+                        .Select(x => x.Oid!.Value)
+                        .ToHashSet();
+                    foreach (var existingChoice in subQuestion.Choices.Where(x => !x.IsDeleted && !incomingChoiceIds.Contains(x.Oid)))
+                    {
+                        existingChoice.IsDeleted = true;
+                        existingChoice.DeletedAt = DateTime.UtcNow;
+                    }
+
+                    for (var choiceIndex = 0; choiceIndex < subDto.Choices.Count; choiceIndex++)
+                    {
+                        var choiceDto = subDto.Choices[choiceIndex];
+                        var choice = choiceDto.Oid.HasValue && choiceDto.Oid != Guid.Empty
+                            ? subQuestion.Choices.FirstOrDefault(x => x.Oid == choiceDto.Oid.Value && !x.IsDeleted)
+                            : null;
+                        if (choiceDto.Oid.HasValue && choiceDto.Oid != Guid.Empty && choice == null)
+                            return ApiResponse<CourseQuestionDto>.ErrorResponse("A choice does not belong to its sub-question.");
+                        if (choice == null)
+                        {
+                            choice = new CourseQuestionSubQuestionChoice
+                            {
+                                SubQuestion = subQuestion,
+                                CreatedBy = dto.UpdatedBy
+                            };
+                            subQuestion.Choices.Add(choice);
+                        }
+                        choice.ChoiceText = choiceDto.ChoiceText.Trim();
+                        choice.ChoiceTextAr = choiceDto.ChoiceTextAr.Trim();
+                        choice.IsCorrect = choiceDto.IsCorrect;
+                        choice.OrderNo = choiceIndex + 1;
+                        choice.UpdatedBy = dto.UpdatedBy;
+                        choice.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+
+                await _db.SaveChangesAsync();
+                var result = await _questionRepository.GetWithAnswersAsync(trackedQuestion.Oid);
+                return ApiResponse<CourseQuestionDto>.SuccessResponse(MapToDto(result!), "Multiple sub-question updated successfully");
+            }
+            catch { throw; }
+        }
+
         private void DeletePhysicalImage(string fileName)
         {
             if (string.IsNullOrWhiteSpace(fileName)) return;
@@ -610,6 +810,26 @@ namespace HelpEmpowermentApi.Services
                         Oid = image.Oid,
                         FileName = image.FileName,
                         OrderNo = image.OrderNo
+                    }).ToList() ?? new(),
+                SubQuestions = question.SubQuestions?
+                    .Where(sub => !sub.IsDeleted)
+                    .OrderBy(sub => sub.OrderNo)
+                    .Select(sub => new CourseQuestionSubQuestionDto
+                    {
+                        Oid = sub.Oid,
+                        QuestionText = sub.QuestionText,
+                        QuestionTextAr = sub.QuestionTextAr,
+                        OrderNo = sub.OrderNo,
+                        Choices = sub.Choices.Where(choice => !choice.IsDeleted)
+                            .OrderBy(choice => choice.OrderNo)
+                            .Select(choice => new CourseQuestionSubQuestionChoiceDto
+                            {
+                                Oid = choice.Oid,
+                                ChoiceText = choice.ChoiceText,
+                                ChoiceTextAr = choice.ChoiceTextAr,
+                                IsCorrect = choice.IsCorrect,
+                                OrderNo = choice.OrderNo
+                            }).ToList()
                     }).ToList() ?? new(),
                 QuestionScore = question.QuestionScore,
                 OrderNo = question.OrderNo,

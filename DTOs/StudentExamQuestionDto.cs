@@ -28,6 +28,7 @@ namespace HelpEmpowermentApi.DTOs
         public bool Question { get; set; }
         public Guid? CorrectChoiceOid { get; set; }
         public List<StudentExamQuestionAnswerDto> Answers { get; set; } = new();
+        public List<StudentExamSubQuestionDto> SubQuestions { get; set; } = new();
         public DateTime? CreatedAt { get; set; }
         public Guid? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
@@ -134,5 +135,49 @@ namespace HelpEmpowermentApi.DTOs
         public bool IsSelected { get; set; }
         public bool IsCorrectAnswer { get; set; }
         public Guid? CorrectAnswerOid { get; set; }
+    }
+
+    public class StudentExamSubQuestionDto
+    {
+        public Guid Oid { get; set; }
+        public string QuestionText { get; set; } = string.Empty;
+        public string QuestionTextAr { get; set; } = string.Empty;
+        public int OrderNo { get; set; }
+        public Guid? SelectedChoiceOid { get; set; }
+        public bool? IsCorrect { get; set; }
+        public decimal? AwardedScore { get; set; }
+        public List<StudentExamSubQuestionChoiceDto> Choices { get; set; } = new();
+    }
+
+    public class StudentExamSubQuestionChoiceDto
+    {
+        public Guid Oid { get; set; }
+        public string ChoiceText { get; set; } = string.Empty;
+        public string ChoiceTextAr { get; set; } = string.Empty;
+        public int OrderNo { get; set; }
+    }
+
+    public class SubmitSubQuestionAnswersDto
+    {
+        public Guid StudentExamOid { get; set; }
+        public Guid QuestionOid { get; set; }
+        public List<SubQuestionAnswerSubmissionDto> Answers { get; set; } = new();
+        public Guid? UpdatedBy { get; set; }
+    }
+
+    public class SubQuestionAnswerSubmissionDto
+    {
+        public Guid SubQuestionOid { get; set; }
+        public Guid SelectedChoiceOid { get; set; }
+    }
+
+    public class SubQuestionAnswerValidationResult
+    {
+        public Guid QuestionOid { get; set; }
+        public int TotalSubQuestions { get; set; }
+        public int CorrectSubQuestions { get; set; }
+        public int QuestionScore { get; set; }
+        public int ObtainedScore { get; set; }
+        public bool IsCorrect { get; set; }
     }
 }

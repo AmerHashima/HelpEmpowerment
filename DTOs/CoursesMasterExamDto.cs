@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace HelpEmpowermentApi.DTOs
 {
     public class CoursesMasterExamDto
@@ -15,6 +17,7 @@ namespace HelpEmpowermentApi.DTOs
         public bool IsActive { get; set; }
         public int? DurationMinutes { get; set; }
         public int? QuestionCount { get; set; }
+        public int? PassPercent { get; set; }
         public DateTime? CreatedAt { get; set; }
         public Guid? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
@@ -31,6 +34,8 @@ namespace HelpEmpowermentApi.DTOs
         public Guid? CourseLevelLookupId { get; set; }
         public int? DurationMinutes { get; set; }
         public int? QuestionCount { get; set; }
+        [Range(0, 100)]
+        public int? PassPercent { get; set; } = 60;
         public Guid? CourseCategoryLookupId { get; set; }
         public bool IsActive { get; set; } = true;
         public Guid? CreatedBy { get; set; }
@@ -45,6 +50,8 @@ namespace HelpEmpowermentApi.DTOs
         public string CourseName { get; set; } = string.Empty;
         public int? DurationMinutes { get; set; }
         public int? QuestionCount { get; set; }
+        [Range(0, 100)]
+        public int? PassPercent { get; set; }
         public Guid? CourseLevelLookupId { get; set; }
         public Guid? CourseCategoryLookupId { get; set; }
         public bool IsActive { get; set; }

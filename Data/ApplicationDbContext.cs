@@ -18,6 +18,8 @@ namespace HelpEmpowermentApi.Data
         public DbSet<CourseQuestionImage> CourseQuestionImages { get; set; }
         public DbSet<CourseQuestionExplanationImage> CourseQuestionExplanationImages { get; set; }
         public DbSet<CourseAnswer> CourseAnswers { get; set; }
+        public DbSet<CourseQuestionSubQuestion> CourseQuestionSubQuestions { get; set; }
+        public DbSet<CourseQuestionSubQuestionChoice> CourseQuestionSubQuestionChoices { get; set; }
         public DbSet<AppLookupHeader> AppLookupHeaders { get; set; }
         public DbSet<AppLookupDetail> AppLookupDetails { get; set; }
         public DbSet<CourseTabContent> CourseTabContents { get; set; }
@@ -39,6 +41,7 @@ namespace HelpEmpowermentApi.Data
         public DbSet<StudentExam> StudentExams { get; set; }
         public DbSet<StudentExamQuestion> StudentExamQuestions { get; set; }
         public DbSet<StudentExamQuestionAnswer> StudentExamQuestionAnswers { get; set; }
+        public DbSet<StudentExamSubQuestionAnswer> StudentExamSubQuestionAnswers { get; set; }
 
         // NEW DbSets - LIVE SESSIONS
         public DbSet<CourseLiveSession> CourseLiveSessions { get; set; }
@@ -261,6 +264,26 @@ namespace HelpEmpowermentApi.Data
                 entity.HasIndex(e => e.OrderNo);
             });
 
+            modelBuilder.Entity<CourseQuestionSubQuestion>(entity =>
+            {
+                entity.HasOne(x => x.CourseQuestion)
+                    .WithMany(x => x.SubQuestions)
+                    .HasForeignKey(x => x.CourseQuestionOid)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(x => new { x.CourseQuestionOid, x.OrderNo });
+                entity.HasIndex(x => new { x.CourseQuestionOid, x.IsDeleted });
+            });
+
+            modelBuilder.Entity<CourseQuestionSubQuestionChoice>(entity =>
+            {
+                entity.HasOne(x => x.SubQuestion)
+                    .WithMany(x => x.Choices)
+                    .HasForeignKey(x => x.SubQuestionOid)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(x => new { x.SubQuestionOid, x.OrderNo });
+                entity.HasIndex(x => new { x.SubQuestionOid, x.IsDeleted, x.IsCorrect });
+            });
+
             modelBuilder.Entity<CourseQuestionImage>(entity =>
             {
                 entity.HasOne(image => image.CourseQuestion)
@@ -283,6 +306,26 @@ namespace HelpEmpowermentApi.Data
 
                 entity.HasIndex(image => image.CourseQuestionOid);
                 entity.HasIndex(image => new { image.CourseQuestionOid, image.OrderNo });
+            });
+
+            modelBuilder.Entity<StudentExamSubQuestionAnswer>(entity =>
+            {
+                entity.Property(x => x.AwardedScore).HasPrecision(18, 4);
+                entity.HasOne(x => x.StudentExamQuestion)
+                    .WithMany(x => x.SubQuestionAnswers)
+                    .HasForeignKey(x => x.StudentExamQuestionOid)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.SubQuestion)
+                    .WithMany()
+                    .HasForeignKey(x => x.SubQuestionOid)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.SelectedChoice)
+                    .WithMany()
+                    .HasForeignKey(x => x.SelectedChoiceOid)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(x => new { x.StudentExamQuestionOid, x.SubQuestionOid })
+                    .IsUnique()
+                    .HasFilter("[IsDeleted] = 0");
             });
 
             modelBuilder.Entity<CourseTabContent>(entity =>
@@ -1103,6 +1146,18 @@ namespace HelpEmpowermentApi.Data
                     LookupNameAr = "مطابقة",
                     LookupNameEn = "Matching",
                     OrderNo = 6,
+                    IsActive = true,
+                    CreatedAt = seedDate,
+                    CreatedBy = null
+                },
+                new AppLookupDetail
+                {
+                    Oid = Guid.Parse("33333333-3333-3333-3333-333333333307"),
+                    LookupHeaderId = questionTypeHeaderId,
+                    LookupValue = "MULTI_IMAGE",
+                    LookupNameAr = "أسئلة متعددة برأس مشترك",
+                    LookupNameEn = "Multiple Sub-Questions",
+                    OrderNo = 7,
                     IsActive = true,
                     CreatedAt = seedDate,
                     CreatedBy = null

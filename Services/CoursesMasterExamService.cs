@@ -132,6 +132,7 @@ namespace HelpEmpowermentApi.Services
                     CourseLevelLookupId = dto.CourseLevelLookupId,
                     CourseCategoryLookupId = dto.CourseCategoryLookupId,
                     QuestionCount = dto.QuestionCount,
+                    PassPercent = dto.PassPercent ?? 60,
                     DurationMinutes = dto.DurationMinutes,
                     IsActive = dto.IsActive,
                     CreatedBy = dto.CreatedBy
@@ -178,6 +179,7 @@ namespace HelpEmpowermentApi.Services
                 exam.FreeExam = dto.FreeExam;
 
                 exam.QuestionCount = dto.QuestionCount;
+                exam.PassPercent = dto.PassPercent ?? 60;
                 exam.DurationMinutes = dto.DurationMinutes;
                 exam.CourseLevelLookupId = dto.CourseLevelLookupId;
                 exam.CourseCategoryLookupId = dto.CourseCategoryLookupId;
@@ -225,6 +227,7 @@ namespace HelpEmpowermentApi.Services
                 CourseCategoryName = exam.CourseCategoryLookup?.LookupNameEn,
                 IsActive = exam.IsActive,
                 QuestionCount = exam.QuestionCount,
+                PassPercent = exam.PassPercent ?? 60,
                 DurationMinutes = exam.DurationMinutes,
                 CreatedAt = exam.CreatedAt,
                 CreatedBy = exam.CreatedBy,

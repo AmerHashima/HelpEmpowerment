@@ -25,9 +25,13 @@ namespace HelpEmpowermentApi.Repositories
                     .ThenInclude(q => q.Images.Where(image => !image.IsDeleted))
                 .Include(seq => seq.Question)
                     .ThenInclude(q => q.ExplanationImages.Where(image => !image.IsDeleted))
+                .Include(seq => seq.Question)
+                    .ThenInclude(q => q.SubQuestions.Where(sub => !sub.IsDeleted))
+                        .ThenInclude(sub => sub.Choices.Where(choice => !choice.IsDeleted))
                 .Include(seq => seq.QuestionStatus)
                 .Include(seq => seq.Answers.Where(a => !a.IsDeleted))
                     .ThenInclude(a => a.SelectedAnswer)
+                .Include(seq => seq.SubQuestionAnswers.Where(a => !a.IsDeleted))
                 .Where(seq => !seq.IsDeleted)
                 .AsQueryable();
 
@@ -60,9 +64,13 @@ namespace HelpEmpowermentApi.Repositories
                     .ThenInclude(q => q.Images.Where(image => !image.IsDeleted))
                 .Include(seq => seq.Question)
                     .ThenInclude(q => q.ExplanationImages.Where(image => !image.IsDeleted))
+                .Include(seq => seq.Question)
+                    .ThenInclude(q => q.SubQuestions.Where(sub => !sub.IsDeleted))
+                        .ThenInclude(sub => sub.Choices.Where(choice => !choice.IsDeleted))
                 .Include(seq => seq.QuestionStatus)
                 .Include(seq => seq.Answers.Where(a => !a.IsDeleted))
                     .ThenInclude(a => a.SelectedAnswer)
+                .Include(seq => seq.SubQuestionAnswers.Where(a => !a.IsDeleted))
                 .Where(seq => seq.StudentExamOid == studentExamId && !seq.IsDeleted)
                 .ToListAsync();
         }

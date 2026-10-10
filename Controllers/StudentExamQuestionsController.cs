@@ -85,5 +85,13 @@ namespace HelpEmpowermentApi.Controllers
             }
             return BadRequest(ApiResponse<string>.ErrorResponse(response.Message ?? "Failed to submit answers"));
         }
+
+        [HttpPut("sub-question-answers")]
+        public async Task<ActionResult<ApiResponse<SubQuestionAnswerValidationResult>>> SubmitSubQuestionAnswers(
+            [FromBody] SubmitSubQuestionAnswersDto dto)
+        {
+            var response = await _studentExamQuestionService.SubmitSubQuestionAnswersAsync(dto);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
     }
 }

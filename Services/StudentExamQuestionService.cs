@@ -3,6 +3,8 @@ using HelpEmpowermentApi.DTOs;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.IServices;
 using HelpEmpowermentApi.Models;
+using HelpEmpowermentApi.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace HelpEmpowermentApi.Services
 {
@@ -18,19 +20,22 @@ namespace HelpEmpowermentApi.Services
         private readonly IStudentExamRepository _studentExamRepository;
         private readonly ICourseQuestionRepository _courseQuestionRepository;
         private readonly ICourseAnswerRepository _courseAnswerRepository;
+        private readonly ApplicationDbContext _db;
 
         public StudentExamQuestionService(
             IStudentExamQuestionRepository studentExamQuestionRepository,
             IStudentExamQuestionAnswerRepository studentExamQuestionAnswerRepository,
             IStudentExamRepository studentExamRepository,
             ICourseQuestionRepository courseQuestionRepository,
-            ICourseAnswerRepository courseAnswerRepository)
+            ICourseAnswerRepository courseAnswerRepository,
+            ApplicationDbContext db)
         {
             _studentExamQuestionRepository = studentExamQuestionRepository;
             _studentExamQuestionAnswerRepository = studentExamQuestionAnswerRepository;
             _studentExamRepository = studentExamRepository;
             _courseQuestionRepository = courseQuestionRepository;
             _courseAnswerRepository = courseAnswerRepository;
+            _db = db;
         }
 
         public async Task<PagedResponse<StudentExamQuestionDto>> GetPagedAsync(DataRequest request)
@@ -315,6 +320,33 @@ namespace HelpEmpowermentApi.Services
                         SelectedAnswerText = a.SelectedAnswer?.AnswerText,
                         AnswerSelectedAnswerOid = a.AnswerSelectedAnswerOid
                     }).ToList() ?? new List<StudentExamQuestionAnswerDto>(),
+                SubQuestions = examQuestion.Question?.SubQuestions
+                    .Where(sub => !sub.IsDeleted)
+                    .OrderBy(sub => sub.OrderNo)
+                    .Select(sub =>
+                    {
+                        var studentAnswer = examQuestion.SubQuestionAnswers?
+                            .FirstOrDefault(answer => !answer.IsDeleted && answer.SubQuestionOid == sub.Oid);
+                        return new StudentExamSubQuestionDto
+                        {
+                            Oid = sub.Oid,
+                            QuestionText = sub.QuestionText,
+                            QuestionTextAr = sub.QuestionTextAr,
+                            OrderNo = sub.OrderNo,
+                            SelectedChoiceOid = studentAnswer?.SelectedChoiceOid,
+                            IsCorrect = studentAnswer?.IsCorrect,
+                            AwardedScore = studentAnswer?.AwardedScore,
+                            Choices = sub.Choices.Where(choice => !choice.IsDeleted)
+                                .OrderBy(choice => choice.OrderNo)
+                                .Select(choice => new StudentExamSubQuestionChoiceDto
+                                {
+                                    Oid = choice.Oid,
+                                    ChoiceText = choice.ChoiceText,
+                                    ChoiceTextAr = choice.ChoiceTextAr,
+                                    OrderNo = choice.OrderNo
+                                }).ToList()
+                        };
+                    }).ToList() ?? new List<StudentExamSubQuestionDto>(),
                 CreatedAt = examQuestion.CreatedAt,
                 CreatedBy = examQuestion.CreatedBy,
                 UpdatedAt = examQuestion.UpdatedAt,
@@ -523,6 +555,126 @@ namespace HelpEmpowermentApi.Services
             catch (Exception ex)
             {
                 return ApiResponse<MultipleQuestionsSubmissionResult>.ErrorResponse($"Error submitting questions: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<SubQuestionAnswerValidationResult>> SubmitSubQuestionAnswersAsync(
+            SubmitSubQuestionAnswersDto dto)
+        {
+            if (dto.Answers == null || dto.Answers.Count == 0)
+                return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse("Select at least one sub-question answer.");
+            if (dto.Answers.Select(x => x.SubQuestionOid).Distinct().Count() != dto.Answers.Count)
+                return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse("A sub-question can only be submitted once per request.");
+
+            await using var transaction = await _db.Database.BeginTransactionAsync();
+            try
+            {
+                var studentExam = await _db.StudentExams
+                    .FirstOrDefaultAsync(x => x.Oid == dto.StudentExamOid && !x.IsDeleted);
+                if (studentExam == null)
+                    return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse("Student exam not found.");
+
+                var question = await _db.CourseQuestions
+                    .Include(x => x.QuestionTypeLookup)
+                    .Include(x => x.SubQuestions.Where(sub => !sub.IsDeleted))
+                        .ThenInclude(sub => sub.Choices.Where(choice => !choice.IsDeleted))
+                    .FirstOrDefaultAsync(x => x.Oid == dto.QuestionOid && !x.IsDeleted && x.IsActive);
+                if (question == null || question.CoursesMasterExamOid != studentExam.CoursesMasterExamOid)
+                    return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse("Question does not belong to this exam.");
+                if (!string.Equals(question.QuestionTypeLookup?.LookupValue, "MULTI_IMAGE", StringComparison.OrdinalIgnoreCase))
+                    return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse("This endpoint only accepts Multiple Sub-Questions.");
+                if (question.SubQuestions.Count == 0)
+                    return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse("The question has no active sub-questions.");
+
+                foreach (var submission in dto.Answers)
+                {
+                    var subQuestion = question.SubQuestions.FirstOrDefault(x => x.Oid == submission.SubQuestionOid);
+                    if (subQuestion == null)
+                        return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse("Invalid sub-question.");
+                    if (!subQuestion.Choices.Any(x => x.Oid == submission.SelectedChoiceOid))
+                        return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse("A selected choice does not belong to its sub-question.");
+                }
+
+                var examQuestion = await _db.StudentExamQuestions
+                    .Include(x => x.SubQuestionAnswers.Where(answer => !answer.IsDeleted))
+                    .FirstOrDefaultAsync(x => x.StudentExamOid == dto.StudentExamOid &&
+                                              x.QuestionOid == dto.QuestionOid && !x.IsDeleted);
+                if (examQuestion == null)
+                {
+                    examQuestion = new StudentExamQuestion
+                    {
+                        StudentExamOid = dto.StudentExamOid,
+                        QuestionOid = dto.QuestionOid,
+                        QuestionScore = question.QuestionScore,
+                        ObtainedScore = 0,
+                        IsCorrect = false,
+                        QuestionStatusLookupId = QuestionStatusIncorrect,
+                        CreatedBy = dto.UpdatedBy
+                    };
+                    _db.StudentExamQuestions.Add(examQuestion);
+                }
+
+                var scorePerSubQuestion = (decimal)question.QuestionScore / question.SubQuestions.Count;
+                foreach (var submission in dto.Answers)
+                {
+                    var subQuestion = question.SubQuestions.Single(x => x.Oid == submission.SubQuestionOid);
+                    var choice = subQuestion.Choices.Single(x => x.Oid == submission.SelectedChoiceOid);
+                    var answer = examQuestion.SubQuestionAnswers
+                        .FirstOrDefault(x => x.SubQuestionOid == submission.SubQuestionOid && !x.IsDeleted);
+                    if (answer == null)
+                    {
+                        answer = new StudentExamSubQuestionAnswer
+                        {
+                            StudentExamQuestion = examQuestion,
+                            SubQuestionOid = submission.SubQuestionOid,
+                            CreatedBy = dto.UpdatedBy
+                        };
+                        examQuestion.SubQuestionAnswers.Add(answer);
+                    }
+                    answer.SelectedChoiceOid = submission.SelectedChoiceOid;
+                    answer.IsCorrect = choice.IsCorrect;
+                    answer.AwardedScore = choice.IsCorrect ? scorePerSubQuestion : 0;
+                    answer.UpdatedBy = dto.UpdatedBy;
+                    answer.UpdatedAt = DateTime.UtcNow;
+                }
+
+                var activeSubQuestionIds = question.SubQuestions.Select(x => x.Oid).ToHashSet();
+                var validAnswers = examQuestion.SubQuestionAnswers
+                    .Where(x => !x.IsDeleted && activeSubQuestionIds.Contains(x.SubQuestionOid))
+                    .ToList();
+                var correctCount = validAnswers.Count(x => x.IsCorrect);
+                var allCorrect = validAnswers.Count == question.SubQuestions.Count && correctCount == question.SubQuestions.Count;
+                var obtainedScore = (int)Math.Round(
+                    question.QuestionScore * ((decimal)correctCount / question.SubQuestions.Count),
+                    MidpointRounding.AwayFromZero);
+
+                examQuestion.QuestionScore = question.QuestionScore;
+                examQuestion.ObtainedScore = obtainedScore;
+                examQuestion.IsCorrect = allCorrect;
+                examQuestion.QuestionStatusLookupId = allCorrect ? QuestionStatusCorrect : QuestionStatusIncorrect;
+                examQuestion.UpdatedBy = dto.UpdatedBy;
+                examQuestion.UpdatedAt = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync();
+                await CalcAndUpdateStudentExamScoreAsync(dto.StudentExamOid);
+                await transaction.CommitAsync();
+
+                return ApiResponse<SubQuestionAnswerValidationResult>.SuccessResponse(
+                    new SubQuestionAnswerValidationResult
+                    {
+                        QuestionOid = question.Oid,
+                        TotalSubQuestions = question.SubQuestions.Count,
+                        CorrectSubQuestions = correctCount,
+                        QuestionScore = question.QuestionScore,
+                        ObtainedScore = obtainedScore,
+                        IsCorrect = allCorrect
+                    },
+                    "Sub-question answers saved successfully.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return ApiResponse<SubQuestionAnswerValidationResult>.ErrorResponse($"Error saving sub-question answers: {ex.Message}");
             }
         }
 

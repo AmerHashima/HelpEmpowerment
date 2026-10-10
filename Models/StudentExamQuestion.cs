@@ -38,5 +38,6 @@ namespace HelpEmpowermentApi.Models
         //public virtual AppLookupDetail? PaymentStatus { get; set; }
 
         public virtual ICollection<StudentExamQuestionAnswer> Answers { get; set; } = new List<StudentExamQuestionAnswer>();
+        public virtual ICollection<StudentExamSubQuestionAnswer> SubQuestionAnswers { get; set; } = new List<StudentExamSubQuestionAnswer>();
     }
 }
