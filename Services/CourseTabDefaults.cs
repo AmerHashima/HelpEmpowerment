@@ -5,7 +5,7 @@ namespace HelpEmpowermentApi.Services;
 public static class CourseTabDefaults
 {
     public static readonly string[] TabKeys =
-        ["exam-simulator", "recorded-course", "live-course", "webinar", "quiz-game", "faq", "reviews"];
+        ["exam-simulator", "recorded-course", "live-course", "webinar", "quiz-game", "faq", "reviews", "certificate-settings"];
 
     public static string Create(string courseCode, string tabKey)
     {

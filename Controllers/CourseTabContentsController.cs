@@ -18,6 +18,10 @@ public class CourseTabContentsController(ApplicationDbContext db, IConfiguration
         { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
     private string InstructorImagesPath => configuration["FileStorage:InstructorImagesPath"]
         ?? "/var/www/images/instructors";
+    private string SocialProofImagesPath => configuration["FileStorage:SocialProofImagesPath"]
+        ?? "/var/www/images/social-proof";
+    private string CertificateAssetsPath => configuration["FileStorage:CertificateAssetsPath"]
+        ?? "/var/www/images/certificate-assets";
 
     [AllowAnonymous]
     [HttpGet("{courseCode}")]
@@ -65,6 +69,16 @@ public class CourseTabContentsController(ApplicationDbContext db, IConfiguration
              availability.ValueKind != JsonValueKind.String ||
              availability.GetString() is not ("play-now" or "coming-soon")))
             return BadRequest("Quiz Game availability must be either 'play-now' or 'coming-soon'.");
+        if (dto.Content.TryGetProperty("socialProof", out var socialProof))
+        {
+            if (socialProof.ValueKind != JsonValueKind.Object ||
+                !socialProof.TryGetProperty("count", out var count) || count.ValueKind != JsonValueKind.String ||
+                string.IsNullOrWhiteSpace(count.GetString()) || count.GetString()!.Length > 30 ||
+                !socialProof.TryGetProperty("images", out var images) || images.ValueKind != JsonValueKind.Array ||
+                images.GetArrayLength() != 4 ||
+                images.EnumerateArray().Any(image => image.ValueKind != JsonValueKind.String))
+                return BadRequest("Social proof requires a count and exactly four image paths.");
+        }
         if (sections.GetArrayLength() > 100)
             return BadRequest("Too many sections.");
         foreach (var section in sections.EnumerateArray())
@@ -135,6 +149,93 @@ public class CourseTabContentsController(ApplicationDbContext db, IConfiguration
         if (!string.Equals(fileName, Path.GetFileName(fileName), StringComparison.Ordinal))
             return BadRequest();
         var filePath = Path.Combine(InstructorImagesPath, fileName);
+        if (!System.IO.File.Exists(filePath)) return NotFound();
+        var contentType = Path.GetExtension(fileName).ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".webp" => "image/webp",
+            _ => "application/octet-stream"
+        };
+        return PhysicalFile(filePath, contentType);
+    }
+
+    [Authorize(Policy = "InternalUser")]
+    [HttpPost("{courseCode}/social-proof-image")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<ActionResult<object>> UploadSocialProofImage(
+        string courseCode, [FromForm] IFormFile image, CancellationToken ct)
+    {
+        var code = courseCode.Trim().ToUpperInvariant();
+        if (!await db.Courses.AnyAsync(x => !x.IsDeleted && x.CourseCode == code, ct))
+            return NotFound("Course not found.");
+        if (image is null || image.Length == 0)
+            return BadRequest("A non-empty learner image is required.");
+
+        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+        if (!AllowedImageExtensions.Contains(extension))
+            return BadRequest($"Invalid image type. Allowed: {string.Join(", ", AllowedImageExtensions)}");
+
+        Directory.CreateDirectory(SocialProofImagesPath);
+        var safeCode = string.Concat(code.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_'));
+        var fileName = $"{safeCode}_{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(SocialProofImagesPath, fileName);
+        await using var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write);
+        await image.CopyToAsync(stream, ct);
+        return Ok(new { fileName });
+    }
+
+    [Authorize(Policy = "InternalUser")]
+    [HttpPost("{courseCode}/certificate-asset")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<ActionResult<object>> UploadCertificateAsset(
+        string courseCode, [FromForm] IFormFile image, CancellationToken ct)
+    {
+        var code = courseCode.Trim().ToUpperInvariant();
+        if (!await db.Courses.AnyAsync(x => !x.IsDeleted && x.CourseCode == code, ct))
+            return NotFound("Course not found.");
+        if (image is null || image.Length == 0)
+            return BadRequest("A non-empty certificate image is required.");
+        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+        if (!AllowedImageExtensions.Contains(extension))
+            return BadRequest($"Invalid image type. Allowed: {string.Join(", ", AllowedImageExtensions)}");
+        Directory.CreateDirectory(CertificateAssetsPath);
+        var safeCode = string.Concat(code.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_'));
+        var fileName = $"{safeCode}_{Guid.NewGuid():N}{extension}";
+        await using var stream = new FileStream(Path.Combine(CertificateAssetsPath, fileName), FileMode.CreateNew, FileAccess.Write);
+        await image.CopyToAsync(stream, ct);
+        return Ok(new { fileName });
+    }
+
+    [AllowAnonymous]
+    [HttpGet("certificate-assets/{fileName}")]
+    public IActionResult GetCertificateAsset(string fileName)
+    {
+        if (!string.Equals(fileName, Path.GetFileName(fileName), StringComparison.Ordinal)) return BadRequest();
+        var filePath = Path.Combine(CertificateAssetsPath, fileName);
+        if (!System.IO.File.Exists(filePath)) return NotFound();
+        var contentType = Path.GetExtension(fileName).ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg", ".png" => "image/png",
+            ".gif" => "image/gif", ".webp" => "image/webp", _ => "application/octet-stream"
+        };
+        return PhysicalFile(filePath, contentType);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("social-proof-images/{fileName}")]
+    public IActionResult GetSocialProofImage(string fileName)
+    {
+        if (!string.Equals(fileName, Path.GetFileName(fileName), StringComparison.Ordinal))
+            return BadRequest();
+        var filePath = Path.Combine(SocialProofImagesPath, fileName);
+        // Images uploaded before the upload handlers were corrected were stored
+        // in the instructor directory. Keep them readable after deployment.
+        if (!System.IO.File.Exists(filePath))
+            filePath = Path.Combine(InstructorImagesPath, fileName);
         if (!System.IO.File.Exists(filePath)) return NotFound();
         var contentType = Path.GetExtension(fileName).ToLowerInvariant() switch
         {
