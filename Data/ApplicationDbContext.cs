@@ -23,6 +23,7 @@ namespace HelpEmpowermentApi.Data
         public DbSet<AppLookupHeader> AppLookupHeaders { get; set; }
         public DbSet<AppLookupDetail> AppLookupDetails { get; set; }
         public DbSet<CourseTabContent> CourseTabContents { get; set; }
+        public DbSet<Article> Articles { get; set; }
 
         // NEW DbSets - AUTH & USERS
         public DbSet<User> Users { get; set; }
@@ -153,6 +154,14 @@ namespace HelpEmpowermentApi.Data
             });
 
             // Configure Course
+            modelBuilder.Entity<Article>(entity =>
+            {
+                entity.HasIndex(x => new { x.Category, x.Slug }).IsUnique().HasFilter("[IsDeleted] = 0");
+                entity.HasIndex(x => new { x.Status, x.PublishedAt });
+                entity.HasIndex(x => new { x.CourseCode, x.Status });
+                entity.Property(x => x.ReadingTimeMinutes).HasDefaultValue(0);
+            });
+
             modelBuilder.Entity<Course>(entity =>
             {
                 entity.Property(e => e.CertificateNumber).HasDefaultValue(1);
