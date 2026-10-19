@@ -23,7 +23,7 @@ namespace HelpEmpowermentApi.Controllers
             return response.Success ? Ok(response) : BadRequest(response);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:guid}")]
         public async Task<ActionResult<ApiResponse<StudentExamQuestionDto>>> GetById(Guid id)
         {
             var response = await _studentExamQuestionService.GetByIdAsync(id);
@@ -68,7 +68,7 @@ namespace HelpEmpowermentApi.Controllers
             return response.Success ? Ok(response) : BadRequest(response);
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:guid}")]
         public async Task<ActionResult<ApiResponse<bool>>> Delete(Guid id)
         {
             var response = await _studentExamQuestionService.DeleteAsync(id);

@@ -230,7 +230,11 @@ namespace HelpEmpowermentApi.Services
                         return ApiResponse<CourseQuestionDto>.ErrorResponse("Invalid Correct Choice. The referenced question does not exist.");
                 }
 
-                if (dto.QuestionTypeLookupId == MultiImageQuestionTypeId)
+                // The edit form sends subQuestions for the multiple-sub-question
+                // type. Treat that as authoritative as well as the lookup id: a
+                // missing/stale lookup value must not make this request fall into
+                // the regular-answer update path and silently ignore its choices.
+                if (dto.QuestionTypeLookupId == MultiImageQuestionTypeId || dto.SubQuestions != null)
                     return await UpdateMultiQuestionAsync(question, dto);
 
                 // Update question properties
@@ -677,6 +681,10 @@ namespace HelpEmpowermentApi.Services
             try
             {
                 var trackedQuestion = await _db.CourseQuestions
+                    // The application defaults to NoTracking for read queries.
+                    // This endpoint mutates the question, its sub-questions and
+                    // their choices in one unit, so the aggregate must be tracked.
+                    .AsTracking()
                     .Include(x => x.SubQuestions)
                         .ThenInclude(x => x.Choices)
                     .FirstAsync(x => x.Oid == question.Oid && !x.IsDeleted);

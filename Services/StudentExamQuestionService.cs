@@ -416,10 +416,49 @@ namespace HelpEmpowermentApi.Services
                     try
                     {
                         // Validate Question exists
-                        var question = await _courseQuestionRepository.GetByIdAsync(questionSubmission.QuestionOid);
+                        var question = await _courseQuestionRepository.GetWithAnswersAsync(questionSubmission.QuestionOid);
                         if (question == null)
                         {
                             result.Errors.Add($"Question {questionSubmission.QuestionOid} not found");
+                            continue;
+                        }
+
+                        // Multiple Sub-Questions are scored when their individual answers are
+                        // saved. Do not run them through the normal answer flow here, otherwise
+                        // the final exam submit replaces their partial score with zero.
+                        var existingQuestion = existingAnswers.FirstOrDefault(eq => eq.QuestionOid == questionSubmission.QuestionOid);
+                        if (string.Equals(question.QuestionTypeLookup?.LookupValue, "MULTI_IMAGE", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (existingQuestion != null)
+                            {
+                                var activeSubQuestionIds = question.SubQuestions
+                                    .Where(sub => !sub.IsDeleted)
+                                    .Select(sub => sub.Oid)
+                                    .ToHashSet();
+                                var submittedSubAnswers = existingQuestion.SubQuestionAnswers
+                                    .Where(answer => !answer.IsDeleted && activeSubQuestionIds.Contains(answer.SubQuestionOid))
+                                    .ToList();
+                                var correctSubQuestions = submittedSubAnswers.Count(answer => answer.IsCorrect);
+                                var subQuestionCount = activeSubQuestionIds.Count;
+                                var allCorrect = subQuestionCount > 0 &&
+                                                 submittedSubAnswers.Count == subQuestionCount &&
+                                                 correctSubQuestions == subQuestionCount;
+                                var partialScore = subQuestionCount == 0
+                                    ? 0
+                                    : (int)Math.Round(
+                                        question.QuestionScore * ((decimal)correctSubQuestions / subQuestionCount),
+                                        MidpointRounding.AwayFromZero);
+
+                                existingQuestion.QuestionScore = question.QuestionScore;
+                                existingQuestion.ObtainedScore = partialScore;
+                                existingQuestion.IsCorrect = allCorrect;
+                                existingQuestion.QuestionStatusLookupId = submittedSubAnswers.Count == 0
+                                    ? QuestionStatusNotAnswered
+                                    : allCorrect ? QuestionStatusCorrect : QuestionStatusIncorrect;
+                                existingQuestion.UpdatedBy = dto.CreatedBy;
+                                existingQuestion.UpdatedAt = DateTime.UtcNow;
+                                await _studentExamQuestionRepository.UpdateAsync(existingQuestion);
+                            }
                             continue;
                         }
 
@@ -451,8 +490,6 @@ namespace HelpEmpowermentApi.Services
                         }
 
                         // Find or create question row
-                        var existingQuestion = existingAnswers.FirstOrDefault(eq => eq.QuestionOid == questionSubmission.QuestionOid);
-
                         if (existingQuestion != null)
                         {
                             existingQuestion.IsCorrect = isCorrect;
@@ -599,7 +636,9 @@ namespace HelpEmpowermentApi.Services
                 }
 
                 var examQuestion = await _db.StudentExamQuestions
-                    .Include(x => x.SubQuestionAnswers.Where(answer => !answer.IsDeleted))
+                    // The default DbContext behavior is NoTracking. Scores and
+                    // sub-question answers are changed below before SaveChanges.
+                    .AsTracking()
                     .FirstOrDefaultAsync(x => x.StudentExamOid == dto.StudentExamOid &&
                                               x.QuestionOid == dto.QuestionOid && !x.IsDeleted);
                 if (examQuestion == null)
@@ -617,22 +656,30 @@ namespace HelpEmpowermentApi.Services
                     _db.StudentExamQuestions.Add(examQuestion);
                 }
 
+                // Upsert the dependent rows directly. The StudentExamQuestion row
+                // already exists when an exam starts; adding through its navigation
+                // collection can make EF attempt to update a stale dependent row.
+                var existingSubAnswers = await _db.StudentExamSubQuestionAnswers
+                    .AsTracking()
+                    .Where(answer => answer.StudentExamQuestionOid == examQuestion.Oid && !answer.IsDeleted)
+                    .ToListAsync();
                 var scorePerSubQuestion = (decimal)question.QuestionScore / question.SubQuestions.Count;
                 foreach (var submission in dto.Answers)
                 {
                     var subQuestion = question.SubQuestions.Single(x => x.Oid == submission.SubQuestionOid);
                     var choice = subQuestion.Choices.Single(x => x.Oid == submission.SelectedChoiceOid);
-                    var answer = examQuestion.SubQuestionAnswers
-                        .FirstOrDefault(x => x.SubQuestionOid == submission.SubQuestionOid && !x.IsDeleted);
+                    var answer = existingSubAnswers
+                        .FirstOrDefault(x => x.SubQuestionOid == submission.SubQuestionOid);
                     if (answer == null)
                     {
                         answer = new StudentExamSubQuestionAnswer
                         {
-                            StudentExamQuestion = examQuestion,
+                            StudentExamQuestionOid = examQuestion.Oid,
                             SubQuestionOid = submission.SubQuestionOid,
                             CreatedBy = dto.UpdatedBy
                         };
-                        examQuestion.SubQuestionAnswers.Add(answer);
+                        _db.StudentExamSubQuestionAnswers.Add(answer);
+                        existingSubAnswers.Add(answer);
                     }
                     answer.SelectedChoiceOid = submission.SelectedChoiceOid;
                     answer.IsCorrect = choice.IsCorrect;
@@ -642,7 +689,7 @@ namespace HelpEmpowermentApi.Services
                 }
 
                 var activeSubQuestionIds = question.SubQuestions.Select(x => x.Oid).ToHashSet();
-                var validAnswers = examQuestion.SubQuestionAnswers
+                var validAnswers = existingSubAnswers
                     .Where(x => !x.IsDeleted && activeSubQuestionIds.Contains(x.SubQuestionOid))
                     .ToList();
                 var correctCount = validAnswers.Count(x => x.IsCorrect);

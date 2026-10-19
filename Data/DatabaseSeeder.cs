@@ -58,6 +58,9 @@ public static class DatabaseSeeder
                 }
             }
 
+            // Links are permissions, not merely menu labels. Keep every current
+            // Admin sidebar destination available for assignment from Roles.
+            await SeedAdminLinksAsync(dbContext, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
             await SeedCourseTabsAsync(dbContext, cancellationToken);
             await SeedArticlesAsync(dbContext, cancellationToken);
@@ -84,6 +87,55 @@ public static class DatabaseSeeder
         string CoverImagePath,
         DateTime PublishedAt,
         int ReadingTimeMinutes);
+
+    private sealed record SeedLink(string NameEn, string NameAr, string Path);
+
+    private static async Task SeedAdminLinksAsync(ApplicationDbContext db, CancellationToken ct)
+    {
+        var requiredLinks = new[]
+        {
+            new SeedLink("Dashboard", "لوحة التحكم", "/admin/dashboard"),
+            new SeedLink("Reports", "التقارير", "/admin/reports"),
+            new SeedLink("Certifications", "الشهادات", "/admin/certifications"),
+            new SeedLink("Users", "المستخدمون", "/admin/students"),
+            new SeedLink("Users Features Reservations", "حجوزات خدمات المستخدمين", "/admin/students-table"),
+            new SeedLink("Messages", "الرسائل", "/admin/contact-us"),
+            new SeedLink("Live Course", "دورة مباشرة", "/admin/live-course"),
+            new SeedLink("Webinar", "ندوة عبر الإنترنت", "/admin/webinar"),
+            new SeedLink("Announcements", "الإعلانات", "/admin/announcements"),
+            new SeedLink("Moderators", "المشرفون", "/admin/moderators"),
+            new SeedLink("Roles", "الأدوار", "/admin/roles"),
+            new SeedLink("Articles", "المقالات", "/admin/articles")
+        };
+
+        var existingPaths = (await db.Links
+                .IgnoreQueryFilters()
+                .Select(link => new { link.Path, link.IsDeleted })
+                .ToListAsync(ct))
+            .Where(link => !link.IsDeleted)
+            .Select(link => NormalizeAdminPath(link.Path))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var link in requiredLinks.Where(link => !existingPaths.Contains(NormalizeAdminPath(link.Path))))
+        {
+            db.Links.Add(new Link
+            {
+                NameEn = link.NameEn,
+                NameAr = link.NameAr,
+                Path = link.Path,
+                Active = true,
+                IsActive = true
+            });
+        }
+    }
+
+    private static string NormalizeAdminPath(string? path)
+    {
+        var normalized = $"/{(path ?? string.Empty).Trim().Trim('/')}".ToLowerInvariant();
+        return normalized.StartsWith("/admin/", StringComparison.Ordinal)
+            ? normalized
+            : $"/admin{normalized}";
+    }
 
     private static async Task SeedArticlesAsync(ApplicationDbContext db, CancellationToken ct)
     {
