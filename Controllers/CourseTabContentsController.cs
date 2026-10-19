@@ -120,7 +120,7 @@ public class CourseTabContentsController(ApplicationDbContext db, IConfiguration
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(10 * 1024 * 1024)]
     public async Task<ActionResult<object>> UploadInstructorImage(
-        string courseCode, [FromForm] IFormFile image, CancellationToken ct)
+        string courseCode, IFormFile image, CancellationToken ct)
     {
         var code = courseCode.Trim().ToUpperInvariant();
         if (!await db.Courses.AnyAsync(x => !x.IsDeleted && x.CourseCode == code, ct))
@@ -166,7 +166,7 @@ public class CourseTabContentsController(ApplicationDbContext db, IConfiguration
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(10 * 1024 * 1024)]
     public async Task<ActionResult<object>> UploadSocialProofImage(
-        string courseCode, [FromForm] IFormFile image, CancellationToken ct)
+        string courseCode, IFormFile image, CancellationToken ct)
     {
         var code = courseCode.Trim().ToUpperInvariant();
         if (!await db.Courses.AnyAsync(x => !x.IsDeleted && x.CourseCode == code, ct))
@@ -192,7 +192,7 @@ public class CourseTabContentsController(ApplicationDbContext db, IConfiguration
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(10 * 1024 * 1024)]
     public async Task<ActionResult<object>> UploadCertificateAsset(
-        string courseCode, [FromForm] IFormFile image, CancellationToken ct)
+        string courseCode, IFormFile image, CancellationToken ct)
     {
         var code = courseCode.Trim().ToUpperInvariant();
         if (!await db.Courses.AnyAsync(x => !x.IsDeleted && x.CourseCode == code, ct))

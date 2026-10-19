@@ -88,7 +88,7 @@ namespace HelpEmpowermentApi.Controllers
 
         [HttpPost("{id}/images")]
         [Consumes("multipart/form-data")]
-        public async Task<ActionResult<ApiResponse<CourseQuestionDto>>> UploadImages(Guid id, [FromForm] List<IFormFile> images)
+        public async Task<ActionResult<ApiResponse<CourseQuestionDto>>> UploadImages(Guid id, List<IFormFile> images)
         {
             if (images == null || images.Count == 0 || images.Any(image => image.Length == 0))
                 return BadRequest(ApiResponse<CourseQuestionDto>.ErrorResponse("No image files provided"));
@@ -133,7 +133,7 @@ namespace HelpEmpowermentApi.Controllers
         [HttpPost("{id}/explanation-images")]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<ApiResponse<CourseQuestionDto>>> UploadExplanationImages(
-            Guid id, [FromForm] List<IFormFile> images)
+            Guid id, List<IFormFile> images)
         {
             if (images == null || images.Count == 0 || images.Any(image => image.Length == 0))
                 return BadRequest(ApiResponse<CourseQuestionDto>.ErrorResponse("No image files provided"));

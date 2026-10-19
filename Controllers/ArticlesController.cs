@@ -109,8 +109,9 @@ public class ArticlesController(ApplicationDbContext db, IConfiguration configur
     [HttpPost("images")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(10 * 1024 * 1024)]
-    public async Task<ActionResult<object>> UploadImage([FromForm] IFormFile image, CancellationToken ct)
+    public async Task<ActionResult<object>> UploadImage([FromForm] ArticleImageUploadRequest request, CancellationToken ct)
     {
+        var image = request.Image;
         if (image is null || image.Length == 0) return BadRequest("A non-empty image is required.");
         var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
         if (!AllowedImageExtensions.Contains(extension)) return BadRequest("Only JPG, PNG, GIF, and WEBP images are allowed.");
@@ -152,4 +153,9 @@ public class ArticlesController(ApplicationDbContext db, IConfiguration configur
     }
     private Guid? CurrentUserId() => Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var id) ? id : null;
     private static string Normalize(string value) => value.Trim().ToLowerInvariant().Replace(' ', '-');
+}
+
+public sealed class ArticleImageUploadRequest
+{
+    public IFormFile? Image { get; set; }
 }
