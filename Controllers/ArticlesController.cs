@@ -137,7 +137,10 @@ public class ArticlesController(ApplicationDbContext db, IConfiguration configur
         Oid = item.Oid, Category = item.Category, CourseCode = item.CourseCode, Slug = item.Slug, TitleEn = item.TitleEn, TitleAr = item.TitleAr,
         SummaryEn = item.SummaryEn, SummaryAr = item.SummaryAr, CoverImagePath = item.CoverImagePath, CoverImageAltEn = item.CoverImageAltEn, CoverImageAltAr = item.CoverImageAltAr,
         PublishedAt = item.PublishedAt, ReadingTimeMinutes = item.ReadingTimeMinutes, Status = item.Status, IsFeatured = item.IsFeatured, CreatedAt = item.CreatedAt, UpdatedAt = item.UpdatedAt,
-        Blocks = JsonSerializer.Deserialize<List<ArticleBlockDto>>(item.ContentJson) ?? []
+        Blocks = JsonSerializer.Deserialize<List<ArticleBlockDto>>(item.ContentJson, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        }) ?? []
     };
     private static void Apply(Article item, SaveArticleDto dto)
     {

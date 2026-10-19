@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Data\Seeds\*-tabs.json" />
+    <EmbeddedResource Include="Data\Seeds\articles.json" />
     <Compile Remove="HelpEmpowermentApi.Tests\**\*.cs" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="GTranslate" Version="2.3.1" />

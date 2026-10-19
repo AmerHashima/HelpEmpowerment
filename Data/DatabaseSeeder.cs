@@ -60,6 +60,7 @@ public static class DatabaseSeeder
 
             await dbContext.SaveChangesAsync(cancellationToken);
             await SeedCourseTabsAsync(dbContext, cancellationToken);
+            await SeedArticlesAsync(dbContext, cancellationToken);
             logger.LogInformation("Database migrations and seed data applied successfully.");
         }
         catch (Exception exception)
@@ -70,6 +71,111 @@ public static class DatabaseSeeder
     }
 
     private sealed record SeedTab(string TabKey, bool IsEnabled, int OrderNo, string Status, JsonElement Content);
+
+    private sealed record SeedArticle(
+        Guid Oid,
+        string Category,
+        string? CourseCode,
+        string Slug,
+        string TitleEn,
+        string TitleAr,
+        string SummaryEn,
+        string SummaryAr,
+        string CoverImagePath,
+        DateTime PublishedAt,
+        int ReadingTimeMinutes);
+
+    private static async Task SeedArticlesAsync(ApplicationDbContext db, CancellationToken ct)
+    {
+        var assembly = typeof(DatabaseSeeder).Assembly;
+        var resource = assembly.GetManifestResourceNames()
+            .Single(name => name.EndsWith(".articles.json", StringComparison.Ordinal));
+        await using var stream = assembly.GetManifestResourceStream(resource)!;
+        var contentBySlug = await JsonSerializer.DeserializeAsync<Dictionary<string, JsonElement>>(
+            stream, new JsonSerializerOptions(JsonSerializerDefaults.Web), ct) ?? [];
+
+        var articles = new[]
+        {
+            new SeedArticle(
+                Guid.Parse("10000000-0000-0000-0000-000000000001"),
+                "capm", "CAPM", "capm-study-plan",
+                "CAPM Study Plan", "خطة دراسة CAPM",
+                "Passing the CAPM exam requires a structured methodology, much like managing a real project. This guide breaks your preparation into five clear phases, helping you build strong understanding, practice effectively, and confidently prepare for the exam.",
+                "يتطلب النجاح في اختبار CAPM اتباع منهجية منظمة مثل إدارة مشروع حقيقي. يوضح هذا الدليل خمس مراحل أساسية تساعدك على الفهم والتطبيق والاستعداد بثقة للاختبار.",
+                "assets/images/homeArticles/article1.jpeg",
+                new DateTime(2025, 3, 10, 0, 0, 0, DateTimeKind.Utc), 8),
+            new SeedArticle(
+                Guid.Parse("10000000-0000-0000-0000-000000000002"),
+                "pmp", "PMP", "pmp-study-plan",
+                "PMP Study Plan", "خطة دراسة PMP",
+                "Passing the PMP exam requires a structured methodology, much like managing a real project. Based on experience with many candidates, this guide divides your preparation into five clear phases.",
+                "اجتياز امتحان PMP يتطلب منهجية منظمة، تمامًا مثل إدارة مشروع حقيقي. بناءً على خبرة العديد من المرشحين، يقسم هذا الدليل التحضير إلى خمس مراحل واضحة.",
+                "assets/images/homeArticles/article2.jpeg",
+                new DateTime(2025, 2, 10, 0, 0, 0, DateTimeKind.Utc), 6),
+            new SeedArticle(
+                Guid.Parse("10000000-0000-0000-0000-000000000003"),
+                "general", null, "digital-transformation-failure",
+                "Three Reasons Why Most Digital Transformation Plans Fail", "ثلاثة أسباب تجعل أغلب خطط التحول الرقمي تفشل",
+                "70% of digital transformation initiatives fail to achieve their goals despite massive investments—and the reason is rarely technical. This article explores digital patching, loss-driven decisions, and resistance to transparency.",
+                "70% من مبادرات التحول الرقمي تفشل رغم الاستثمارات الضخمة، والسبب غالباً ليس تقنياً. يستعرض هذا المقال الترقيع الرقمي والقرارات المبنية على الخوف من الخسارة ومقاومة الشفافية.",
+                "assets/images/homeArticles/article3.png",
+                new DateTime(2025, 2, 10, 0, 0, 0, DateTimeKind.Utc), 6),
+            new SeedArticle(
+                Guid.Parse("10000000-0000-0000-0000-000000000004"),
+                "capm", "CAPM", "capm-application-process",
+                "CAPM Application Process", "التقديم على شهادة CAPM",
+                "Applying for the CAPM certification is simple and requires only basic education and 23 hours of training. This guide walks through creating a PMI account, completing the application, and scheduling the exam.",
+                "التقديم على CAPM بسيط ويتطلب مؤهلًا دراسيًا و23 ساعة تدريب فقط. يوضح هذا الدليل خطوات إنشاء حساب PMI وإتمام الطلب وحجز الامتحان.",
+                "assets/images/homeArticles/article1.jpeg",
+                new DateTime(2025, 3, 10, 0, 0, 0, DateTimeKind.Utc), 8)
+        };
+
+        var slugs = articles.Select(article => article.Slug).ToArray();
+        var existing = await db.Articles
+            .IgnoreQueryFilters()
+            .AsTracking()
+            .Where(article => slugs.Contains(article.Slug))
+            .ToListAsync(ct);
+
+        foreach (var article in articles)
+        {
+            if (!contentBySlug.TryGetValue(article.Slug, out var blocks))
+                throw new InvalidOperationException($"Legacy content is missing for article '{article.Slug}'.");
+
+            var contentJson = blocks.GetRawText();
+            var current = existing.SingleOrDefault(item => item.Slug == article.Slug);
+            if (current is not null)
+            {
+                // Upgrade only the deterministic seed rows while they are still untouched.
+                // Dashboard edits set UpdatedAt/UpdatedBy and must never be overwritten.
+                if (current.Oid == article.Oid && current.UpdatedAt is null && current.UpdatedBy is null)
+                    current.ContentJson = contentJson;
+                continue;
+            }
+
+            db.Articles.Add(new Article
+            {
+                Oid = article.Oid,
+                Category = article.Category,
+                CourseCode = article.CourseCode,
+                Slug = article.Slug,
+                TitleEn = article.TitleEn,
+                TitleAr = article.TitleAr,
+                SummaryEn = article.SummaryEn,
+                SummaryAr = article.SummaryAr,
+                CoverImagePath = article.CoverImagePath,
+                CoverImageAltEn = article.TitleEn,
+                CoverImageAltAr = article.TitleAr,
+                PublishedAt = article.PublishedAt,
+                ReadingTimeMinutes = article.ReadingTimeMinutes,
+                Status = "Published",
+                IsFeatured = true,
+                ContentJson = contentJson
+            });
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
 
     private static async Task SeedCourseTabsAsync(ApplicationDbContext db, CancellationToken ct)
     {

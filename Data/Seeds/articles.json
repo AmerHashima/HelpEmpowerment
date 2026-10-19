@@ -1,0 +1,1098 @@
+{
+  "pmp-study-plan": [
+    {
+      "type": "details",
+      "textEn": "Passing the PMP exam requires a structured Methodology, much like managing a real project.\n\nBased on my experience and observing many candidates, I recommend dividing your preparation into five clear phases.\n\nMany people fail because they either mix the different phase requirements or don't fully complete one phase before moving to the next. Here are the five essential phases:",
+      "textAr": "يتطلب النجاح في اختبار PMP إلى اتباع منهجية واضحة تُدار بدقة وكأنها مشروع حقيقي.\n\nوبناءً على تجربتي الشخصية في الاختبار، بالإضافة إلى متابعة العديد من المهتمين باجتياز الاختبار الدولي، فإنني أوصي بتقسيم رحلة اجتياز الاختبار إلى خمسة مراحل متتالية.\n\nجدير بالذكر أن الكثيرين يفشلون في تحقيق الهدف المنشود بسبب عدم التمييز بين متطلبات كل مرحلة، أو عدم الالتزام باستكمال متطلبات مرحلة ما قبل الانتقال للمرحلة التالية. وهذه المراحل هي:",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 1
+    },
+    {
+      "type": "image",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "assets/images/homeArticles/pmp_article1-1.png",
+      "altEn": "pmp-study-plan",
+      "altAr": "pmp-study-plan",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 2
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Phase 1: Understanding Phase",
+      "textAr": "المرحلة الأولى: مرحلة الفهم (Understanding Phase)",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 3
+    },
+    {
+      "type": "details",
+      "textEn": "This phase represents the solid foundation for building your knowledge, aiming to grasp concepts and connect them systematically while ensuring comprehension of terminology.\n\nIt's preferable to avoid attempting simulation questions during this phase and focus only on questions discussed in training sessions to prioritize understanding:",
+      "textAr": "تمثل هذه المرحلة الأساس المتين لبناء معرفتك، وتهدف إلى إدراك المفاهيم وربطها بشكل منهجي والتأكد من فهم المصطلحات.\n\nويفضل عدم التوجه لمحاولة حل اسئلة تحاكى الاختبار الحقيقى خلال هذة المرحلة والاكتفاء بالاسئلة التى يتم مناقشتها خلال الجلسات التدريبية وذلك للتركيز اولا على الفهم:",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 4
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Enroll in a PMP course and actively engage in training sessions.",
+        "Study regularly after each lecture by reviewing covered materials and ensuring initial understanding of concepts and their connections.",
+        "Identify unclear points and note them for discussion with the trainer in subsequent sessions.",
+        "Conduct a comprehensive review after course completion using provided educational materials, reaching a level where you can explain basic concepts in your own words.",
+        "Focus on deep understanding rather than memorization, as the exam depends on context comprehension rather than text recall.",
+        "Master the explanation of basic terms, such as: Project Charter: A foundational document that defines project objectives, stakeholder roles, preliminary scope, timelines, and budget, formally approved by the project sponsor."
+      ],
+      "itemsAr": [
+        "الالتحاق بدورة PMP والانخراط بفاعلية خلال الجلسات التدريبية.",
+        "المذاكرة المنتظمة بعد كل محاضرة عبر مراجعة المواد المغطاة وضمان الفهم الأولي للمفاهيم وترابطها.",
+        "تحديد النقاط الغامضة وتدوينها لمناقشتها مع المدرب في الجلسات اللاحقة.",
+        "إجراء مراجعة شاملة بعد انتهاء الدورة باستخدام المواد التعليمية المقدمة، والوصول إلى مستوى يُمكّنك من شرح المفاهيم الأساسية بلغتك الخاصة.",
+        "التركيز على الفهم العميق بدلاً من الحفظ حيث يعتمد الاختبار على استيعاب السياق وليس استرجاع النصوص.",
+        "التمكن من شرح المصطلحات الأساسية بإتقان مثل: شرح عن ميثاق المشروع: وثيقة تأسيسية تُحدد أهداف المشروع وأدوار أصحاب المصلحة والنطاق الأولي والجداول الزمنية والميزانية، ويتم اعتمادها رسمياً من قبل راعي المشروع."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 5
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Phase 2: Simulation Practice Question Phase",
+      "textAr": "المرحلة الثانية: مرحلة المحاكاة التدريبية (Simulation Practice Question Phase)",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 6
+    },
+    {
+      "type": "details",
+      "textEn": "After mastering the fundamental concepts in the first phase, the practical application phase begins through the simulation platform, which features two main training modes:",
+      "textAr": "بعد إتقان أساسيات المفاهيم في المرحلة الأولى، تبدأ مرحلة التطبيق العملي من خلال منصة المحاكاة، والتي تتميز بنمطين تدريبيين:",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 7
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Practice Mode: Allows answering questions without time pressure to solidify understanding.",
+        "Exam Mode: Simulates real exam conditions with time constraints.",
+        "Regularly solving a large number of questions daily to build gradual experience.",
+        "Dealing with initial errors as learning opportunities.",
+        "Elimination Method: Ruling out incorrect answers.",
+        "Focusing on the Core of the Question."
+      ],
+      "itemsAr": [
+        "نمط التدريب (Practice Mode): يتيح حل الأسئلة بدون ضغط الوقت لترسيخ الفهم.",
+        "نمط الاختبار (Exam Mode): يقلّد ظروف الاختبار الحقيقية بوقت محدد.",
+        "حل عدد كبير من الاسئلة يوميًا بشكل منتظم لبناء الخبرة التدريجية.",
+        "التعامل مع الأخطاء الأولية كفرص للتعلم.",
+        "طريقة الاستبعاد (Elimination).",
+        "التركيز على جوهر السؤال."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 8
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Phase 3: Submitting PMP Application Phase",
+      "textAr": "المرحلة الثالثة: تقديم طلب الاختبار (Submitting PMP Application Phase)",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 9
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Completing personal details and essential professional information.",
+        "Selecting the exam modality.",
+        "Monitoring the application status.",
+        "Average approval timeframe: approximately one week."
+      ],
+      "itemsAr": [
+        "تعبئة البيانات الشخصية والمعلومات المهنية الأساسية.",
+        "اختيار طريقة أداء الاختبار.",
+        "متابعة حالة الطلب حتى الموافقة.",
+        "متوسط فترة الموافقة: حوالي أسبوع."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 10
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Phase 4: Simulation Test Question Phase",
+      "textAr": "المرحلة الرابعة: مرحلة محاكاة الاختبار (Simulation Test Question Phase)",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 11
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Simulate real exam conditions.",
+        "Practice maintaining focus for 230 minutes.",
+        "Achieve at least 70%."
+      ],
+      "itemsAr": [
+        "محاكاة ظروف الاختبار الحقيقية.",
+        "التمرين على الحفاظ على التركيز لمدة 230 دقيقة.",
+        "تحقيق نسبة 70% على الأقل."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 12
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Phase 5: Booking the Exam and Final Revision",
+      "textAr": "المرحلة الخامسة: حجز الاختبار والمراجعة النهائية",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 13
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Scheduling your exam.",
+        "Reviewing all materials.",
+        "Focusing on weak areas.",
+        "Building confidence."
+      ],
+      "itemsAr": [
+        "حجز موعد الاختبار.",
+        "مراجعة جميع المواد.",
+        "التركيز على نقاط الضعف.",
+        "تعزيز الثقة."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 14
+    },
+    {
+      "type": "details",
+      "textEn": "Success Assurance: We are confident that following this integrated methodology will make passing the PMP exam achievable.\n\nBy: Mahmoud Elhelbawi",
+      "textAr": "ضمان النجاح: نحن على ثقة بأن الالتزام بهذه المنهجية سيجعل اجتياز الاختبار أمراً ميسراً.\n\nمحمود الهلباوى",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 15
+    }
+  ],
+  "capm-study-plan": [
+    {
+      "type": "details",
+      "textEn": "Passing the CAPM exam requires a structured Methodology, much like managing a real project.\n\nBased on my experience and observing many candidates, I recommend dividing your preparation into five clear phases.\n\nMany people fail because they either mix the different phase requirements or don't fully complete one phase before moving to the next. Here are the five essential phases:",
+      "textAr": "يتطلب النجاح في اختبار CAPM إلى اتباع منهجية واضحة تُدار بدقة وكأنها مشروع حقيقي.\n\nوبناءً على تجربتي الشخصية في الاختبار، بالإضافة إلى متابعة العديد من المهتمين باجتياز الاختبار الدولي، فإنني أوصي بتقسيم رحلة اجتياز الاختبار إلى خمسة مراحل متتالية.\n\nجدير بالذكر أن الكثيرين يفشلون في تحقيق الهدف المنشود بسبب عدم التمييز بين متطلبات كل مرحلة، أو عدم الالتزام باستكمال متطلبات مرحلة ما قبل الانتقال للمرحلة التالية. وهذه المراحل هي:",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 1
+    },
+    {
+      "type": "image",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "assets/images/homeArticles/capm_article_1.png",
+      "altEn": "capm-study-plan",
+      "altAr": "capm-study-plan",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 2
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Phase 1: Understanding Phase",
+      "textAr": "المرحلة الأولى: مرحلة الفهم (Understanding Phase)",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 3
+    },
+    {
+      "type": "details",
+      "textEn": "This phase represents the solid foundation for building your knowledge, aiming to grasp concepts and connect them systematically while ensuring comprehension of terminology.\n\nIt's preferable to avoid attempting simulation questions during this phase and focus only on questions discussed in training sessions to prioritize understanding:",
+      "textAr": "تمثل هذه المرحلة الأساس المتين لبناء معرفتك، وتهدف إلى إدراك المفاهيم وربطها بشكل منهجي والتأكد من فهم المصطلحات.\n\nويفضل عدم التوجه لمحاولة حل اسئلة تحاكى الاختبار الحقيقى خلال هذة المرحلة والاكتفاء بالاسئلة التى يتم مناقشتها خلال الجلسات التدريبية وذلك للتركيز اولا على الفهم:",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 4
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Enroll in a CAPM course and actively engage in training sessions.",
+        "Study regularly after each lecture by reviewing covered materials and ensuring initial understanding of concepts and their connections.",
+        "Identify unclear points and note them for discussion with the trainer in subsequent sessions.",
+        "Conduct a comprehensive review after course completion using provided educational materials, reaching a level where you can explain basic concepts in your own words.",
+        "Focus on deep understanding rather than memorization, as the exam depends on context comprehension rather than text recall.",
+        "Master the explanation of basic terms, such as: Project Charter: A foundational document that defines project objectives, stakeholder roles, preliminary scope, timelines, and budget, formally approved by the project sponsor."
+      ],
+      "itemsAr": [
+        "الالتحاق بدورة CAPM والانخراط بفاعلية خلال الجلسات التدريبية.",
+        "المذاكرة المنتظمة بعد كل محاضرة عبر مراجعة المواد المغطاة وضمان الفهم الأولي للمفاهيم وترابطها.",
+        "تحديد النقاط الغامضة وتدوينها لمناقشتها مع المدرب في الجلسات اللاحقة.",
+        "إجراء مراجعة شاملة بعد انتهاء الدورة باستخدام المواد التعليمية المقدمة، والوصول إلى مستوى يُمكّنك من شرح المفاهيم الأساسية بلغتك الخاصة.",
+        "التركيز على الفهم العميق بدلاً من الحفظ حيث يعتمد الاختبار على استيعاب السياق وليس استرجاع النصوص.",
+        "التمكن من شرح المصطلحات الأساسية بإتقان مثل: شرح عن ميثاق المشروع: وثيقة تأسيسية تُحدد أهداف المشروع وأدوار أصحاب المصلحة والنطاق الأولي والجداول الزمنية والميزانية، ويتم اعتمادها رسمياً من قبل راعي المشروع."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 5
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Phase 2: Simulation Practice Question Phase",
+      "textAr": "المرحلة الثانية: مرحلة المحاكاة التدريبية (Simulation Practice Question Phase)",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 6
+    },
+    {
+      "type": "details",
+      "textEn": "After mastering the fundamental concepts in the first phase, the practical application phase begins through the simulation platform, which features two main training modes:",
+      "textAr": "بعد إتقان أساسيات المفاهيم في المرحلة الأولى، تبدأ مرحلة التطبيق العملي من خلال منصة المحاكاة، والتي تتميز بنمطين تدريبيين:",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 7
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Practice Mode: Allows answering questions without time pressure to solidify understanding.",
+        "Exam Mode: Simulates real exam conditions with time constraints.",
+        "Regularly solving a large number of questions daily to build gradual experience.",
+        "Dealing with initial errors as learning opportunities, as complete accuracy isn't expected initially.",
+        "Elimination Method: Ruling out incorrect answers to identify the most accurate one.",
+        "Focusing on the Core of the Question: Extracting the essential requirement from lengthy scenarios and avoiding unnecessary details.",
+        "Utilizing the instructions provided in the course where these strategies are explained in practical detail."
+      ],
+      "itemsAr": [
+        "نمط التدريب (Practice Mode): يتيح حل الأسئلة بدون ضغط الوقت لترسيخ الفهم.",
+        "نمط الاختبار (Exam Mode): يقلّد ظروف الاختبار الحقيقية بوقت محدد.",
+        "حل عدد كبير من الاسئلة يوميًا بشكل منتظم لبناء الخبرة التدريجية.",
+        "التعامل مع الأخطاء الأولية كفرص للتعلم.",
+        "طريقة الاستبعاد (Elimination): استبعاد الإجابات غير الصحيحة.",
+        "التركيز على جوهر السؤال.",
+        "الاستفادة من الأدوات المُقدَّمة في الدورة."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 8
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Phase 3: Submitting CAPM Application Phase",
+      "textAr": "المرحلة الثالثة: تقديم طلب الاختبار (Submitting CAPM Application Phase)",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 9
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Completing personal details and essential professional information.",
+        "Selecting the exam modality (at a test center or online).",
+        "Monitoring the application status until approval.",
+        "Detailed guidance for the application process is provided during the course.",
+        "This phase can be completed concurrently with Phase 4.",
+        "Average approval timeframe: approximately one week."
+      ],
+      "itemsAr": [
+        "تعبئة البيانات الشخصية والمعلومات المهنية الأساسية.",
+        "اختيار طريقة أداء الاختبار (في مركز الاختبار أو عبر الإنترنت).",
+        "متابعة حالة الطلب حتى الموافقة.",
+        "يتم شرح عملية تقديم الطلب خلال الدورة.",
+        "يمكن البدء بالتوازي مع المرحلة الرابعة.",
+        "متوسط فترة الموافقة: حوالي أسبوع."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 10
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Phase 4: Simulation Test Question Phase",
+      "textAr": "المرحلة الرابعة: مرحلة محاكاة الاختبار (Simulation Test Question Phase)",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 11
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Simulate real exam conditions regarding time constraints and pressure.",
+        "Practice maintaining focus for the full 230-minute duration.",
+        "Achieve a passing rate of at least 70% on multiple full-length simulation exams.",
+        "We recommend completing all nine practice tests available on our platform."
+      ],
+      "itemsAr": [
+        "محاكاة ظروف الاختبار الحقيقية من حيث الزمن والضغط.",
+        "التمرين على الحفاظ على التركيز لمدة 230 دقيقة.",
+        "تحقيق نسبة 70% على الأقل.",
+        "يوصى بأداء جميع الاختبارات المتاحة."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 12
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Phase 5: Booking the Exam and final revision Phase",
+      "textAr": "المرحلة الخامسة: حجز الاختبار والمراجعة النهائية",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 13
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Scheduling your exam.",
+        "Select the most suitable date and time.",
+        "Ensure adequate preparation time.",
+        "Comprehensive review of all course materials.",
+        "Focus on weak areas.",
+        "Build confidence through simulations."
+      ],
+      "itemsAr": [
+        "حجز موعد الاختبار.",
+        "تحديد التاريخ والوقت المناسب.",
+        "توفير وقت كافٍ للمراجعة.",
+        "مراجعة شاملة لجميع المواد.",
+        "التركيز على نقاط الضعف.",
+        "تعزيز الثقة من خلال المحاكاة."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 14
+    },
+    {
+      "type": "details",
+      "textEn": "Success Assurance: We are confident that following this integrated methodology will make passing the CAPM exam achievable.\n\nBy: Mahmoud Elhelbawi",
+      "textAr": "ضمان النجاح: نحن على ثقة بأن الالتزام بهذه المنهجية سيجعل اجتياز اختبار CAPM تجربة ميسرة ومضمونة.\n\nمحمود الهلباوى",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 15
+    }
+  ],
+  "digital-transformation-failure": [
+    {
+      "type": "image",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "assets/images/homeArticles/article3.png",
+      "altEn": "digital-transformation-failure",
+      "altAr": "digital-transformation-failure",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 1
+    },
+    {
+      "type": "details",
+      "textEn": "70% of digital transformation initiatives fail to achieve their goals despite massive investments? And the reason is rarely technical! According to statistics from McKinsey and other consulting firms.",
+      "textAr": "70% من مبادرات التحول الرقمي تفشل في تحقيق أهدافها رغم الاستثمارات الهائلة؟ والسبب نادراً ما يكون تقنياً! وذلك بحسب احصائيات McKinsey وغيرها من الشركات الاستشارية.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 2
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Reason One: Digital Transformation or Digital Patching?",
+      "textAr": "السبب الأول: التحول الرقمي أم الترقيع الرقمي؟",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 3
+    },
+    {
+      "type": "details",
+      "textEn": "Most organizations don't undergo a true transformation; they undergo digital patching.\n\nTransformation means changing identity, culture, and processes, while patching means placing new technology over old processes.\n\nExample: A CEO invested heavily in an ERP system, but employees only used 10% of its features while old processes remained.",
+      "textAr": "معظم المؤسسات لا تمر بتحول حقيقي بل تمر بترقيع رقمي.\n\nالتحول يعني تغيير الهوية والثقافة والعمليات، بينما الترقيع يعني إضافة التكنولوجيا فوق العمليات القديمة.\n\nمثال: مؤسسة استثمرت في نظام ERP لكن الموظفين استخدموا فقط 10% منه بينما استمرت العمليات القديمة.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 4
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Reason Two: Loss Aversion Phobia",
+      "textAr": "السبب الثاني: فوبيا الخسارة",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 5
+    },
+    {
+      "type": "details",
+      "textEn": "Research shows loss pain is twice as strong as gain pleasure.\n\nLoss-driven transformation ends when pain stops, not when vision is achieved.",
+      "textAr": "الأبحاث تثبت أن ألم الخسارة أقوى من متعة الربح.\n\nالتحول المبني على الخسارة ينتهي عند توقف الألم.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 6
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Transformation decisions are made after losses.",
+        "Focus is on preventing losses more than creating opportunities.",
+        "A defensive culture dominates."
+      ],
+      "itemsAr": [
+        "قرارات التحول تأتي بعد خسائر.",
+        "التركيز على منع الخسارة أكثر من خلق الفرص.",
+        "سيطرة ثقافة الدفاع."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 7
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Reason Three: Authority that Fears Transparency",
+      "textAr": "السبب الثالث: السلطة التي تخاف من الشفافية",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 8
+    },
+    {
+      "type": "details",
+      "textEn": "85% of resistance comes from middle management because transparency exposes real performance.\n\nModern systems make performance measurable and corruption harder.",
+      "textAr": "85% من المقاومة تأتي من الإدارة المتوسطة بسبب خوفهم من الشفافية.\n\nالأنظمة الحديثة تجعل الأداء قابلاً للقياس.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 9
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Hidden Resistance Matrix",
+      "textAr": "مصفوفة المقاومة الخفية",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 10
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Bureaucratic Manager: fears losing authority → delays approvals",
+        "Average Performer: fears exposure → spreads negativity",
+        "Chaos Beneficiary: fears losing advantage → disrupts training"
+      ],
+      "itemsAr": [
+        "المدير البيروقراطي: يخاف فقدان السلطة → يؤخر الموافقات",
+        "الموظف المتوسط: يخاف الانكشاف → ينشر الشائعات",
+        "مستفيد الفوضى: يخاف فقدان المكاسب → يعطل التدريب"
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 11
+    },
+    {
+      "type": "sub-header",
+      "textEn": "How to Avoid These Traps",
+      "textAr": "كيف تتجنب هذه المصائد",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 12
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Ask: What culture do we want to build?",
+        "Measure opportunities, not savings.",
+        "Win over those who fear transparency.",
+        "Announce culture change, not system purchase."
+      ],
+      "itemsAr": [
+        "اسأل: ما الثقافة التي نريد بناءها؟",
+        "قم بقياس الفرص وليس التوفير.",
+        "احتوِ من يخاف الشفافية.",
+        "أعلن تغيير الثقافة وليس شراء نظام."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 13
+    },
+    {
+      "type": "details",
+      "textEn": "Digital transformation begins and ends with people, not technology.\n\nThe biggest success is turning resistance into support.\n\nDigital transformation is cultural surgery, not just a technical project.",
+      "textAr": "التحول الرقمي يبدأ وينتهي عند الأشخاص وليس التكنولوجيا.\n\nأكبر نجاح هو تحويل المقاومة إلى دعم.\n\nالتحول الرقمي هو جراحة ثقافية وليس مشروعاً تقنياً فقط.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 14
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Ask Your Team Before Starting",
+      "textAr": "اسأل فريقك قبل البدء",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 15
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "What do we lose if we don't change?",
+        "What do we gain if transformation succeeds?",
+        "Who will lose power with transparency?"
+      ],
+      "itemsAr": [
+        "ما الذي نخسره إذا لم نتغير؟",
+        "ما الذي نكسبه إذا نجح التحول؟",
+        "من سيخسر النفوذ مع الشفافية؟"
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 16
+    },
+    {
+      "type": "details",
+      "textEn": "Honest answers can prevent 80% of failure.\n\nSource: McKinsey\n\nBy: Mahmoud Elhelbawi",
+      "textAr": "الإجابات الصادقة تقلل احتمالية الفشل بنسبة كبيرة.\n\nالمصدر: McKinsey\n\nمحمود الهلباوى",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 17
+    }
+  ],
+  "capm-application-process": [
+    {
+      "type": "image",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "assets/images/homeArticles/article1.jpeg",
+      "altEn": "capm-application-process",
+      "altAr": "capm-application-process",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 1
+    },
+    {
+      "type": "details",
+      "textEn": "Thinking about the CAPM certification? Smart move. It's the perfect launchpad for your project management career.\n\nThe application is straightforward—easier than the PMP, and we'll walk you through the current, updated process step-by-step.",
+      "textAr": "هل تفكر في الحصول على شهادة CAPM؟ اختيار ذكي. إنها البداية المثالية لمسيرتك المهنية في إدارة المشاريع.\n\nعملية التقديم سهلة وبسيطة—أسهل من PMP—وسنرشدك خلال الخطوات المحدثة خطوة بخطوة.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 2
+    },
+    {
+      "type": "sub-header",
+      "textEn": "What You Need Before Starting",
+      "textAr": "ما الذي تحتاجه قبل البدء",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 3
+    },
+    {
+      "type": "details",
+      "textEn": "Gather just two things:",
+      "textAr": "ستحتاج فقط إلى شيئين:",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 4
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Your Education Proof: Have your high school diploma, associate's degree, or equivalent ready. This is the only educational requirement.",
+        "Your 23-Hour Training Proof: You must complete 23 contact hours of project management education and keep the certificate."
+      ],
+      "itemsAr": [
+        "إثبات التعليم: يجب أن يكون لديك شهادة الثانوية أو ما يعادلها، وهو الشرط التعليمي الوحيد.",
+        "إثبات 23 ساعة تدريب: يجب إكمال 23 ساعة تدريبية في إدارة المشاريع والحصول على الشهادة."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 5
+    },
+    {
+      "type": "details",
+      "textEn": "That's it. Unlike the PMP, you do NOT need any professional project management experience.\n\nThis makes CAPM ideal for students, career changers, and beginners.",
+      "textAr": "هذا كل ما تحتاجه. على عكس شهادة PMP، لا تحتاج إلى خبرة عملية في إدارة المشاريع.\n\nوهذا يجعل CAPM مناسبة للطلاب والمبتدئين ومن يرغبون في تغيير مسارهم المهني.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 6
+    },
+    {
+      "type": "sub-header",
+      "textEn": "The Application Process: Three Easy Steps",
+      "textAr": "خطوات التقديم: ثلاث خطوات سهلة",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 7
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Step 1: Create Your PMI Account",
+      "textAr": "الخطوة الأولى: إنشاء حساب PMI",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 8
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Go to the PMI website.",
+        "Click Join or Log In and create a free account.",
+        "Use a personal email you check regularly."
+      ],
+      "itemsAr": [
+        "اذهب إلى موقع PMI.",
+        "اضغط على تسجيل أو تسجيل الدخول وأنشئ حسابًا مجانيًا.",
+        "استخدم بريدًا إلكترونيًا شخصيًا تتحقق منه باستمرار."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 9
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Step 2: Start and Complete the CAPM Application",
+      "textAr": "الخطوة الثانية: بدء وإكمال طلب CAPM",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 10
+    },
+    {
+      "type": "details",
+      "textEn": "Go to Certifications in your PMI account and select CAPM.\n\nClick Apply.",
+      "textAr": "انتقل إلى قسم الشهادات في حساب PMI واختر CAPM.\n\nاضغط على تقديم الطلب.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 11
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Enter personal information.",
+        "Confirm your education.",
+        "Add training details.",
+        "Enter provider name, course name, and completion date.",
+        "Confirm 23 hours completed.",
+        "Review everything carefully."
+      ],
+      "itemsAr": [
+        "أدخل بياناتك الشخصية.",
+        "أكد بيانات التعليم.",
+        "أدخل تفاصيل التدريب.",
+        "أضف اسم الجهة التدريبية واسم الدورة وتاريخ الانتهاء.",
+        "أكد إتمام 23 ساعة تدريب.",
+        "راجع البيانات جيدًا."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 12
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Step 3: Submit, Pay, and Schedule",
+      "textAr": "الخطوة الثالثة: التقديم والدفع وحجز الامتحان",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 13
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Submit application and pay fee.",
+        "PMI membership may reduce cost.",
+        "Approval is usually instant or within 24 hours.",
+        "Receive eligibility ID.",
+        "Schedule your exam within one year."
+      ],
+      "itemsAr": [
+        "قم بإرسال الطلب ودفع الرسوم.",
+        "قد يساعدك الاشتراك في PMI على تقليل التكلفة.",
+        "يتم قبول الطلب غالبًا فورًا أو خلال 24 ساعة.",
+        "ستحصل على رقم الأهلية.",
+        "قم بحجز الامتحان خلال سنة."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 14
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Important Notes",
+      "textAr": "ملاحظات مهمة",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 15
+    },
+    {
+      "type": "bullet-list",
+      "textEn": "",
+      "textAr": "",
+      "itemsEn": [
+        "Audits are rare but possible.",
+        "Your name must match your ID exactly."
+      ],
+      "itemsAr": [
+        "التدقيق نادر ولكنه ممكن.",
+        "يجب أن يتطابق اسمك تمامًا مع بطاقة الهوية."
+      ],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 16
+    },
+    {
+      "type": "sub-header",
+      "textEn": "What Comes After Approval?",
+      "textAr": "ماذا بعد قبول الطلب؟",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 17
+    },
+    {
+      "type": "details",
+      "textEn": "Now the real work begins: preparing for the exam.\n\nUse your one-year eligibility wisely.",
+      "textAr": "الآن تبدأ المرحلة الأهم: التحضير للامتحان.\n\nاستغل فترة السنة للتحضير بشكل جيد.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 18
+    },
+    {
+      "type": "details",
+      "textEn": "The CAPM application is simple and accessible.\n\nComplete it correctly and start your certification journey.",
+      "textAr": "عملية التقديم لـ CAPM سهلة ومباشرة.\n\nأكملها بشكل صحيح وابدأ رحلتك نحو الشهادة.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 19
+    },
+    {
+      "type": "sub-header",
+      "textEn": "Final Tip",
+      "textAr": "نصيحة أخيرة",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 20
+    },
+    {
+      "type": "details",
+      "textEn": "Need the 23-hour training?\n\nOur CAPM course provides certificate + exam readiness.",
+      "textAr": "هل تحتاج إلى إكمال 23 ساعة تدريب؟\n\nدورتنا توفر الشهادة والاستعداد الكامل للامتحان.",
+      "itemsEn": [],
+      "itemsAr": [],
+      "imagePath": "",
+      "altEn": "",
+      "altAr": "",
+      "captionEn": "",
+      "captionAr": "",
+      "orderNo": 21
+    }
+  ]
+}
