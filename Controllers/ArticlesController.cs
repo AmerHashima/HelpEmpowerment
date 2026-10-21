@@ -87,22 +87,33 @@ public class ArticlesController(ApplicationDbContext db, IConfiguration configur
     public async Task<ActionResult<ApiResponse<ArticleDto>>> Update([FromBody] UpdateArticleDto dto, CancellationToken ct)
     {
         var validation = Validate(dto); if (validation is not null) return BadRequest(ApiResponse<ArticleDto>.ErrorResponse(validation));
-        var article = await db.Articles.FirstOrDefaultAsync(x => x.Oid == dto.Oid && !x.IsDeleted, ct);
+        // Legacy deletes were soft deletes. An administrator editing one of those
+        // records should restore it instead of receiving a misleading 404.
+        var article = await db.Articles.FirstOrDefaultAsync(x => x.Oid == dto.Oid, ct);
         if (article is null) return NotFound(ApiResponse<ArticleDto>.ErrorResponse("Article not found."));
         var category = Normalize(dto.Category); var slug = Normalize(dto.Slug);
         if (await db.Articles.AnyAsync(x => !x.IsDeleted && x.Oid != dto.Oid && x.Category == category && x.Slug == slug, ct)) return Conflict(ApiResponse<ArticleDto>.ErrorResponse("An article with this category and slug already exists."));
-        Apply(article, dto); article.UpdatedAt = DateTime.UtcNow; article.UpdatedBy = CurrentUserId(); await db.SaveChangesAsync(ct);
-        return Ok(ApiResponse<ArticleDto>.SuccessResponse(Map(article), "Article updated."));
+        var wasSoftDeleted = article.IsDeleted;
+        Apply(article, dto);
+        article.IsDeleted = false;
+        article.DeletedAt = null;
+        article.UpdatedAt = DateTime.UtcNow;
+        article.UpdatedBy = CurrentUserId();
+        await db.SaveChangesAsync(ct);
+        return Ok(ApiResponse<ArticleDto>.SuccessResponse(Map(article), wasSoftDeleted ? "Article restored and updated." : "Article updated."));
     }
 
     [Authorize(Policy = "InternalUser")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(Guid id, CancellationToken ct)
     {
-        var article = await db.Articles.FirstOrDefaultAsync(x => x.Oid == id && !x.IsDeleted, ct);
+        // Articles are managed content: deleting from the dashboard must remove the
+        // record entirely, including legacy records that were soft-deleted before.
+        var article = await db.Articles.FirstOrDefaultAsync(x => x.Oid == id, ct);
         if (article is null) return NotFound(ApiResponse<bool>.ErrorResponse("Article not found."));
-        article.IsDeleted = true; article.DeletedAt = DateTime.UtcNow; article.UpdatedAt = DateTime.UtcNow; article.UpdatedBy = CurrentUserId(); await db.SaveChangesAsync(ct);
-        return Ok(ApiResponse<bool>.SuccessResponse(true, "Article deleted."));
+        db.Articles.Remove(article);
+        await db.SaveChangesAsync(ct);
+        return Ok(ApiResponse<bool>.SuccessResponse(true, "Article permanently deleted."));
     }
 
     [Authorize(Policy = "InternalUser")]
