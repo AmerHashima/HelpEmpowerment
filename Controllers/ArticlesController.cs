@@ -56,6 +56,7 @@ public class ArticlesController(ApplicationDbContext db, IConfiguration configur
 
     [AllowAnonymous]
     [HttpGet("by-slug/{category}/{slug}")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<ActionResult<ApiResponse<ArticleDto>>> GetBySlug(string category, string slug, CancellationToken ct)
     {
         var article = await db.Articles.AsNoTracking().FirstOrDefaultAsync(x => !x.IsDeleted && x.Category == category && x.Slug == slug && x.Status == "Published" && (!x.PublishedAt.HasValue || x.PublishedAt <= DateTime.UtcNow), ct);
@@ -64,6 +65,7 @@ public class ArticlesController(ApplicationDbContext db, IConfiguration configur
 
     [Authorize(Policy = "InternalUser")]
     [HttpGet("{id:guid}")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<ActionResult<ApiResponse<ArticleDto>>> Get(Guid id, CancellationToken ct)
     {
         var article = await db.Articles.AsNoTracking().FirstOrDefaultAsync(x => x.Oid == id && !x.IsDeleted, ct);
