@@ -91,7 +91,9 @@ public class ArticlesController(ApplicationDbContext db, IConfiguration configur
         var validation = Validate(dto); if (validation is not null) return BadRequest(ApiResponse<ArticleDto>.ErrorResponse(validation));
         // Legacy deletes were soft deletes. An administrator editing one of those
         // records should restore it instead of receiving a misleading 404.
-        var article = await db.Articles.FirstOrDefaultAsync(x => x.Oid == dto.Oid, ct);
+        // The application uses NoTracking globally, so this row must be tracked
+        // or SaveChanges would only return the in-memory values without persisting them.
+        var article = await db.Articles.AsTracking().FirstOrDefaultAsync(x => x.Oid == dto.Oid, ct);
         if (article is null) return NotFound(ApiResponse<ArticleDto>.ErrorResponse("Article not found."));
         var category = Normalize(dto.Category); var slug = Normalize(dto.Slug);
         if (await db.Articles.AnyAsync(x => !x.IsDeleted && x.Oid != dto.Oid && x.Category == category && x.Slug == slug, ct)) return Conflict(ApiResponse<ArticleDto>.ErrorResponse("An article with this category and slug already exists."));
