@@ -333,10 +333,26 @@ public sealed class RevenueManagementRepository(ApplicationDbContext db) : IReve
             : db.UserCourseAssignments.Where(x => x.UserId == userId && x.IsActive && !x.IsDeleted).Select(x => x.CourseId).Distinct();
         var assigned = await courseIds.CountAsync(ct);
         var active = await db.Courses.CountAsync(x => courseIds.Contains(x.Oid) && x.IsActive && !x.IsDeleted, ct);
-        var students = await db.StudentCourses.Where(x => courseIds.Contains(x.CourseId) && !x.IsDeleted)
+        // Dashboard figures must be based on live relationships only. Without
+        // these checks, a soft-deleted student/enrolment/reservation can still
+        // inflate the cards through its navigation properties.
+        var relatedStudentCourses = db.StudentCourses.Where(x =>
+            courseIds.Contains(x.CourseId) && !x.IsDeleted &&
+            !x.Student.IsDeleted && x.Student.IsActive &&
+            !x.Course.IsDeleted);
+        var students = await relatedStudentCourses
             .Select(x => x.StudentId).Distinct().CountAsync(ct);
-        var reservations = await db.StudentCourseReservations.CountAsync(x =>
-            courseIds.Contains(x.StudentCourse.CourseId) && x.IsReserved && !x.IsDeleted, ct);
+
+        var activeReservations = db.StudentCourseReservations.Where(x =>
+            x.IsReserved && !x.IsDeleted &&
+            !x.StudentCourse.IsDeleted &&
+            !x.StudentCourse.Student.IsDeleted && x.StudentCourse.Student.IsActive &&
+            !x.StudentCourse.Course.IsDeleted && !x.CourseService.IsDeleted);
+        var reservations = await activeReservations
+            .Where(x => courseIds.Contains(x.StudentCourse.CourseId))
+            // A retry must not make the dashboard count the same service twice.
+            .Select(x => new { x.StudentCourseId, x.CourseServiceId })
+            .Distinct().CountAsync(ct);
         var totalRevenue = await db.InvoiceItems.Where(x => courseIds.Contains(x.CourseId) && x.Invoice.IsPaid)
             .SumAsync(x => (decimal?)x.LineTotal, ct) ?? 0;
         var myRevenueQuery = db.CourseRevenueDistributions.Where(x => courseIds.Contains(x.CourseId) && !x.IsDeleted);
@@ -348,15 +364,16 @@ public sealed class RevenueManagementRepository(ApplicationDbContext db) : IReve
             Paid = g.Sum(x => x.Status == RevenueDistributionStatus.Paid ? x.ShareAmount : 0m)
         }).SingleOrDefaultAsync(ct);
         var upcoming = await db.CourseLiveSessions.CountAsync(x => courseIds.Contains(x.CourseOid)
-            && x.Active && !x.IsDeleted && x.Date >= DateTime.UtcNow.Date, ct);
+            && x.Active && !x.IsDeleted && x.Course != null && !x.Course.IsDeleted && x.Course.IsActive
+            && x.Date >= DateTime.UtcNow.Date, ct);
 
         var dashboardCourses = await db.Courses.AsNoTracking()
             .Where(x => courseIds.Contains(x.Oid) && !x.IsDeleted)
             .OrderBy(x => x.CourseName)
             .Select(x => new { x.Oid, x.CourseCode, x.CourseName })
             .ToListAsync(ct);
-        var serviceReservationCounts = await db.StudentCourseReservations.AsNoTracking()
-            .Where(x => courseIds.Contains(x.StudentCourse.CourseId) && x.IsReserved && !x.IsDeleted)
+        var serviceReservationCounts = await activeReservations.AsNoTracking()
+            .Where(x => courseIds.Contains(x.StudentCourse.CourseId))
             .GroupBy(x => new
             {
                 x.StudentCourse.CourseId,
@@ -366,7 +383,7 @@ public sealed class RevenueManagementRepository(ApplicationDbContext db) : IReve
             {
                 group.Key.CourseId,
                 group.Key.ServiceType,
-                Count = group.Count()
+                Count = group.Select(x => x.StudentCourseId).Distinct().Count()
             })
             .ToListAsync(ct);
         var countsByCourse = serviceReservationCounts
