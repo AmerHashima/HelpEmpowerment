@@ -87,7 +87,8 @@ public sealed record CourseDashboardStatisticsDto(Guid CourseId, string CourseCo
 public sealed record AssignedDashboardDto(int AssignedCourses, int ActiveCourses,
     int StudentsCount, int ReservationsCount, decimal TotalRevenue, decimal MyRevenue,
     decimal PendingRevenue, decimal PaidRevenue, int UpcomingLiveSessions,
-    IReadOnlyList<CourseDashboardStatisticsDto> Courses);
+    IReadOnlyList<CourseDashboardStatisticsDto> Courses,
+    int AllStudentsCount, int StudentsBoughtCoursesCount);
 
 public sealed record RevenueSettlementDto(Guid Oid, Guid BeneficiaryUserId, string BeneficiaryName,
     string SettlementNumber, DateTime PeriodFrom, DateTime PeriodTo, decimal TotalAmount,

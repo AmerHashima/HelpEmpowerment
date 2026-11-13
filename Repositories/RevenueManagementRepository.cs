@@ -5,6 +5,7 @@ using HelpEmpowermentApi.Enums;
 using HelpEmpowermentApi.IRepositories;
 using HelpEmpowermentApi.Models;
 using HelpEmpowermentApi.Payments.Application;
+using HelpEmpowermentApi.Payments.Domain;
 using HelpEmpowermentApi.Common;
 using HelpEmpowermentApi.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -343,6 +344,28 @@ public sealed class RevenueManagementRepository(ApplicationDbContext db) : IReve
         var students = await relatedStudentCourses
             .Select(x => x.StudentId).Distinct().CountAsync(ct);
 
+        var allStudentsQuery = db.Students.AsNoTracking()
+            .Where(student => !student.IsDeleted);
+        if (!globalAccess)
+        {
+            allStudentsQuery = allStudentsQuery.Where(student => student.EnrolledCourses.Any(enrollment =>
+                !enrollment.IsDeleted && !enrollment.Course.IsDeleted &&
+                courseIds.Contains(enrollment.CourseId)));
+        }
+        var allStudents = await allStudentsQuery.CountAsync(ct);
+
+        // A buyer is counted only once, and only after the payment is authorised.
+        // This deliberately excludes baskets, failed transactions, and unpaid invoices.
+        var paidBuyerIds = db.Invoices.AsNoTracking().Where(invoice =>
+                invoice.OwnerId.HasValue && invoice.IsPaid &&
+                invoice.PaymentTransactions.Any(payment => payment.Status == PaymentStatus.Authorised) &&
+                invoice.Items.Any(item => courseIds.Contains(item.CourseId)))
+            .Select(invoice => invoice.OwnerId!.Value)
+            .Distinct();
+        var studentsBoughtCourses = await db.Students.AsNoTracking()
+            .Where(student => !student.IsDeleted && paidBuyerIds.Contains(student.Oid))
+            .CountAsync(ct);
+
         var activeReservations = db.StudentCourseReservations.Where(x =>
             x.IsReserved && !x.IsDeleted &&
             !x.StudentCourse.IsDeleted &&
@@ -400,7 +423,8 @@ public sealed class RevenueManagementRepository(ApplicationDbContext db) : IReve
         }).ToList();
 
         return new(assigned, active, students, reservations, totalRevenue, revenue?.Total ?? 0,
-            revenue?.Pending ?? 0, revenue?.Paid ?? 0, upcoming, courseStatistics);
+            revenue?.Pending ?? 0, revenue?.Paid ?? 0, upcoming, courseStatistics,
+            allStudents, studentsBoughtCourses);
     }
 
     public async Task<IReadOnlyList<RevenueSettlementDto>> GetSettlementsAsync(

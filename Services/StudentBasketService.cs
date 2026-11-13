@@ -620,7 +620,9 @@ namespace HelpEmpowermentApi.Services
                 StudentName = entity.Student?.NameEn,
                 CourseId = entity.CourseId,
                 CourseName = entity.Course?.CourseName,
-                // CourseImage = entity.Course?.ImageUrl,
+                // Keep the stored file name in the basket payload. Clients use
+                // Courses/{courseId}/image to safely resolve this to an image.
+                CourseImage = entity.Course?.ImagePath,
                 OriginalPrice = entity.OriginalPrice,
                 DiscountAmount = entity.DiscountAmount,
                 FinalPrice = entity.FinalPrice,

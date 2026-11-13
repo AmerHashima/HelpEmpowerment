@@ -60,7 +60,7 @@ namespace HelpEmpowermentApi.Services
                 if (student == null)
                     return ApiResponse<StudentDto>.ErrorResponse("Student not found");
 
-                return ApiResponse<StudentDto>.SuccessResponse(MapToDto(student));
+                return ApiResponse<StudentDto>.SuccessResponse(await MapToDtoWithPromoUsageAsync(student));
             }
             catch (Exception ex)
             {
@@ -76,7 +76,7 @@ namespace HelpEmpowermentApi.Services
                 if (student == null)
                     return ApiResponse<StudentDto>.ErrorResponse("Student not found");
 
-                return ApiResponse<StudentDto>.SuccessResponse(MapToDto(student));
+                return ApiResponse<StudentDto>.SuccessResponse(await MapToDtoWithPromoUsageAsync(student));
             }
             catch (Exception ex)
             {
@@ -186,7 +186,7 @@ namespace HelpEmpowermentApi.Services
                 if (student == null)
                     return ApiResponse<StudentDto>.ErrorResponse("Invalid username or password");
 
-                return ApiResponse<StudentDto>.SuccessResponse(MapToDto(student), "Authentication successful");
+                return ApiResponse<StudentDto>.SuccessResponse(await MapToDtoWithPromoUsageAsync(student), "Authentication successful");
             }
             catch (Exception ex)
             {
@@ -215,6 +215,35 @@ namespace HelpEmpowermentApi.Services
                 UpdatedAt = student.UpdatedAt,
                 UpdatedBy = student.UpdatedBy
             };
+        }
+
+        // Promo usage is derived from completed payments rather than the legacy
+        // counters stored on Student, which were not updated by every payment path.
+        private async Task<StudentDto> MapToDtoWithPromoUsageAsync(Student student)
+        {
+            var dto = MapToDto(student);
+            if (string.IsNullOrWhiteSpace(student.PromoCode))
+            {
+                dto.UsersUsedPromo = 0;
+                dto.TotalMoneyWithPromo = 0;
+                return dto;
+            }
+
+            var matchingInvoices = _db.Invoices.AsNoTracking().Where(invoice =>
+                invoice.OwnerId.HasValue &&
+                invoice.OwnerId.Value != student.Oid &&
+                invoice.IsPaid &&
+                invoice.PromoCode != null &&
+                invoice.PromoCode.Trim().ToUpper() == student.PromoCode.Trim().ToUpper() &&
+                invoice.PaymentTransactions.Any(payment => payment.Status == PaymentStatus.Authorised));
+
+            dto.UsersUsedPromo = await matchingInvoices
+                .Select(invoice => invoice.OwnerId!.Value)
+                .Distinct()
+                .CountAsync();
+            dto.TotalMoneyWithPromo = (float)(await matchingInvoices
+                .SumAsync(invoice => (decimal?)invoice.TotalAmount) ?? 0m);
+            return dto;
         }
 
         public async Task<PagedResponse<StudentWithCoursesDto>> GetStudentsWithCoursesAsync(DataRequest request, Guid? assignedUserId = null)
