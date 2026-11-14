@@ -341,6 +341,16 @@ namespace HelpEmpowermentApi.Services
                     CoursesMasterExamOid = q.Question?.CoursesMasterExamOid,
                     QuestionText_Ar = q.Question?.QuestionText_Ar ?? string.Empty,
                     QuestionExplination = q.Question?.QuestionExplination ?? string.Empty,
+                    QuestionImage = q.Question?.QuestionImage ?? string.Empty,
+                    QuestionImages = q.Question?.Images
+                        .Where(image => !image.IsDeleted)
+                        .OrderBy(image => image.OrderNo)
+                        .Select(image => new CourseQuestionImageDto
+                        {
+                            Oid = image.Oid,
+                            FileName = image.FileName,
+                            OrderNo = image.OrderNo
+                        }).ToList() ?? new(),
                     ExplanationImages = q.Question?.ExplanationImages
                         .Where(image => !image.IsDeleted)
                         .OrderBy(image => image.OrderNo)
@@ -370,6 +380,33 @@ namespace HelpEmpowermentApi.Services
                         SelectedAnswerText = a.SelectedAnswer?.AnswerText,
                         AnswerSelectedAnswerOid = a.AnswerSelectedAnswerOid
                     }).ToList() ?? new List<StudentExamQuestionAnswerDto>(),
+                    SubQuestions = q.Question?.SubQuestions
+                        .Where(sub => !sub.IsDeleted)
+                        .OrderBy(sub => sub.OrderNo)
+                        .Select(sub =>
+                        {
+                            var studentAnswer = q.SubQuestionAnswers?
+                                .FirstOrDefault(answer => !answer.IsDeleted && answer.SubQuestionOid == sub.Oid);
+                            return new StudentExamSubQuestionDto
+                            {
+                                Oid = sub.Oid,
+                                QuestionText = sub.QuestionText,
+                                QuestionTextAr = sub.QuestionTextAr,
+                                OrderNo = sub.OrderNo,
+                                SelectedChoiceOid = studentAnswer?.SelectedChoiceOid,
+                                IsCorrect = studentAnswer?.IsCorrect,
+                                AwardedScore = studentAnswer?.AwardedScore,
+                                Choices = sub.Choices.Where(choice => !choice.IsDeleted)
+                                    .OrderBy(choice => choice.OrderNo)
+                                    .Select(choice => new StudentExamSubQuestionChoiceDto
+                                    {
+                                        Oid = choice.Oid,
+                                        ChoiceText = choice.ChoiceText,
+                                        ChoiceTextAr = choice.ChoiceTextAr,
+                                        OrderNo = choice.OrderNo
+                                    }).ToList()
+                            };
+                        }).ToList() ?? new List<StudentExamSubQuestionDto>(),
                     CreatedAt = q.CreatedAt,
                     CreatedBy = q.CreatedBy,
                     UpdatedAt = q.UpdatedAt,

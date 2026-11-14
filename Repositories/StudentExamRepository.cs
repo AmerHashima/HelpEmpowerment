@@ -81,10 +81,19 @@ namespace HelpEmpowermentApi.Repositories
                     .ThenInclude(eq => eq.Question)
                         .ThenInclude(q => q.ExplanationImages.Where(image => !image.IsDeleted))
                 .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
+                    .ThenInclude(eq => eq.Question)
+                        .ThenInclude(q => q.Images.Where(image => !image.IsDeleted))
+                .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
+                    .ThenInclude(eq => eq.Question)
+                        .ThenInclude(q => q.SubQuestions.Where(sub => !sub.IsDeleted))
+                            .ThenInclude(sub => sub.Choices.Where(choice => !choice.IsDeleted))
+                .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
                     .ThenInclude(eq => eq.QuestionStatus)
                 .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
                     .ThenInclude(eq => eq.Answers.Where(a => !a.IsDeleted))
                         .ThenInclude(a => a.SelectedAnswer)
+                .Include(se => se.ExamQuestions.Where(q => !q.IsDeleted))
+                    .ThenInclude(eq => eq.SubQuestionAnswers.Where(a => !a.IsDeleted))
                 .FirstOrDefaultAsync(se => se.Oid == id && !se.IsDeleted);
         }
 

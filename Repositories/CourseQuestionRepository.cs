@@ -91,7 +91,6 @@ namespace HelpEmpowermentApi.Repositories
                 .Include(q => q.MasterExam)
                 .Include(q => q.QuestionTypeLookup)
                 .Include(q => q.Answers.Where(a => !a.IsDeleted))
-                    .ThenInclude(a => a.Question)
                 .Include(q => q.Images.Where(image => !image.IsDeleted))
                 .Include(q => q.ExplanationImages.Where(image => !image.IsDeleted))
                 .Include(q => q.SubQuestions.Where(sub => !sub.IsDeleted))
