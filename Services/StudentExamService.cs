@@ -368,6 +368,24 @@ namespace HelpEmpowermentApi.Services
                     CorrectAnswer = q.Question?.CorrectAnswer ?? false,
                     Question = q.Question?.Question ?? false,
                     CorrectChoiceOid = q.Question?.CorrectChoiceOid,
+                    QuestionAnswers = q.Question?.Answers
+                        .Where(answer => !answer.IsDeleted)
+                        .OrderBy(answer => answer.OrderNo)
+                        .Select(answer => new CourseAnswerDto
+                        {
+                            Oid = answer.Oid,
+                            QuestionId = answer.QuestionId,
+                            AnswerText = answer.AnswerText,
+                            AnswerText_Ar = answer.AnswerText_Ar,
+                            Question_Ask = answer.Question_Ask,
+                            CorrectAnswerOid = answer.CorrectAnswerOid,
+                            IsCorrect = answer.IsCorrect,
+                            OrderNo = answer.OrderNo,
+                            CreatedAt = answer.CreatedAt,
+                            CreatedBy = answer.CreatedBy,
+                            UpdatedAt = answer.UpdatedAt,
+                            UpdatedBy = answer.UpdatedBy
+                        }).ToList() ?? new List<CourseAnswerDto>(),
                     IsCorrect = q.IsCorrect,
                     QuestionScore = q.QuestionScore,
                     ObtainedScore = q.ObtainedScore,

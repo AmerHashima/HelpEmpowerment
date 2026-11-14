@@ -27,6 +27,10 @@ namespace HelpEmpowermentApi.DTOs
         public bool CorrectAnswer { get; set; }
         public bool Question { get; set; }
         public Guid? CorrectChoiceOid { get; set; }
+        // The answer bank belonging to the original course question. This is
+        // distinct from Answers below, which represents the student's saved
+        // submissions.
+        public List<CourseAnswerDto> QuestionAnswers { get; set; } = new();
         public List<StudentExamQuestionAnswerDto> Answers { get; set; } = new();
         public List<StudentExamSubQuestionDto> SubQuestions { get; set; } = new();
         public DateTime? CreatedAt { get; set; }
